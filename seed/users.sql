@@ -1,0 +1,4 @@
+-- Passwords are bcrypt-hashed at runtime in db/init_db.py
+-- This file documents the user structure only
+-- INSERT OR IGNORE INTO users (username, password_hash) VALUES (?, ?)
+-- Users: owner / assistant / wife
