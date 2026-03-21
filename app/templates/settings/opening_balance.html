@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}Opening Balance Setup — cashflow-tracker{% endblock %}
+
+{% block content %}
+<h1>Opening Balance Setup</h1>
+<p>Set the starting cash position before logging transactions.</p>
+
+{% if error %}
+<div class="error">{{ error }}</div>
+{% endif %}
+
+<form method="post" action="/settings/opening-balance">
+    <div>
+        <label for="opening_balance">Opening balance (PLN)</label><br>
+        <input
+            type="number"
+            id="opening_balance"
+            name="opening_balance"
+            step="0.01"
+            min="0.01"
+            value="{{ current_balance if current_balance is not none else '' }}"
+            required
+        >
+    </div>
+    <br>
+    <div>
+        <label for="as_of_date">As of date</label><br>
+        <input
+            type="date"
+            id="as_of_date"
+            name="as_of_date"
+            value="{{ current_date }}"
+            required
+        >
+    </div>
+    <br>
+    <button type="submit">Save opening balance</button>
+</form>
+{% endblock %}
