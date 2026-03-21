@@ -2,7 +2,7 @@
 ## Task Board
 
 **Status:** IN PROGRESS
-**Last updated:** 2026-03-21 — I1-T1 DONE (PR #1 open), T2 and T3 unblocked
+**Last updated:** 2026-03-21 — I1-T1 DONE (merged), I1-T2 DONE (PR #2 open), T3 unblocked
 **Iteration branch:** `feature/phase-1/iteration-1`  ← all task PRs target this branch
 **Final PR:** `feature/phase-1/iteration-1` → `main`  ← QA agent approves before merge
 
@@ -27,7 +27,7 @@ T5 closes the iteration — runs last.
 | ID    | Title                   | Owner       | Status     | Depends on   | Branch                        |
 |-------|-------------------------|-------------|------------|--------------|-------------------------------|
 | I1-T1 | Schema + seed data      | Codex       | ✅ DONE    | —            | `feature/p1-i1/t1-schema`    |
-| I1-T2 | FastAPI skeleton        | Claude Code | ⏳ WAITING | I1-T1        | `feature/p1-i1/t2-fastapi`   |
+| I1-T2 | FastAPI skeleton        | Claude Code | ✅ DONE    | I1-T1        | `feature/p1-i1/t2-fastapi`   |
 | I1-T3 | Opening balance route   | Codex       | ⏳ WAITING | I1-T1        | `feature/p1-i1/t3-balance`   |
 | I1-T4 | Base template + UI      | Claude Code | ⏳ WAITING | I1-T2, I1-T3 | `feature/p1-i1/t4-ui`        |
 | I1-T5 | Tests + ruff + PR ready | Claude Code | ⏳ WAITING | I1-T4        | `feature/p1-i1/t5-tests`     |
