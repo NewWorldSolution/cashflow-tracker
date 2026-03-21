@@ -24,6 +24,9 @@ if not SECRET_KEY:
 
 _memory_keeper: sqlite3.Connection | None = None
 
+EXEMPT_PATHS = {"/settings/opening-balance", "/auth/login", "/auth/logout", "/favicon.ico"}
+EXEMPT_PREFIXES = ("/static", "/docs", "/openapi.json")
+
 
 def _connect(url: str) -> sqlite3.Connection:
     """Open a SQLite connection, using shared-cache URI for :memory: databases.
@@ -58,31 +61,37 @@ def get_db() -> sqlite3.Connection:
         conn.close()
 
 
-class OpeningBalanceGate(BaseHTTPMiddleware):
-    """Middleware that enforces the opening balance setup requirement.
+def _is_exempt(path: str) -> bool:
+    """Return True if path bypasses both opening-balance and auth gates."""
+    normalised = path.rstrip("/") or "/"
+    if normalised in EXEMPT_PATHS:
+        return True
+    return any(normalised.startswith(prefix) for prefix in EXEMPT_PREFIXES)
 
-    Redirects all requests to /settings/opening-balance (302) when the
-    opening_balance setting is not present in the database.
-    /settings/opening-balance is exempt so the setup form is always reachable.
-    A missing opening balance is not a warning — it is a hard block.
-    """
 
-    EXEMPT_PATHS = {"/settings/opening-balance"}
+class AuthGate(BaseHTTPMiddleware):
+    """Single middleware enforcing both opening-balance and auth checks."""
 
     async def dispatch(self, request: Request, call_next):
-        if request.url.path not in self.EXEMPT_PATHS:
-            conn = _connect(DATABASE_URL)
-            try:
-                row = conn.execute(
-                    "SELECT value FROM settings WHERE key = 'opening_balance'"
-                ).fetchone()
-            except sqlite3.OperationalError:
-                # settings table not yet created — treat as not set
-                row = None
-            finally:
-                conn.close()
-            if row is None:
+        if _is_exempt(request.url.path):
+            return await call_next(request)
+
+        from app.services.auth_service import get_current_user, get_opening_balance
+
+        conn = _connect(DATABASE_URL)
+        conn.row_factory = sqlite3.Row
+        try:
+            if get_opening_balance(conn) is None:
                 return RedirectResponse(url="/settings/opening-balance", status_code=302)
+            user = get_current_user(request, conn)
+        finally:
+            conn.close()
+
+        if user is None:
+            request.session.clear()
+            return RedirectResponse(url="/auth/login", status_code=302)
+
+        request.state.user = user
         return await call_next(request)
 
 
@@ -114,11 +123,16 @@ def create_app(database_url: str | None = None) -> FastAPI:
 
     app = FastAPI(title="cashflow-tracker", lifespan=lifespan)
 
+    app.add_middleware(AuthGate)
     app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
-    app.add_middleware(OpeningBalanceGate)
 
     from app.routes.settings import router as settings_router
+    from app.routes.auth import router as auth_router
+    from app.routes.dashboard import router as dashboard_router
+
     app.include_router(settings_router)
+    app.include_router(auth_router)
+    app.include_router(dashboard_router)
 
     return app
 

@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block title %}Sign in — cashflow-tracker{% endblock %}
+
+{% block content %}
+<h1>Sign in</h1>
+
+{% if error %}
+<div class="error">{{ error }}</div>
+{% endif %}
+
+<form method="post" action="/auth/login">
+    <div>
+        <label for="username">Username</label><br>
+        <input
+            type="text"
+            id="username"
+            name="username"
+            value="{{ username or '' }}"
+            autocomplete="username"
+            required
+        >
+    </div>
+    <div>
+        <label for="password">Password</label><br>
+        <input
+            type="password"
+            id="password"
+            name="password"
+            autocomplete="current-password"
+            required
+        >
+    </div>
+    <div>
+        <button type="submit">Sign in</button>
+    </div>
+</form>
+{% endblock %}
