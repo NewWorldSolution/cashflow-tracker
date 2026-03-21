@@ -1,8 +1,8 @@
 # P1-I2 — Authentication: Login, Logout, Session Protection
 ## Task Board
 
-**Status:** ⏳ WAITING — not started
-**Last updated:** 2026-03-21 — board created, awaiting bootstrap
+**Status:** 🔄 IN PROGRESS — T1/T2/T3 done, T4 unblocked
+**Last updated:** 2026-03-21 — T1, T2, T3 merged; T4 can start
 **Iteration branch:** `feature/phase-1/iteration-2` ← all task PRs target this branch
 **Final PR:** `feature/phase-1/iteration-2` → `main` ← QA agent approves before merge
 
@@ -26,10 +26,10 @@ T5 closes the iteration — runs last.
 
 | ID    | Title                          | Owner       | Status     | Depends on   | Branch                          |
 |-------|--------------------------------|-------------|------------|--------------|---------------------------------|
-| I2-T1 | Auth service layer             | Codex       | ⏳ WAITING | —            | `feature/p1-i2/t1-auth-service` |
-| I2-T2 | Auth routes + placeholder dashboard | Claude Code | ⏳ WAITING | I2-T1        | `feature/p1-i2/t2-auth-routes`  |
-| I2-T3 | Login template                 | Codex       | ⏳ WAITING | I2-T1        | `feature/p1-i2/t3-login-template` |
-| I2-T4 | Middleware + base template     | Claude Code | ⏳ WAITING | I2-T2, I2-T3 | `feature/p1-i2/t4-middleware`   |
+| I2-T1 | Auth service layer             | Codex       | ✅ DONE    | —            | `feature/p1-i2/t1-auth-service` |
+| I2-T2 | Auth routes + placeholder dashboard | Claude Code | ✅ DONE    | I2-T1        | `feature/p1-i2/t2-auth-routes`  |
+| I2-T3 | Login template                 | Codex       | ✅ DONE    | I2-T1        | `feature/p1-i2/t3-login-template` |
+| I2-T4 | Middleware + base template     | Codex       | ⏳ WAITING | I2-T2, I2-T3 | `feature/p1-i2/t4-middleware`   |
 | I2-T5 | Tests + ruff + PR ready        | Claude Code | ⏳ WAITING | I2-T4        | `feature/p1-i2/t5-tests`        |
 
 ---
@@ -41,7 +41,7 @@ T5 closes the iteration — runs last.
 | I2-T1 | `iterations/p1-i2/prompts/t1-auth-service.md` | `iterations/p1-i2/reviews/review-t1.md` | Claude Code |
 | I2-T2 | `iterations/p1-i2/prompts/t2-auth-routes.md`  | `iterations/p1-i2/reviews/review-t2.md` | Codex       |
 | I2-T3 | `iterations/p1-i2/prompts/t3-login-template.md` | `iterations/p1-i2/reviews/review-t3.md` | Claude Code |
-| I2-T4 | `iterations/p1-i2/prompts/t4-middleware.md`   | `iterations/p1-i2/reviews/review-t4.md` | Codex       |
+| I2-T4 | `iterations/p1-i2/prompts/t4-middleware.md`   | `iterations/p1-i2/reviews/review-t4.md` | Claude Code |
 | I2-T5 | `iterations/p1-i2/prompts/t5-tests.md`        | `iterations/p1-i2/reviews/review-t5.md` | Codex       |
 | —     | —                                           | `iterations/p1-i2/reviews/review-iteration.md` | Claude Code (QA) |
 
@@ -100,6 +100,8 @@ require_auth(request: Request) → Row
 python -c "from app.services.auth_service import get_user_by_username, verify_password, get_opening_balance, get_current_user, require_auth; print('imports ok')"
 ```
 
+**Done:** auth_service.py: all 5 functions; __init__.py: empty package marker. PR #8 open → feature/phase-1/iteration-2.
+
 ---
 
 ### I2-T2 — Auth routes + placeholder dashboard (Claude Code)
@@ -154,6 +156,8 @@ GET  /             → placeholder dashboard: render dashboard.html (protected b
 - Router imports without error
 - GET /auth/login returns 200 when opening balance is set and user is not authenticated
 
+**Done:** auth.py: login/logout; dashboard.py: GET /; dashboard.html: placeholder. PR #9 open → feature/phase-1/iteration-2.
+
 ---
 
 ### I2-T3 — Login template (Codex)
@@ -186,6 +190,8 @@ app/templates/auth/__init__.py   ← empty if needed
 - Password field uses type="password" — never type="text"
 
 ---
+
+**Done:** auth/login.html: form with inline error, username preserved, extends base.html. PR #10 open → feature/phase-1/iteration-2.
 
 ### I2-T4 — Middleware + base template update (Claude Code)
 

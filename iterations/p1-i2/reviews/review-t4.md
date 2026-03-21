@@ -1,6 +1,6 @@
 # Review — I2-T4: Middleware + Base Template
-**Reviewer:** Codex
-**Implemented by:** Claude Code
+**Reviewer:** Claude Code
+**Implemented by:** Codex
 **Branch:** `feature/p1-i2/t4-middleware`
 **PR target:** `feature/phase-1/iteration-2`
 
