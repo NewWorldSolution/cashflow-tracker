@@ -91,6 +91,7 @@ app/templates/base.html
 
 # Iteration spec files (added when iteration was bootstrapped)
 iterations/p1-i2/prompt.md
+iterations/p1-i2/run.md
 iterations/p1-i2/tasks.md
 iterations/p1-i2/prompts/t1-auth-service.md
 iterations/p1-i2/prompts/t2-auth-routes.md
