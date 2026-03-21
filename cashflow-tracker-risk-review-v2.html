@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>cashflow-tracker — Risk &amp; Design Decision Summary v2</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Arial, sans-serif; font-size: 13px; color: #1a1a1a; background: #fff; max-width: 960px; margin: 40px auto; padding: 0 40px 60px; }
+  h1 { font-size: 22px; font-weight: 700; margin-bottom: 4px; }
+  .meta { font-size: 12px; color: #666; margin-bottom: 36px; }
+  h2 { font-size: 15px; font-weight: 700; margin: 32px 0 12px; padding-bottom: 6px; border-bottom: 2px solid #e0e0e0; }
+  h3 { font-size: 13px; font-weight: 700; margin: 20px 0 8px; }
+  p { line-height: 1.65; margin-bottom: 10px; color: #222; }
+  ul { margin: 8px 0 10px 20px; }
+  li { line-height: 1.65; margin-bottom: 4px; }
+  code { background: #f3f3f3; padding: 1px 5px; border-radius: 3px; font-size: 12px; font-family: monospace; }
+  pre { background: #f5f5f5; padding: 10px; border-radius: 4px; font-size: 12px; overflow-x: auto; margin: 10px 0; }
+  .badge { display: inline-block; font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 4px; margin-right: 6px; vertical-align: middle; }
+  .red    { background: #fde8e8; color: #a00; }
+  .yellow { background: #fef9e0; color: #7a5800; }
+  .green  { background: #e6f4ea; color: #1a6e2e; }
+  .blue   { background: #e8f0fe; color: #1a4ea0; }
+  .decision-box { background: #f0f4ff; border-left: 4px solid #3a5bd9; padding: 10px 14px; margin: 12px 0; border-radius: 0 6px 6px 0; }
+  .decision-box strong { display: block; font-size: 12px; color: #3a5bd9; margin-bottom: 4px; }
+  .decision-box.closed { background: #f0faf2; border-left-color: #2e7d32; }
+  .decision-box.closed strong { color: #2e7d32; }
+  .sources { font-size: 11px; color: #888; margin-top: 14px; }
+  table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 12px; }
+  th { background: #f5f5f5; text-align: left; padding: 7px 10px; border: 1px solid #ddd; font-weight: 700; }
+  td { padding: 7px 10px; border: 1px solid #ddd; vertical-align: top; line-height: 1.5; }
+  tr:nth-child(even) td { background: #fafafa; }
+  .toc { background: #f9f9f9; border: 1px solid #e0e0e0; padding: 16px 20px; margin-bottom: 32px; border-radius: 6px; }
+  .toc h3 { font-size: 13px; margin: 0 0 10px; }
+  .toc ol { margin-left: 18px; }
+  .toc li { margin-bottom: 4px; }
+  .toc a { color: #3a5bd9; text-decoration: none; }
+  .toc a:hover { text-decoration: underline; }
+  hr { border: none; border-top: 1px solid #e8e8e8; margin: 28px 0; }
+  .section-group { background: #fafafa; border: 1px solid #eee; border-radius: 8px; padding: 4px 16px 16px; margin: 24px 0; }
+  .section-group-label { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: #888; margin: 12px 0 4px; }
+</style>
+</head>
+<body>
+
+<h1>cashflow-tracker — Risk &amp; Design Decision Summary</h1>
+<p class="meta">Version 2 · All 17 topics closed · Sources: Claude, ChatGPT, Burak · March 2026</p>
+
+<div class="toc">
+  <h3>Contents</h3>
+  <ol>
+    <li><a href="#t1">Audit trail &amp; transaction corrections</a> <span class="badge green">CLOSED</span></li>
+    <li><a href="#t2">Authentication &amp; user identity</a> <span class="badge green">CLOSED</span></li>
+    <li><a href="#t3">Database: sandbox vs production</a> <span class="badge green">CLOSED</span></li>
+    <li><a href="#t4">Category system</a> <span class="badge green">CLOSED</span></li>
+    <li><a href="#t5">VAT rate flexibility</a> <span class="badge green">CLOSED</span></li>
+    <li><a href="#t6">Income vs expense VAT logic separation</a> <span class="badge green">CLOSED</span></li>
+    <li><a href="#t7">Expense VAT deductibility — never null</a> <span class="badge green">CLOSED</span></li>
+    <li><a href="#t8">Gross amount always stored</a> <span class="badge green">CLOSED</span></li>
+    <li><a href="#t9">Internal income rule</a> <span class="badge green">CLOSED</span></li>
+    <li><a href="#t10">Input guardrails &amp; validation</a> <span class="badge green">CLOSED</span></li>
+    <li><a href="#t11">Mixed VAT invoices — advanced mode</a> <span class="badge green">CLOSED</span></li>
+    <li><a href="#t12">Opening balance correction &amp; validation</a> <span class="badge green">CLOSED</span></li>
+    <li><a href="#t13">Backup &amp; data safety</a> <span class="badge green">CLOSED</span></li>
+    <li><a href="#t14">Phase ordering &amp; MVP assumption</a> <span class="badge green">CLOSED</span></li>
+    <li><a href="#t15">Transaction ordering &amp; "fix last" logic</a> <span class="badge green">CLOSED</span></li>
+    <li><a href="#t16">Final VAT model</a> <span class="badge green">CLOSED</span></li>
+    <li><a href="#t17">Practical simplicity rule</a> <span class="badge green">CLOSED</span></li>
+  </ol>
+</div>
+
+<!-- ══════════════════════════════════════════ -->
+<h2 id="t1"><span class="badge green">CLOSED</span> 1. Audit trail &amp; transaction corrections</h2>
+
+<h3>Problem</h3>
+<p>The original schema had no way to link a correction to the original transaction. Overwriting or deleting transactions would destroy the financial audit trail.</p>
+
+<h3>Solution</h3>
+<p>The system never hard-deletes or overwrites transactions. If a transaction is wrong, it is deactivated and a new correcting transaction is created to replace it. Every correction or deactivation must record the reason and the ID of the user who made the change. Admin view shows both active and inactive transactions, together with the full correction history.</p>
+<p>Schema additions to <code>transactions</code>:</p>
+<ul>
+  <li><code>is_active BOOLEAN DEFAULT TRUE</code> — soft-delete flag; all reports filter on <code>WHERE is_active = TRUE</code></li>
+  <li><code>void_reason TEXT</code> — mandatory when <code>is_active</code> is set to FALSE</li>
+  <li><code>voided_by INTEGER REFERENCES users(id)</code> — who deactivated the row</li>
+  <li><code>replacement_transaction_id INTEGER REFERENCES transactions(id)</code> — FK on the voided row pointing forward to the new correcting transaction, if one exists. Named from the perspective of the old row: "I was replaced by this transaction." The new row needs no back-reference — you can always find it via this FK.</li>
+</ul>
+
+<div class="decision-box closed">
+  <strong>Decision — closed</strong>
+  Soft-delete with mandatory void_reason and user attribution. No hard deletes ever. Reports use active rows only. Admin sees full history.
+</div>
+<p class="sources">Sources: Claude, Burak</p>
+
+<!-- ══════════════════════════════════════════ -->
+<h2 id="t2"><span class="badge green">CLOSED</span> 2. Authentication &amp; user identity</h2>
+
+<h3>Problem</h3>
+<p><code>logged_by TEXT</code> was free text — no enforcement, no permissions, no identity consistency between the web form and Telegram.</p>
+
+<h3>Solution</h3>
+<p>A small fixed <code>users</code> table holds records for the 3 known users. The web form uses a simple login page with username and password, one account per user. All transactions are linked to the authenticated user ID, never to a typed name.</p>
+<p>For Telegram (Phase 5), access is restricted by storing each user's Telegram user ID directly in the <code>users</code> table as a nullable column (<code>telegram_user_id TEXT UNIQUE</code>). The bot checks incoming messages against this column — if the Telegram ID is not found, the message is ignored. Identity mapping is part of the user model, not the generic settings table.</p>
+
+<table>
+  <tr><th>Channel</th><th>Auth method</th><th>Identity source</th></tr>
+  <tr><td>Web form</td><td>Username + password login page</td><td><code>users.id</code> from session</td></tr>
+  <tr><td>Telegram bot</td><td>Telegram user ID matched against <code>users.telegram_user_id</code></td><td><code>users.id</code> from matched row</td></tr>
+</table>
+
+<p>The <code>users</code> table structure:</p>
+<ul>
+  <li><code>id INTEGER PRIMARY KEY</code></li>
+  <li><code>username TEXT NOT NULL UNIQUE</code></li>
+  <li><code>password_hash TEXT NOT NULL</code></li>
+  <li><code>telegram_user_id TEXT UNIQUE</code> — nullable; populated when Telegram bot is set up in Phase 5</li>
+  <li><code>created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP</code></li>
+</ul>
+
+<div class="decision-box closed">
+  <strong>Decision — closed</strong>
+  Username + password login for web form. Telegram user ID stored directly in <code>users.telegram_user_id</code> — identity belongs to the user model, not settings. Both channels resolve to a single <code>users.id</code>. <code>logged_by</code> column stores <code>users.id</code>, not free text.
+</div>
+<p class="sources">Sources: Claude, ChatGPT, Burak</p>
+
+<!-- ══════════════════════════════════════════ -->
+<h2 id="t3"><span class="badge green">CLOSED</span> 3. Database: sandbox vs production</h2>
+
+<h3>Problem</h3>
+<p>The original plan said "SQLite → PostgreSQL later" with no clear boundary between test and production data.</p>
+
+<h3>Solution</h3>
+<table>
+  <tr><th>Phase</th><th>Database</th><th>Data status</th><th>Purpose</th></tr>
+  <tr><td>Sandbox (Phase 1)</td><td>SQLite</td><td>Non-production — may be discarded</td><td>Validate UX, logic, reporting</td></tr>
+  <tr><td>Go-live</td><td>PostgreSQL on Azure</td><td>Production from this point</td><td>Real business data</td></tr>
+</table>
+<p>Go-live is defined as the moment the system switches to PostgreSQL. The schema is identical between both engines — only the connection string changes. Migration is a one-time CSV export/import or <code>pg_loader</code> run taking roughly 1 hour. All data entered before go-live is considered non-production and may be discarded or migrated as needed.</p>
+
+<div class="decision-box closed">
+  <strong>Decision — closed</strong>
+  SQLite is the sandbox only. Go-live = switch to Azure PostgreSQL. Data entered before go-live is non-production. From go-live onward, all data is real.
+</div>
+<p class="sources">Sources: Claude, ChatGPT, Burak</p>
+
+<!-- ══════════════════════════════════════════ -->
+<h2 id="t4"><span class="badge green">CLOSED</span> 4. Category system</h2>
+
+<h3>Problem</h3>
+<p>The concept doc listed example categories but had no fixed, versioned list. Free text or inconsistent values corrupt all GROUP BY reporting — "fuel" vs "petrol" vs "car fuel" aggregate separately and silently.</p>
+
+<h3>Solution</h3>
+<p>A <code>categories</code> reference table is defined before Phase 1 development starts. The <code>transactions</code> table stores a <code>category_id</code> integer FK, never a text string. The UI shows the display label.</p>
+
+<table>
+  <tr><th>Field</th><th>Type</th><th>Purpose</th></tr>
+  <tr><td><code>category_id</code></td><td>INTEGER PK</td><td>Internal reference key</td></tr>
+  <tr><td><code>name</code></td><td>TEXT</td><td>Internal code, e.g. <code>petrol</code></td></tr>
+  <tr><td><code>label</code></td><td>TEXT</td><td>Display name, e.g. "Vehicle &amp; petrol"</td></tr>
+  <tr><td><code>direction</code></td><td>TEXT</td><td>income / expense</td></tr>
+  <tr><td><code>default_vat_rate</code></td><td>REAL</td><td>Suggested VAT rate for this category</td></tr>
+  <tr><td><code>default_vat_deductible_pct</code></td><td>REAL</td><td>Suggested deductibility (expense categories only)</td></tr>
+</table>
+
+<h3>Additional rules</h3>
+<ul>
+  <li><strong>Description field</strong> is available on every transaction — optional by default, mandatory when <code>other_expense</code> or <code>other_income</code> is selected</li>
+  <li><strong>Never rename or delete a category</strong> once it has transactions attached. Add new categories forward; migrate old transactions with a correction if needed</li>
+  <li><strong>Review "other" categories monthly</strong> — patterns in descriptions reveal missing categories to add in the next version</li>
+</ul>
+
+<h3>Income categories — v1</h3>
+<table>
+  <tr><th>#</th><th>name</th><th>label</th><th>Default VAT</th><th>income_type default</th></tr>
+  <tr><td>1</td><td><code>services</code></td><td>Services</td><td>23%</td><td>external</td></tr>
+  <tr><td>2</td><td><code>products</code></td><td>Products sold</td><td>23%</td><td>external</td></tr>
+  <tr><td>3</td><td><code>internal_transfer</code></td><td>Internal transfer</td><td>0% (locked)</td><td>internal (locked)</td></tr>
+  <tr><td>4</td><td><code>other_income</code></td><td>Other income</td><td>23%</td><td>external</td></tr>
+</table>
+
+<h3>Expense categories — v1</h3>
+<table>
+  <tr><th>#</th><th>name</th><th>label</th><th>Default VAT</th><th>Default deductible %</th><th>Notes</th></tr>
+  <tr><td>1</td><td><code>marketing</code></td><td>Marketing &amp; advertising</td><td>23%</td><td>100%</td><td>Ads, agency, promo materials</td></tr>
+  <tr><td>2</td><td><code>marketing_commission</code></td><td>Sales commissions</td><td>23%</td><td>100%</td><td>Commissions paid to resellers</td></tr>
+  <tr><td>3</td><td><code>rent</code></td><td>Rent &amp; premises</td><td>23%</td><td>100%</td><td></td></tr>
+  <tr><td>4</td><td><code>utilities</code></td><td>Utilities</td><td>23%</td><td>100%</td><td>Electricity, internet, water</td></tr>
+  <tr><td>5</td><td><code>renovation</code></td><td>Renovation &amp; repairs</td><td>23%</td><td>100%</td><td>Flag large amounts to accountant</td></tr>
+  <tr><td>6</td><td><code>office_supplies</code></td><td>Office supplies</td><td>23%</td><td>100%</td><td></td></tr>
+  <tr><td>7</td><td><code>cleaning</code></td><td>Cleaning services</td><td>0%</td><td>0%</td><td>Cash payments, no invoice — 0% VAT, not deductible</td></tr>
+  <tr><td>8</td><td><code>consumables</code></td><td>Operational consumables</td><td>23%</td><td>100%</td><td>Gloves, towels, materials used in service delivery</td></tr>
+  <tr><td>9</td><td><code>equipment</code></td><td>Equipment &amp; tools</td><td>23%</td><td>100%</td><td>Devices and tools used during operations</td></tr>
+  <tr><td>10</td><td><code>contractor_fees</code></td><td>Contractor &amp; educator fees</td><td>23%</td><td>100%</td><td>Commission to people delivering education</td></tr>
+  <tr><td>11</td><td><code>taxes</code></td><td>Taxes &amp; ZUS</td><td>0%</td><td>0%</td><td>ZUS, PIT, VAT payments — pure cash outflow</td></tr>
+  <tr><td>12</td><td><code>it_software</code></td><td>IT &amp; software</td><td>23%</td><td>100%</td><td>Subscriptions, domains, hosting</td></tr>
+  <tr><td>13</td><td><code>salaries</code></td><td>Salaries &amp; employee costs</td><td>0%</td><td>0%</td><td>Net salary + employer ZUS</td></tr>
+  <tr><td>14</td><td><code>transport_vehicle</code></td><td>Vehicle &amp; petrol</td><td>23%</td><td>50%</td><td>Car, petrol — Polish mixed-use rule</td></tr>
+  <tr><td>15</td><td><code>transport_travel</code></td><td>Travel &amp; transport</td><td>0%</td><td>100%</td><td>Flights, trains — VAT exempt, fully deductible as cost</td></tr>
+  <tr><td>16</td><td><code>training</code></td><td>Training &amp; education</td><td>23%</td><td>100%</td><td>Courses, seminars attended by owner/staff</td></tr>
+  <tr><td>17</td><td><code>inventory</code></td><td>Inventory purchases</td><td>23%</td><td>100%</td><td>Products bought to resell — not operational consumables</td></tr>
+  <tr><td>18</td><td><code>other_expense</code></td><td>Other expense</td><td>23%</td><td>100%</td><td>Description mandatory when this category is selected</td></tr>
+</table>
+
+<div class="decision-box closed">
+  <strong>Decision — closed</strong>
+  Fixed category reference table defined. 4 income categories, 18 expense categories. Description available on all transactions; mandatory on other_expense and other_income. Categories are never renamed or deleted once in use.
+</div>
+<p class="sources">Sources: ChatGPT, Burak</p>
+
+<!-- ══════════════════════════════════════════ -->
+<h2 id="t5"><span class="badge green">CLOSED</span> 5. VAT rate flexibility</h2>
+
+<h3>Problem</h3>
+<p>Hardcoding <code>vat_rate IN (0, 5, 8, 23)</code> as a database CHECK constraint means any law change requires a schema migration.</p>
+
+<h3>Solution</h3>
+<p>The initial valid rates remain 0, 5, 8, and 23 for MVP. Validation moves to the application layer only, driven by a configurable reference list (settings table or <code>vat_rates</code> reference table). Adding a new rate becomes a data change, not a schema change.</p>
+
+<div class="decision-box closed">
+  <strong>Decision — closed</strong>
+  Remove the CHECK constraint from schema. Validate VAT rates in application code against a configurable reference list. Initial values: 0, 5, 8, 23.
+</div>
+<p class="sources">Sources: Claude</p>
+
+<!-- ══════════════════════════════════════════ -->
+<div class="section-group">
+<p class="section-group-label">VAT model — topics 6 through 9 and 11 form one unified system. Read together.</p>
+
+<!-- ══════════════════════════════════════════ -->
+<h2 id="t6"><span class="badge green">CLOSED</span> 6. Income vs expense VAT logic — clean separation</h2>
+
+<h3>Problem</h3>
+<p>Income and expense VAT logic was mixed into the same fields, creating ambiguity. They answer different business questions and must be kept separate.</p>
+
+<h3>Solution</h3>
+<p><strong>Income transactions:</strong> use <code>income_type</code> (values: <code>internal</code> / <code>external</code>). Internal means no real sale — VAT is 0% and gross equals net. External defaults to 23% VAT, editable if needed. No VAT deductibility field on income rows.</p>
+<p><strong>Expense transactions:</strong> use <code>vat_deductible_pct</code> only. No internal/external concept on expenses. This field is mandatory and defaults to 100%.</p>
+
+<div class="decision-box closed">
+  <strong>Decision — closed</strong>
+  Income uses <code>income_type</code> (internal/external). Expenses use <code>vat_deductible_pct</code>. These fields do not cross between directions.
+</div>
+<p class="sources">Sources: Burak</p>
+
+<!-- ══════════════════════════════════════════ -->
+<h2 id="t7"><span class="badge green">CLOSED</span> 7. Expense VAT deductibility — never null</h2>
+
+<h3>Problem</h3>
+<p>A NULL <code>vat_deductible_pct</code> on an expense row silently breaks VAT reclaimable calculations — the formula returns NULL and the row disappears from aggregates without any error.</p>
+
+<h3>Solution</h3>
+<p>Expense transactions always require <code>vat_deductible_pct</code>. Default is 100%. User can change to 50% or 0%.</p>
+<p>Enforcement is layered by phase:</p>
+<ul>
+  <li><strong>SQLite sandbox (Phase 1):</strong> enforced in the UI and application layer only — SQLite does not support conditional CHECK constraints cleanly</li>
+  <li><strong>PostgreSQL production (go-live):</strong> additionally enforced at the database level with a conditional CHECK constraint</li>
+</ul>
+<pre>-- PostgreSQL only — add at go-live
+ALTER TABLE transactions
+ADD CONSTRAINT chk_expense_vat_deductible
+CHECK (direction != 'expense' OR vat_deductible_pct IS NOT NULL);</pre>
+
+<div class="decision-box closed">
+  <strong>Decision — closed</strong>
+  Expense transactions always have <code>vat_deductible_pct</code>. Default 100%. Allowed values: 100, 50, 0. Enforced in UI and app layer from day 1 (SQLite sandbox). DB-level conditional CHECK constraint added at go-live (PostgreSQL).
+</div>
+<p class="sources">Sources: Claude, Burak</p>
+
+<!-- ══════════════════════════════════════════ -->
+<h2 id="t8"><span class="badge green">CLOSED</span> 8. Gross amount always stored as-is</h2>
+
+<h3>Problem</h3>
+<p>VAT deductibility should not affect the stored amount — otherwise the record no longer reflects the real cash movement.</p>
+
+<h3>Solution</h3>
+<p>The <code>amount</code> field always stores the actual gross cash amount paid or received. Deductibility affects derived reporting values only, never the stored amount.</p>
+
+<table>
+  <tr><th>Scenario</th><th>Stored amount</th><th>Derived: VAT reclaimable</th><th>Derived: effective cost</th></tr>
+  <tr><td>Gross 123 PLN, VAT 23%, deductible 100%</td><td>123.00</td><td>23.00</td><td>100.00</td></tr>
+  <tr><td>Gross 123 PLN, VAT 23%, deductible 50%</td><td>123.00</td><td>11.50</td><td>111.50</td></tr>
+  <tr><td>Gross 123 PLN, VAT 23%, deductible 0%</td><td>123.00</td><td>0.00</td><td>123.00</td></tr>
+</table>
+
+<div class="decision-box closed">
+  <strong>Decision — closed</strong>
+  Always store gross amount. Reclaimable VAT and effective cost are derived at query time, never stored.
+</div>
+<p class="sources">Sources: Burak</p>
+
+<!-- ══════════════════════════════════════════ -->
+<h2 id="t9"><span class="badge green">CLOSED</span> 9. Internal income rule — enforced, not suggested</h2>
+
+<h3>Problem</h3>
+<p>If <code>income_type = internal</code>, the VAT rate must be 0% by definition. Without enforcement, a user could accidentally set a contradictory VAT rate.</p>
+
+<h3>Solution</h3>
+<p>When <code>income_type</code> is set to <code>internal</code>, the system automatically forces <code>vat_rate = 0</code> and locks the field so the user cannot override it. Enforced in both the UI and backend validation.</p>
+
+<div class="decision-box closed">
+  <strong>Decision — closed</strong>
+  <code>income_type = internal</code> forces <code>vat_rate = 0</code>. The field is greyed out and locked. This is a hard rule, not a default.
+</div>
+<p class="sources">Sources: Burak</p>
+
+<!-- ══════════════════════════════════════════ -->
+<h2 id="t11"><span class="badge green">CLOSED</span> 11. Mixed VAT invoices — advanced mode</h2>
+
+<h3>Problem</h3>
+<p>Real Polish invoices occasionally contain items at different VAT rates (e.g. some lines at 23%, others at 8%). A single VAT rate field cannot correctly represent such an invoice, but full line-item accounting is out of scope for this tool.</p>
+
+<h3>Solution</h3>
+<p>Add an optional <strong>advanced VAT mode</strong> as an escape hatch. In normal mode, user selects a standard VAT rate. In advanced mode, user enters the total VAT amount manually. Gross amount remains the primary stored value. Derived calculations use the manual VAT amount when provided.</p>
+
+<table>
+  <tr><th></th><th>Normal mode (default)</th><th>Advanced mode</th></tr>
+  <tr><td>VAT input</td><td>Select rate: 0 / 5 / 8 / 23%</td><td>Enter VAT amount manually</td></tr>
+  <tr><td>Gross amount</td><td>Always stored</td><td>Always stored</td></tr>
+  <tr><td>VAT calculation</td><td>Derived from rate × gross</td><td>Uses manual VAT amount directly</td></tr>
+  <tr><td>Use case</td><td>All standard transactions</td><td>Mixed-rate invoices only</td></tr>
+  <tr><td>UI visibility</td><td>Default — always shown</td><td>Hidden behind toggle — optional</td></tr>
+</table>
+
+<div class="decision-box closed">
+  <strong>Decision — closed</strong>
+  Advanced VAT mode is optional and hidden by default. It exists only for mixed-rate or non-standard invoices. It must not complicate the normal workflow.
+</div>
+<p class="sources">Sources: Burak</p>
+
+</div><!-- end VAT section group -->
+
+<!-- ══════════════════════════════════════════ -->
+<h2 id="t10"><span class="badge green">CLOSED</span> 10. Input guardrails &amp; validation</h2>
+
+<h3>Problem</h3>
+<p>Users entering net amounts instead of gross, wrong VAT rates, or forgetting to log card commissions separately — these corrupt the data silently.</p>
+
+<h3>Required guardrails (Phase 1 — not optional)</h3>
+<ul>
+  <li><strong>Gross amount reminder</strong> — persistent label on the amount field: "Enter gross amount (VAT included)"</li>
+  <li><strong>Category auto-defaults</strong> — selecting a category auto-fills the suggested VAT rate and, for expenses, the default deductibility percentage. User can override consciously</li>
+  <li><strong>Card payment reminder</strong> — when <code>payment_method = card</code>: "Log gross amount. Card commission is logged separately at month end from terminal invoice"</li>
+  <li><strong>Telegram confirmation step</strong> — always show extracted fields and ask for confirmation before saving. Non-negotiable, not optional</li>
+</ul>
+<p>Unusual value detection (flag amounts outside historical range for the category) is a later-phase addition, not Phase 1.</p>
+
+<div class="decision-box closed">
+  <strong>Decision — closed</strong>
+  Guardrails are Phase 1 requirements. Gross amount reminder and category-based defaults must be present from day 1.
+</div>
+<p class="sources">Sources: ChatGPT, Burak</p>
+
+<!-- ══════════════════════════════════════════ -->
+<h2 id="t12"><span class="badge green">CLOSED</span> 12. Opening balance — correction &amp; validation</h2>
+
+<h3>Problem</h3>
+<p>Opening balance was described as "sacred, log once, never reconstruct" but had no correction flow if someone set it wrong on day 1, and no validation that <code>as_of_date</code> precedes the first transaction date.</p>
+
+<h3>Solution</h3>
+<ul>
+  <li>Opening balance is correctable by admin, but every correction must be logged with a reason and timestamp — same audit trail principle as transactions</li>
+  <li>Correction history stored in <code>settings_audit</code> table</li>
+  <li>System validates on startup that <code>as_of_date &lt;= MIN(transaction date)</code> and warns if not</li>
+  <li>Cash flow statement is blocked if no opening balance is set</li>
+</ul>
+
+<div class="decision-box closed">
+  <strong>Decision — closed</strong>
+  Opening balance is mandatory, audited, and correctable with traceability. Cash flow report is blocked until it is set.
+</div>
+<p class="sources">Sources: Claude, ChatGPT</p>
+
+<!-- ══════════════════════════════════════════ -->
+<h2 id="t13"><span class="badge green">CLOSED</span> 13. Backup &amp; data safety</h2>
+
+<h3>Problem</h3>
+<p>No backup strategy was defined anywhere in the project docs. Financial records cannot be reconstructed from memory after loss.</p>
+
+<h3>Solution</h3>
+<table>
+  <tr><th>Layer</th><th>Method</th><th>Frequency</th></tr>
+  <tr><td>Infrastructure backup</td><td>Azure Database for PostgreSQL — automatic managed backups enabled</td><td>Continuous / daily (Azure-managed)</td></tr>
+  <tr><td>Application export</td><td>Manual CSV export endpoint — downloads all transactions as CSV</td><td>On-demand</td></tr>
+  <tr><td>Offsite cold copy</td><td>Automated monthly database download → OneDrive (Azure + Microsoft ecosystem, low friction)</td><td>Monthly automated job</td></tr>
+</table>
+<p>The OneDrive monthly export provides an additional offsite copy independent of the Azure subscription. Since both Azure and OneDrive are Microsoft products, the integration is straightforward via Azure Logic Apps or a simple scheduled script.</p>
+
+<div class="decision-box closed">
+  <strong>Decision — closed</strong>
+  Three-layer backup: Azure managed backup (continuous) + on-demand CSV export + monthly automated copy to OneDrive.
+</div>
+<p class="sources">Sources: ChatGPT, Burak</p>
+
+<!-- ══════════════════════════════════════════ -->
+<h2 id="t14"><span class="badge green">CLOSED</span> 14. Phase ordering &amp; MVP assumption</h2>
+
+<h3>Situation</h3>
+<p>Phase 1 (web form) comes weeks before Phase 5 (Telegram bot). Two of the three users may prefer Telegram, but they have no option during early phases.</p>
+
+<div class="decision-box closed">
+  <strong>Decision — closed</strong>
+  Web form is the sole input method during Phases 1–4. All 3 users use the web form. Telegram arrives in Phase 5. This is a conscious, accepted limitation — not an unstated assumption.
+</div>
+<p class="sources">Sources: Burak</p>
+
+<!-- ══════════════════════════════════════════ -->
+<h2 id="t15"><span class="badge green">CLOSED</span> 15. Transaction ordering &amp; "fix last" logic</h2>
+
+<h3>Problem</h3>
+<p>Multiple transactions can be entered on the same calendar date. Without precise ordering, "fix last" and "delete that" Telegram commands become ambiguous.</p>
+
+<h3>Solution</h3>
+<p>Use <code>created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP</code> as the authoritative ordering field — already in the schema. All correction logic and "last transaction" queries must order by <code>created_at DESC</code>, not by <code>date DESC</code>.</p>
+
+<div class="decision-box closed">
+  <strong>Decision — closed</strong>
+  <code>created_at</code> timestamp is the real ordering mechanism. Date alone is not sufficient. Correction and audit queries always use <code>ORDER BY created_at DESC</code>.
+</div>
+<p class="sources">Sources: Burak</p>
+
+<!-- ══════════════════════════════════════════ -->
+<h2 id="t16"><span class="badge green">CLOSED</span> 16. Final VAT model — consolidated specification</h2>
+
+<p>This is the authoritative VAT specification. All agents and builders must follow this. It supersedes any earlier descriptions in concept.md or architecture.md.</p>
+
+<h3>All transactions</h3>
+<ul>
+  <li><code>amount</code> is always stored as gross (the actual cash amount)</li>
+  <li><code>vat_rate</code> is always stored in normal mode</li>
+  <li><code>manual_vat_amount</code> can optionally be stored in advanced mode for mixed-rate invoices</li>
+</ul>
+
+<h3>Income transactions</h3>
+<ul>
+  <li>Use <code>income_type</code>: <code>internal</code> or <code>external</code></li>
+  <li><code>internal</code> → VAT forced to 0%, gross = net, field locked</li>
+  <li><code>external</code> → VAT defaults to 23%, user can change</li>
+  <li>No <code>vat_deductible_pct</code> field on income rows</li>
+</ul>
+
+<h3>Expense transactions</h3>
+<ul>
+  <li>No <code>income_type</code> field on expense rows</li>
+  <li><code>vat_deductible_pct</code> is mandatory — default 100%, allowed values: 100 / 50 / 0</li>
+  <li>Petrol / car: 50% by default (Polish rule)</li>
+  <li>Meals / entertainment: 0% by default (not deductible in Poland)</li>
+</ul>
+
+<h3>Derived calculations (never stored)</h3>
+<pre>vat_amount       = amount - (amount / (1 + vat_rate / 100))
+               OR = manual_vat_amount  (if advanced mode used)
+
+net_amount       = amount - vat_amount
+vat_reclaimable  = vat_amount × vat_deductible_pct / 100   (expenses only)
+effective_cost   = net_amount + (vat_amount × (1 - vat_deductible_pct / 100))
+net_vat_position = SUM(income vat_amount) - SUM(expense vat_reclaimable)</pre>
+
+<div class="decision-box closed">
+  <strong>Decision — closed</strong>
+  This is the final VAT structure. Income logic and expense logic are separate. Derived values are never stored. Advanced mode is an optional escape hatch for edge cases only.
+</div>
+<p class="sources">Sources: Burak</p>
+
+<!-- ══════════════════════════════════════════ -->
+<h2 id="t17"><span class="badge green">CLOSED</span> 17. Practical simplicity rule</h2>
+
+<h3>Principle</h3>
+<p>The main strength of this project is simple daily usage. Advanced features must never complicate the normal workflow for everyday users.</p>
+
+<h3>Standard transaction flow (must remain this fast)</h3>
+<ol style="margin: 8px 0 10px 20px;">
+  <li>Choose category</li>
+  <li>Choose income or expense</li>
+  <li>Enter gross amount</li>
+  <li>Accept suggested VAT defaults</li>
+  <li>Adjust only when necessary</li>
+</ol>
+<p>Advanced VAT mode, unusual value warnings, and admin views are all hidden unless needed. They support edge cases without surfacing into the daily flow.</p>
+
+<div class="decision-box closed">
+  <strong>Decision — closed</strong>
+  Normal workflow stays fast and simple. Advanced capabilities are available but invisible by default.
+</div>
+<p class="sources">Sources: Burak</p>
+
+<!-- ══════════════════════════════════════════ -->
+<hr>
+<h2>Decision status — full summary</h2>
+<table>
+  <tr><th>#</th><th>Topic</th><th>Severity</th><th>Status</th></tr>
+  <tr><td>1</td><td>Audit trail &amp; corrections</td><td><span class="badge red">HIGH</span></td><td><span class="badge green">CLOSED</span> Soft-delete + void_reason + user attribution</td></tr>
+  <tr><td>2</td><td>Authentication &amp; user identity</td><td><span class="badge red">HIGH</span></td><td><span class="badge green">CLOSED</span> Username/password login + Telegram whitelist</td></tr>
+  <tr><td>3</td><td>Database: sandbox vs production</td><td><span class="badge red">HIGH</span></td><td><span class="badge green">CLOSED</span> SQLite sandbox → PostgreSQL at go-live</td></tr>
+  <tr><td>4</td><td>Category system</td><td><span class="badge red">HIGH</span></td><td><span class="badge green">CLOSED</span> 4 income + 18 expense categories defined; description mandatory on "other"</td></tr>
+  <tr><td>5</td><td>VAT rate flexibility</td><td><span class="badge yellow">MEDIUM</span></td><td><span class="badge green">CLOSED</span> Remove CHECK, validate in app layer</td></tr>
+  <tr><td>6</td><td>Income vs expense VAT separation</td><td><span class="badge yellow">MEDIUM</span></td><td><span class="badge green">CLOSED</span> income_type / vat_deductible_pct separated</td></tr>
+  <tr><td>7</td><td>Expense VAT deductibility never null</td><td><span class="badge yellow">MEDIUM</span></td><td><span class="badge green">CLOSED</span> Mandatory, default 100%</td></tr>
+  <tr><td>8</td><td>Gross amount always stored</td><td><span class="badge yellow">MEDIUM</span></td><td><span class="badge green">CLOSED</span> Derived values computed, never stored</td></tr>
+  <tr><td>9</td><td>Internal income forces 0% VAT</td><td><span class="badge yellow">MEDIUM</span></td><td><span class="badge green">CLOSED</span> Hard rule, enforced in UI and backend</td></tr>
+  <tr><td>10</td><td>Input guardrails &amp; validation</td><td><span class="badge yellow">MEDIUM</span></td><td><span class="badge green">CLOSED</span> Phase 1 requirement</td></tr>
+  <tr><td>11</td><td>Mixed VAT — advanced mode</td><td><span class="badge yellow">MEDIUM</span></td><td><span class="badge green">CLOSED</span> Optional, hidden by default</td></tr>
+  <tr><td>12</td><td>Opening balance correction</td><td><span class="badge yellow">MEDIUM</span></td><td><span class="badge green">CLOSED</span> Correctable with audit trail</td></tr>
+  <tr><td>13</td><td>Backup &amp; data safety</td><td><span class="badge red">HIGH</span></td><td><span class="badge green">CLOSED</span> Azure backup + CSV export + monthly OneDrive</td></tr>
+  <tr><td>14</td><td>Phase ordering &amp; MVP</td><td><span class="badge green">LOW</span></td><td><span class="badge green">CLOSED</span> Web form only until Phase 5</td></tr>
+  <tr><td>15</td><td>Transaction ordering / fix last</td><td><span class="badge yellow">MEDIUM</span></td><td><span class="badge green">CLOSED</span> created_at timestamp is the ordering key</td></tr>
+  <tr><td>16</td><td>Final VAT model</td><td><span class="badge red">HIGH</span></td><td><span class="badge green">CLOSED</span> Consolidated specification — authoritative</td></tr>
+  <tr><td>17</td><td>Practical simplicity rule</td><td><span class="badge green">LOW</span></td><td><span class="badge green">CLOSED</span> Normal flow stays simple</td></tr>
+</table>
+
+<p style="margin-top: 20px; color: #555;"><strong>All 17 topics closed.</strong> The decision document is complete. Ready to update project docs and start schema design.</p>
+
+</body>
+</html>
