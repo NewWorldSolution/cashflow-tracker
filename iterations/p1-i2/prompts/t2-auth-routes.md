@@ -222,9 +222,10 @@ Update `iterations/p1-i2/tasks.md` — set I2-T2 to ✅ DONE with note: "auth.py
 
 ## Acceptance checklist
 
+Verify these on your own branch, without waiting for T3 or T4:
+
 - [ ] Auth and dashboard routers import without error
-- [ ] `get_login` handler redirects to `/` when `get_current_user` returns a user (redirect logic implemented — not testable end-to-end until T3 template + T4 middleware are merged)
-- [ ] `GET /auth/login` returns 200 when no session and opening balance is set — **verify only after T3 merges the login template**
+- [ ] `get_login` handler redirects to `/` when `get_current_user` returns a user (read code — not end-to-end testable until T3 + T4 merge)
 - [ ] `POST /auth/login` with valid credentials redirects to `/` (302)
 - [ ] `POST /auth/login` with empty fields returns 401 with "Username and password are required"
 - [ ] `POST /auth/login` with wrong username returns 401 with "Invalid credentials"
@@ -233,6 +234,10 @@ Update `iterations/p1-i2/tasks.md` — set I2-T2 to ✅ DONE with note: "auth.py
 - [ ] `session.clear()` called before `session["user_id"] = user["id"]` on login
 - [ ] `session["user_id"]` stores integer (`user["id"]`), never a username string
 - [ ] `POST /auth/logout` clears session and redirects to `/auth/login`
-- [ ] `GET /` renders dashboard.html (requires AuthGate — not testable until T4)
 - [ ] `app/main.py` not modified
 - [ ] Ruff clean
+
+## Post-merge verification (after T3 and T4 merge into iteration branch)
+
+- [ ] `GET /auth/login` returns 200 when no session and opening balance is set
+- [ ] `GET /` with valid session returns 200 and renders dashboard.html
