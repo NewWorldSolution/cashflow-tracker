@@ -31,9 +31,9 @@ async def get_opening_balance(
     current_date = row_date["value"] if row_date else str(date.today())
 
     return templates.TemplateResponse(
+        request,
         "settings/opening_balance.html",
         {
-            "request": request,
             "current_balance": current_balance,
             "current_date": current_date,
             "error": None,
@@ -71,9 +71,9 @@ async def post_opening_balance(
 
     if errors:
         return templates.TemplateResponse(
+            request,
             "settings/opening_balance.html",
             {
-                "request": request,
                 "current_balance": opening_balance,
                 "current_date": as_of_date,
                 "error": " ".join(errors),

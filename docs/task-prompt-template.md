@@ -19,7 +19,6 @@ PLACEHOLDER KEY
   {{DEPENDS_ON}}        e.g. none | P1-I1
   {{BLOCKS}}            e.g. P1-I2 | none
   {{TEST_COUNT}}        current passing test count (0 at start)
-  {{REVIEW_FILE}}       e.g. iterations/p1-i1/reviews/review-t3.md
 -->
 
 ---
@@ -489,14 +488,6 @@ gh pr ready {{FEATURE_BRANCH}}
 
 Add a summary comment to the PR: what was built, what was tested, any decisions made. Do not merge — merging is a human decision.
 
-### Step 9 — Self-review
-
-Read and execute the review checklist at `{{REVIEW_FILE}}`.
-
-Work through every step in the review file exactly as written. Produce the full required output (Verdict, What's Correct, Problems Found, Scope Violations, Acceptance Criteria Check, Exact Fixes Required).
-
-If the verdict is `CHANGES REQUIRED` or `BLOCKED`: fix every listed issue, re-run tests and ruff, commit the fix, then re-execute the review from Step 1. Do not stop until the verdict is `PASS`.
-
 ---
 
 ## Commit Message Format
@@ -547,7 +538,7 @@ This task is complete when ALL of the following are true:
 <!--
 CHECKLIST BEFORE SENDING
 =========================
-[ ] All {{PLACEHOLDER}} values replaced (including {{REVIEW_FILE}})
+[ ] All {{PLACEHOLDER}} values replaced
 [ ] "Files to Read Before Starting" is specific and ordered
 [ ] "What to Build" includes actual function signatures and data shapes
 [ ] "Allowed Files" is complete and exhaustive
