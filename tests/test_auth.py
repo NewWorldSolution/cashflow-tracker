@@ -7,13 +7,18 @@ from fastapi.testclient import TestClient
 
 
 @pytest.fixture
-def client(tmp_path):
+def db_path(tmp_path):
+    """Temporary SQLite database path shared between client fixture and tests."""
+    return str(tmp_path / "test.db")
+
+
+@pytest.fixture
+def client(db_path):
     """TestClient with a temporary database, opening balance PRE-SET.
 
     Most auth tests need the opening balance set — otherwise AuthGate redirects
     to /settings/opening-balance before any auth logic is reached.
     """
-    db_path = str(tmp_path / "test.db")
     os.environ["SECRET_KEY"] = "test-secret-key"
     os.environ["DATABASE_URL"] = f"sqlite:///./{db_path}"
 
@@ -161,13 +166,12 @@ def test_opening_balance_gate_before_auth(fresh_client):
     assert "/auth/login" not in r.headers["location"]
 
 
-def test_deleted_user_treated_as_unauthenticated(client):
+def test_deleted_user_treated_as_unauthenticated(client, db_path):
     """session['user_id'] set to a valid int that does not exist in db → redirect to /auth/login."""
     login = client.post("/auth/login", data={"username": "owner", "password": "owner123"})
     assert login.status_code == 302
 
-    # Delete owner from db
-    db_path = os.environ.get("DATABASE_URL", "cashflow.db").removeprefix("sqlite:///./")
+    # Delete owner from db using the fixture-provided path — no hardcoded fallback
     conn = sqlite3.connect(db_path)
     conn.execute("DELETE FROM users WHERE username = 'owner'")
     conn.commit()
