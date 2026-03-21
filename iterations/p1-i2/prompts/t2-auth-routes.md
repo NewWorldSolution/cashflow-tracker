@@ -222,8 +222,9 @@ Update `iterations/p1-i2/tasks.md` — set I2-T2 to ✅ DONE with note: "auth.py
 
 ## Acceptance checklist
 
-- [ ] `GET /auth/login` returns 200 when no session and opening balance is set
-- [ ] `GET /auth/login` redirects to `/` when user is already authenticated
+- [ ] Auth and dashboard routers import without error
+- [ ] `get_login` handler redirects to `/` when `get_current_user` returns a user (redirect logic implemented — not testable end-to-end until T3 template + T4 middleware are merged)
+- [ ] `GET /auth/login` returns 200 when no session and opening balance is set — **verify only after T3 merges the login template**
 - [ ] `POST /auth/login` with valid credentials redirects to `/` (302)
 - [ ] `POST /auth/login` with empty fields returns 401 with "Username and password are required"
 - [ ] `POST /auth/login` with wrong username returns 401 with "Invalid credentials"

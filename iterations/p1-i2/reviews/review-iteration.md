@@ -73,34 +73,23 @@ ruff check .
 git diff --name-only main
 ```
 
-Expected files (and only these):
+Files that MUST appear in the diff (changed or added relative to main):
 
 ```
-# Implementation files
-app/__init__.py                          ← P1-I1 (unchanged, present)
-app/main.py                              ← modified: AuthGate, router registration
-app/routes/__init__.py                   ← P1-I1 (unchanged)
-app/routes/auth.py                       ← new: login/logout routes
-app/routes/dashboard.py                  ← new: GET / placeholder
-app/routes/settings.py                   ← P1-I1 (unchanged)
-app/services/__init__.py                 ← new: empty
-app/services/auth_service.py             ← new: 5 service functions
-app/templates/auth/login.html            ← new: login form
-app/templates/base.html                  ← modified: nav with logout
-app/templates/dashboard.html             ← new: placeholder dashboard
-app/templates/settings/opening_balance.html  ← P1-I1 (unchanged)
-db/__init__.py                           ← P1-I1 (unchanged)
-db/init_db.py                            ← P1-I1 (unchanged)
-db/schema.sql                            ← P1-I1 (unchanged)
-requirements.txt                         ← P1-I1 (unchanged, or updated for bcrypt if needed)
-seed/__init__.py                         ← P1-I1 (unchanged)
-seed/categories.sql                      ← P1-I1 (unchanged)
-seed/users.sql                           ← P1-I1 (unchanged)
-tests/__init__.py                        ← P1-I1 (unchanged)
-tests/test_auth.py                       ← new: 14 auth tests
-tests/test_init_db.py                    ← P1-I1 (unchanged)
+# New implementation files
+app/routes/auth.py
+app/routes/dashboard.py
+app/services/__init__.py
+app/services/auth_service.py
+app/templates/auth/login.html
+app/templates/dashboard.html
+tests/test_auth.py
 
-# Iteration spec files (expected — added when iteration was bootstrapped)
+# Modified implementation files
+app/main.py
+app/templates/base.html
+
+# Iteration spec files (added when iteration was bootstrapped)
 iterations/p1-i2/prompt.md
 iterations/p1-i2/tasks.md
 iterations/p1-i2/prompts/t1-auth-service.md
@@ -116,7 +105,18 @@ iterations/p1-i2/reviews/review-t5.md
 iterations/p1-i2/reviews/review-iteration.md
 ```
 
-Any file outside this list = scope violation. P1-I1 frozen files must not be modified.
+Files that must NOT appear in the diff (P1-I1 frozen — unchanged):
+
+```
+db/schema.sql
+db/init_db.py
+seed/categories.sql
+seed/users.sql
+app/routes/settings.py
+tests/test_init_db.py
+```
+
+Any frozen file appearing as modified = scope violation. Any unexpected new file = scope violation.
 
 ### Step 4 — Architecture checks
 

@@ -27,7 +27,7 @@ T5 closes the iteration — runs last.
 | ID    | Title                          | Owner       | Status     | Depends on   | Branch                          |
 |-------|--------------------------------|-------------|------------|--------------|---------------------------------|
 | I2-T1 | Auth service layer             | Codex       | ⏳ WAITING | —            | `feature/p1-i2/t1-auth-service` |
-| I2-T2 | Auth routes (login/logout)     | Claude Code | ⏳ WAITING | I2-T1        | `feature/p1-i2/t2-auth-routes`  |
+| I2-T2 | Auth routes + placeholder dashboard | Claude Code | ⏳ WAITING | I2-T1        | `feature/p1-i2/t2-auth-routes`  |
 | I2-T3 | Login template                 | Codex       | ⏳ WAITING | I2-T1        | `feature/p1-i2/t3-login-template` |
 | I2-T4 | Middleware + base template     | Claude Code | ⏳ WAITING | I2-T2, I2-T3 | `feature/p1-i2/t4-middleware`   |
 | I2-T5 | Tests + ruff + PR ready        | Claude Code | ⏳ WAITING | I2-T4        | `feature/p1-i2/t5-tests`        |
@@ -104,7 +104,7 @@ python -c "from app.services.auth_service import get_user_by_username, verify_pa
 
 ### I2-T2 — Auth routes + placeholder dashboard (Claude Code)
 
-**Goal:** Login/logout route handlers and a minimal placeholder dashboard at `/`.
+**Goal:** Login/logout route handlers, a minimal placeholder dashboard at `/`, and the dashboard template.
 
 **Depends on:** I2-T1 (auth_service.py must exist and be importable)
 
