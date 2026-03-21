@@ -3,8 +3,9 @@ import sqlite3
 from contextlib import asynccontextmanager
 
 from dotenv import load_dotenv
-from fastapi import Depends, FastAPI, Request
+from fastapi import FastAPI, Request
 from fastapi.responses import RedirectResponse
+from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 
 from db.init_db import initialise_db
@@ -35,22 +36,32 @@ def get_db() -> sqlite3.Connection:
         conn.close()
 
 
-async def require_opening_balance(request: Request, db: sqlite3.Connection = Depends(get_db)):
-    """Redirect to opening balance setup if it has not been set.
+class OpeningBalanceGate(BaseHTTPMiddleware):
+    """Middleware that enforces the opening balance setup requirement.
 
-    Applied as a dependency to all routes except /settings/opening-balance.
+    Redirects all requests to /settings/opening-balance (302) when the
+    opening_balance setting is not present in the database.
+    /settings/opening-balance is exempt so the setup form is always reachable.
     A missing opening balance is not a warning — it is a hard block.
     """
-    exempt_paths = {"/settings/opening-balance"}
-    if request.url.path in exempt_paths:
-        return
 
-    row = db.execute(
-        "SELECT value FROM settings WHERE key = 'opening_balance'"
-    ).fetchone()
+    EXEMPT_PATHS = {"/settings/opening-balance"}
 
-    if row is None:
-        return RedirectResponse(url="/settings/opening-balance", status_code=302)
+    async def dispatch(self, request: Request, call_next):
+        if request.url.path not in self.EXEMPT_PATHS:
+            conn = sqlite3.connect(DATABASE_URL)
+            try:
+                row = conn.execute(
+                    "SELECT value FROM settings WHERE key = 'opening_balance'"
+                ).fetchone()
+            except sqlite3.OperationalError:
+                # settings table not yet created — treat as not set
+                row = None
+            finally:
+                conn.close()
+            if row is None:
+                return RedirectResponse(url="/settings/opening-balance", status_code=302)
+        return await call_next(request)
 
 
 @asynccontextmanager
@@ -75,6 +86,7 @@ def create_app(database_url: str | None = None) -> FastAPI:
     app = FastAPI(title="cashflow-tracker", lifespan=lifespan)
 
     app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
+    app.add_middleware(OpeningBalanceGate)
 
     # Register routers — settings router registered after I1-T3 merges
     # app.include_router(settings_router)
