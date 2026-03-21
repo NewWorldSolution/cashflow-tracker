@@ -86,28 +86,41 @@ Be specific — reference the module, endpoint, or gap being closed. -->
 ---
 
 ## Files to Read Before Starting
-<!-- [FILL IN] List the specific files the AI must read BEFORE writing a single line.
-Order matters: list foundational files first, then files directly adjacent to the work. -->
+<!-- [BOILERPLATE — mandatory block] + [FILL IN — task-specific block] -->
 
-Read these files in order before touching anything:
+### Mandatory — read these for every task, in this order
 
 ```
-CLAUDE.md                          ← architecture rules — read first, always
-project.md                         ← current state and what this iteration delivers
-{{FILE_1}}                         ← reason
-{{FILE_2}}                         ← reason
-{{FILE_3}}                         ← reason
+CLAUDE.md                                              ← constitution — read first, always
+project.md                                             ← current state and what this iteration delivers
+skills/cash-flow/schema/SKILL.md                       ← full table structure and SQLite/PG boundary rules
+skills/cash-flow/transaction_validator/SKILL.md        ← all 10 domain rules — the single source of truth
+skills/cash-flow/error_handling/SKILL.md               ← no silent failures, inline errors, block on any failure
 ```
 
-<!-- Common candidates for cashflow-tracker:
-- docs/concept.md                  (data model, category list, VAT logic)
-- docs/architecture.md             (schema, derived calculations)
-- skills/cash-flow/schema/SKILL.md       (table definitions, SQLite/PG boundary)
-- skills/cash-flow/transaction_validator/SKILL.md  (all domain rules)
-- skills/cash-flow/form_logic/SKILL.md   (field visibility and guardrails)
-- skills/cash-flow/auth_logic/SKILL.md   (identity model)
-- skills/cash-flow/error_handling/SKILL.md
-- app/services/validation.py       (if it already exists — do not reimport rules)
+### Task-specific — add the skills relevant to this iteration
+
+<!-- [FILL IN] Choose from the list below. Remove skills not relevant to this task. -->
+
+```
+{{SKILL_OR_FILE_1}}     ← reason
+{{SKILL_OR_FILE_2}}     ← reason
+{{SKILL_OR_FILE_3}}     ← reason
+```
+
+<!-- Available skills — pick what applies:
+skills/cash-flow/auth_logic/SKILL.md         → tasks involving login, session, identity (Iteration 1–2)
+skills/cash-flow/form_logic/SKILL.md         → tasks involving the web form, field defaults, guardrails (Iteration 3)
+skills/cash-flow/deterministic_logic/SKILL.md → tasks involving any calculation or validation logic
+skills/cash-flow/report_writer/SKILL.md      → tasks involving queries, aggregations, VAT calculations (Phase 2+)
+skills/cash-flow/telegram_handler/SKILL.md   → tasks involving the Telegram bot (Phase 5)
+skills/cash-flow/llm_extractor/SKILL.md      → tasks involving LLM extraction (Phase 6)
+skills/generic/qa_runner/SKILL.md            → tasks that include writing or auditing tests
+skills/generic/code_reviewer/SKILL.md        → review tasks only
+
+Also consider reading adjacent code files if they already exist:
+app/services/validation.py    ← if it exists — do not re-implement rules already there
+app/models/                   ← if models exist — understand the contracts before touching
 -->
 
 ---
