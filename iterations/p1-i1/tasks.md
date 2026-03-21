@@ -1,8 +1,8 @@
 # P1-I1 — Foundation: Schema, Seed Data & Opening Balance
 ## Task Board
 
-**Status:** IN PROGRESS
-**Last updated:** 2026-03-21 — I1-T1 DONE (merged), I1-T2 DONE (PR #2 open), T3 unblocked
+**Status:** ✔ COMPLETE
+**Last updated:** 2026-03-21 — All tasks DONE, QA pending merge to main
 **Iteration branch:** `feature/phase-1/iteration-1`  ← all task PRs target this branch
 **Final PR:** `feature/phase-1/iteration-1` → `main`  ← QA agent approves before merge
 
@@ -30,7 +30,7 @@ T5 closes the iteration — runs last.
 | I1-T2 | FastAPI skeleton        | Claude Code | ✅ DONE    | I1-T1        | `feature/p1-i1/t2-fastapi`   |
 | I1-T3 | Opening balance route   | Codex       | ✅ DONE    | I1-T1        | `feature/p1-i1/t3-balance`   |
 | I1-T4 | Base template + UI      | Claude Code | ✅ DONE    | I1-T2, I1-T3 | `feature/p1-i1/t4-ui`        |
-| I1-T5 | Tests + ruff + PR ready | Claude Code | ⏳ WAITING | I1-T4        | `feature/p1-i1/t5-tests`     |
+| I1-T5 | Tests + ruff + PR ready | Claude Code | ✅ DONE    | I1-T4        | `feature/p1-i1/t5-tests`     |
 
 ---
 
