@@ -26,8 +26,8 @@ async def get_login(
 @router.post("/auth/login")
 async def post_login(
     request: Request,
-    username: str = Form(...),
-    password: str = Form(...),
+    username: str = Form(default=""),
+    password: str = Form(default=""),
     db: sqlite3.Connection = Depends(get_db),
 ):
     """Validate credentials, create session, redirect to /."""
