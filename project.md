@@ -15,9 +15,17 @@ Internal use only. No public access. All 3 users interact via web form (Phases 1
 - Jinja2 base template with SANDBOX banner + opening balance form
 - 11 passing tests, ruff clean
 
+### P1-I2 — Authentication (merged to main 2026-03-21)
+- Auth service layer: `get_user_by_username`, `verify_password` (bcrypt UTF-8), `get_opening_balance`, `get_current_user` (isinstance guard + zombie session cleanup), `require_auth`
+- Login/logout routes: `GET/POST /auth/login`, `POST /auth/logout` — session fixation prevention, identical error messages
+- Placeholder dashboard: `GET /` — renders authenticated username
+- Login template: `app/templates/auth/login.html` — extends base.html, inline errors, password field type="password"
+- `AuthGate` middleware: replaces `OpeningBalanceGate` — single combined gate (balance → auth), single DB connection per request, EXEMPT_PATHS + EXEMPT_PREFIXES
+- `base.html` nav: username display + POST logout button for authenticated users
+- 25 passing tests (11 P1-I1 + 14 new), ruff clean
+
 ## What comes next
 **Phase 1 — Web form (in progress)**
-- P1-I2: Username/password login (session-based, one account per user)
 - P1-I3: Transaction entry form with category auto-defaults and required guardrails
 - P1-I4: Monthly summary / reporting view
 
