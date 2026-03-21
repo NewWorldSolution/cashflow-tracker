@@ -98,9 +98,9 @@ def get_db() -> sqlite3.Connection: ...   # returns a live db connection
 
 # Opening balance gate — already in app/main.py middleware:
 # Any route other than /settings/opening-balance redirects there when balance is not set.
-# P1-I2 must NOT remove or bypass this gate.
-# P1-I2 adds a second gate: authentication.
-# Order of evaluation: opening balance check FIRST, then auth check.
+# P1-I2 replaces OpeningBalanceGate with a single AuthGate that handles BOTH checks.
+# Do NOT add a second middleware — use one combined AuthGate.
+# Order of evaluation inside AuthGate: opening balance check FIRST, then auth check.
 
 # Session contract established by P1-I1:
 # session['user_id'] must store users.id (integer) — never username string
@@ -140,6 +140,7 @@ app/templates/dashboard.html
 app/services/auth_service.py
   ← get_user_by_username(db, username) → users row or None
   ← verify_password(plain, hashed) → bool
+  ← get_opening_balance(db) → str | None  (used by AuthGate — keeps SQL out of middleware)
   ← get_current_user(request, db) → users row or None
   ← require_auth(request) → users row (reads request.state.user — never redirects; middleware already guarantees it is set)
 
@@ -220,15 +221,15 @@ which makes two separate middlewares error-prone to order correctly.
 #   app.add_middleware(AuthGate)
 
 # Exact-match exempt paths + prefix-exempt paths (static files, etc.)
-EXEMPT_PATHS = {"/settings/opening-balance", "/auth/login", "/auth/logout"}
-EXEMPT_PREFIXES = ("/static",)  # extend here for future API routes
+EXEMPT_PATHS = {"/settings/opening-balance", "/auth/login", "/auth/logout", "/favicon.ico"}
+EXEMPT_PREFIXES = ("/static", "/docs", "/openapi.json")  # directory-style prefixes only
 
 def _is_exempt(path: str) -> bool:
     # Normalise trailing slash: /auth/login/ == /auth/login
     normalised = path.rstrip("/") or "/"
     if normalised in EXEMPT_PATHS:
         return True
-    return any(path.startswith(prefix) for prefix in EXEMPT_PREFIXES)
+    return any(normalised.startswith(prefix) for prefix in EXEMPT_PREFIXES)
 
 
 class AuthGate(BaseHTTPMiddleware):
@@ -237,27 +238,23 @@ class AuthGate(BaseHTTPMiddleware):
         if _is_exempt(request.url.path):
             return await call_next(request)
 
-        # Step 2 — opening balance must be set (takes priority over auth)
+        # Step 2 + 3 — single connection for both checks; always closed in finally
+        # Import inside the method to avoid circular imports at module level.
+        from app.services.auth_service import get_opening_balance, get_current_user
         conn = _connect(DATABASE_URL)
         try:
-            row = conn.execute("SELECT value FROM settings WHERE key = 'opening_balance'").fetchone()
-        except sqlite3.OperationalError:
-            row = None
+            if get_opening_balance(conn) is None:
+                return RedirectResponse(url="/settings/opening-balance", status_code=302)
+            user = get_current_user(request, conn)
         finally:
             conn.close()
-        if row is None:
-            return RedirectResponse(url="/settings/opening-balance", status_code=302)
 
-        # Step 3 — user must be authenticated
-        # Use get_current_user() from auth_service — do not reimplement the lookup inline.
-        # Import inside the method to avoid circular imports at module level.
-        from app.services.auth_service import get_current_user
-        user = get_current_user(request, _connect(DATABASE_URL))
+        # Step 4 — user must be authenticated
         if user is None:
             request.session.clear()  # clear zombie session if user was deleted
             return RedirectResponse(url="/auth/login", status_code=302)
 
-        # Step 4 — attach user and proceed
+        # Step 5 — attach user and proceed
         request.state.user = user
         return await call_next(request)
 ```
@@ -337,8 +334,12 @@ def test_protected_route_authenticated(client):
 def test_authenticated_user_skips_login(client):
     # Login, then GET /auth/login → redirect to /
 
-def test_opening_balance_gate_before_auth(client):
+def test_opening_balance_gate_before_auth(fresh_client):
     # Fresh db (no opening balance set) → any route redirects to /settings/opening-balance, not /auth/login
+
+def test_deleted_user_treated_as_unauthenticated(client):
+    # Set session['user_id'] to a valid integer that does not exist in db
+    # Expect redirect to /auth/login (AuthGate clears session and redirects)
 ```
 
 ---
@@ -439,7 +440,7 @@ Build in this order:
 
 ```bash
 pytest
-# Must pass: all 11 P1-I1 tests + all 13 new auth tests = 24 total. Zero failures.
+# Must pass: all 11 P1-I1 tests + all 14 new auth tests = 25 total. Zero failures.
 
 ruff check .
 # Must be clean. Fix all issues before committing.
@@ -486,7 +487,7 @@ This iteration is complete when ALL of the following are true:
 - [ ] Opening balance gate still evaluated first — takes priority over auth gate
 - [ ] `session['user_id']` stores `users.id` integer — never username string
 - [ ] Authenticated user hitting GET `/auth/login` is redirected to `/`
-- [ ] All 24 tests pass (11 from P1-I1 + 13 new) — zero failures
+- [ ] All 25 tests pass (11 from P1-I1 + 14 new) — zero failures
 - [ ] Ruff clean (`ruff check .` exit code 0)
 - [ ] Only allowed files modified (`git diff --name-only main`)
 - [ ] Feature branch pushed, draft PR opened, marked ready for review

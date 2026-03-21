@@ -67,11 +67,19 @@ get_user_by_username(db, username) → Row | None
 
 verify_password(plain_password: str, password_hash: str) → bool
   # bcrypt.checkpw only — never plaintext comparison
+  # encode plain_password as UTF-8 bytes before checkpw()
+
+get_opening_balance(db) → str | None
+  # SELECT value FROM settings WHERE key = 'opening_balance'
+  # Returns the value string or None if not set
+  # Catches sqlite3.OperationalError (table not yet created) → return None
+  # Used by AuthGate — keeps SQL out of middleware
 
 get_current_user(request: Request, db) → Row | None
-  # Read session['user_id'] — must be integer
+  # Read session['user_id']
+  # if not isinstance(user_id, int): return None  ← rejects malformed/string sessions
   # Query users WHERE id = ?
-  # If user not found (deleted) → return None
+  # If user not found (deleted) → session.clear(), return None
 
 require_auth(request: Request) → Row
   # Reads request.state.user — set by AuthGate for all non-exempt routes
@@ -89,7 +97,7 @@ require_auth(request: Request) → Row
 
 **Acceptance check:**
 ```bash
-python -c "from app.services.auth_service import get_user_by_username, verify_password; print('imports ok')"
+python -c "from app.services.auth_service import get_user_by_username, verify_password, get_opening_balance, get_current_user, require_auth; print('imports ok')"
 ```
 
 ---
@@ -262,7 +270,7 @@ def fresh_client(tmp_path):
     # Used only for test_opening_balance_gate_before_auth.
 ```
 
-**Tests to implement (13 total):**
+**Tests to implement (14 total):**
 ```python
 test_login_page_loads
 test_login_success_redirects
@@ -277,10 +285,13 @@ test_protected_route_unauthenticated
 test_protected_route_authenticated
 test_authenticated_user_skips_login
 test_opening_balance_gate_before_auth
+test_deleted_user_treated_as_unauthenticated
+  # Set session['user_id'] to a valid integer that does not exist in db
+  # Expect redirect to /auth/login (AuthGate clears session and redirects)
 ```
 
 **Closure steps:**
-1. `pytest` — 24 tests pass (11 from P1-I1 + 13 new), exit code 0
+1. `pytest` — 25 tests pass (11 from P1-I1 + 14 new), exit code 0
 2. `ruff check .` — clean, exit code 0
 3. `git diff --name-only feature/phase-1/iteration-2` — only allowed files
 4. `gh pr ready feature/phase-1/iteration-2`
@@ -300,7 +311,7 @@ test_opening_balance_gate_before_auth
 8. **If blocked:** set status to 🚫 BLOCKED with reason. Stop and wait.
 9. **No `except: pass`, no plaintext passwords, no GET logout, no username in session.**
 10. **auth_service.py is the single source of truth** for user retrieval and password verification. Routes and middleware must not reimplement this logic inline.
-10. Read your task prompt: `iterations/p1-i2/prompts/t[N]-[name].md`
+11. Read your task prompt: `iterations/p1-i2/prompts/t[N]-[name].md`
 
 ---
 
