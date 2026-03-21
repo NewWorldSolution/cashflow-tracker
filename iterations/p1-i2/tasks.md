@@ -74,10 +74,10 @@ get_current_user(request: Request, db) → Row | None
   # If user not found (deleted) → return None
 
 require_auth(request: Request) → Row
-  # Reads request.state.user — set by AuthGate middleware for all non-exempt routes
-  # If None → raise HTTPException(status_code=303, headers={"Location": "/auth/login"})
-  # If found → return user row
-  # P1-I3 uses this as a dependency in every protected route (middleware already blocked unauthenticated requests)
+  # Reads request.state.user — set by AuthGate for all non-exempt routes
+  # Returns user row directly — never redirects (middleware already guarantees auth for non-exempt routes)
+  # If request.state.user is somehow missing → raise RuntimeError (developer misuse, not a user-facing error)
+  # P1-I3 uses this as a convenience to access the user object in route handlers
 ```
 
 **Security rules:**
@@ -299,6 +299,7 @@ test_opening_balance_gate_before_auth
 7. **Never touch another agent's task.** Add notes under your own task only.
 8. **If blocked:** set status to 🚫 BLOCKED with reason. Stop and wait.
 9. **No `except: pass`, no plaintext passwords, no GET logout, no username in session.**
+10. **auth_service.py is the single source of truth** for user retrieval and password verification. Routes and middleware must not reimplement this logic inline.
 10. Read your task prompt: `iterations/p1-i2/prompts/t[N]-[name].md`
 
 ---

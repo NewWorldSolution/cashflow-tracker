@@ -141,7 +141,7 @@ app/services/auth_service.py
   ← get_user_by_username(db, username) → users row or None
   ← verify_password(plain, hashed) → bool
   ← get_current_user(request, db) → users row or None
-  ← require_auth(request) → users row (reads request.state.user set by middleware)
+  ← require_auth(request) → users row (reads request.state.user — never redirects; middleware already guarantees it is set)
 
 app/templates/auth/login.html
   ← login form: username + password fields
@@ -219,12 +219,22 @@ which makes two separate middlewares error-prone to order correctly.
 # With:
 #   app.add_middleware(AuthGate)
 
+# Exact-match exempt paths + prefix-exempt paths (static files, etc.)
 EXEMPT_PATHS = {"/settings/opening-balance", "/auth/login", "/auth/logout"}
+EXEMPT_PREFIXES = ("/static",)  # extend here for future API routes
+
+def _is_exempt(path: str) -> bool:
+    # Normalise trailing slash: /auth/login/ == /auth/login
+    normalised = path.rstrip("/") or "/"
+    if normalised in EXEMPT_PATHS:
+        return True
+    return any(path.startswith(prefix) for prefix in EXEMPT_PREFIXES)
+
 
 class AuthGate(BaseHTTPMiddleware):
     async def dispatch(self, request, call_next):
         # Step 1 — exempt routes bypass both checks
-        if request.url.path in EXEMPT_PATHS:
+        if _is_exempt(request.url.path):
             return await call_next(request)
 
         # Step 2 — opening balance must be set (takes priority over auth)
@@ -239,17 +249,12 @@ class AuthGate(BaseHTTPMiddleware):
             return RedirectResponse(url="/settings/opening-balance", status_code=302)
 
         # Step 3 — user must be authenticated
-        user_id = request.session.get("user_id")
-        if not user_id:
-            return RedirectResponse(url="/auth/login", status_code=302)
-        conn = _connect(DATABASE_URL)
-        try:
-            user = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
-        finally:
-            conn.close()
+        # Use get_current_user() from auth_service — do not reimplement the lookup inline.
+        # Import inside the method to avoid circular imports at module level.
+        from app.services.auth_service import get_current_user
+        user = get_current_user(request, _connect(DATABASE_URL))
         if user is None:
-            # User deleted — clear zombie session
-            request.session.clear()
+            request.session.clear()  # clear zombie session if user was deleted
             return RedirectResponse(url="/auth/login", status_code=302)
 
         # Step 4 — attach user and proceed
@@ -270,6 +275,7 @@ class AuthGate(BaseHTTPMiddleware):
 - No hardcoded credentials anywhere in application code
 - Session cookie is httponly and SameSite=lax (configured in P1-I1 SessionMiddleware — do not change)
 - CSRF: explicit CSRF tokens are out of scope for P1-I2; SameSite=lax cookie mitigates the primary risk
+  TODO: CSRF protection required before Phase 3 (transaction write endpoints introduce real financial risk)
 ```
 
 ---
