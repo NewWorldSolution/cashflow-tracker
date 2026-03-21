@@ -1,0 +1,438 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>cashflow-tracker — Phase 1 Iteration Brief</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+
+  :root {
+    --black: #0e0e0e;
+    --white: #f5f3ee;
+    --accent: #c8f03a;
+    --red: #e8463a;
+    --amber: #f5a623;
+    --green: #3abf7a;
+    --muted: #666;
+    --border: #242424;
+    --card: #141414;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--black);
+    color: var(--white);
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 13.5px;
+    line-height: 1.7;
+    max-width: 1020px;
+    margin: 0 auto;
+    padding: 56px 40px 100px;
+  }
+
+  .header { border-bottom: 1px solid var(--border); padding-bottom: 28px; margin-bottom: 44px; }
+  .header-tag { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--accent); letter-spacing: 0.18em; text-transform: uppercase; margin-bottom: 10px; }
+  h1 { font-size: 30px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.15; margin-bottom: 8px; }
+  .header-meta { font-size: 11px; color: var(--muted); font-family: 'IBM Plex Mono', monospace; }
+
+  .section { margin-bottom: 50px; }
+  .section-header { display: flex; align-items: baseline; gap: 14px; margin-bottom: 18px; padding-bottom: 8px; border-bottom: 1px solid var(--border); }
+  .section-num { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--accent); letter-spacing: 0.12em; min-width: 26px; }
+  h2 { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.1em; }
+
+  p { margin-bottom: 10px; color: #bbb; font-size: 13.5px; }
+  p:last-child { margin-bottom: 0; }
+  strong { color: var(--white); font-weight: 500; }
+
+  .card { background: var(--card); border: 1px solid var(--border); border-radius: 5px; padding: 16px 18px; margin-bottom: 10px; }
+  .card-label { font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 8px; }
+  .lbl-green { color: var(--green); }
+  .lbl-amber { color: var(--amber); }
+  .lbl-red   { color: var(--red); }
+  .lbl-accent{ color: var(--accent); }
+  .lbl-muted { color: var(--muted); }
+
+  .tag { display: inline-block; font-family: 'IBM Plex Mono', monospace; font-size: 9px; padding: 2px 7px; border-radius: 3px; letter-spacing: 0.08em; margin-right: 6px; vertical-align: middle; white-space: nowrap; }
+  .t-green  { background: rgba(58,191,122,0.12);  color: var(--green);  border: 1px solid rgba(58,191,122,0.25); }
+  .t-amber  { background: rgba(245,166,35,0.12);   color: var(--amber);  border: 1px solid rgba(245,166,35,0.25); }
+  .t-muted  { background: rgba(136,136,136,0.10);  color: #777;          border: 1px solid rgba(136,136,136,0.2); }
+
+  ul.plain { list-style: none; }
+  ul.plain li { padding: 5px 0; border-bottom: 1px solid var(--border); color: #bbb; display: flex; align-items: flex-start; gap: 10px; font-size: 13px; }
+  ul.plain li:last-child { border-bottom: none; }
+  ul.plain li::before { content: '—'; color: #444; flex-shrink: 0; font-family: 'IBM Plex Mono', monospace; font-size: 11px; margin-top: 2px; }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
+
+  table { width: 100%; border-collapse: collapse; margin: 10px 0; font-size: 12.5px; }
+  th { text-align: left; padding: 7px 12px; font-family: 'IBM Plex Mono', monospace; font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--border); }
+  td { padding: 9px 12px; border-bottom: 1px solid var(--border); color: #bbb; vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  td strong { color: #e0e0e0; }
+
+  .milestone { background: var(--card); border: 1px solid var(--border); border-radius: 5px; padding: 18px 20px; margin-bottom: 10px; }
+  .m-week { font-family: 'IBM Plex Mono', monospace; font-size: 9px; color: var(--accent); letter-spacing: 0.14em; text-transform: uppercase; margin-bottom: 4px; }
+  .m-title { font-size: 14px; font-weight: 600; color: var(--white); margin-bottom: 12px; }
+  .m-items { list-style: none; margin-bottom: 14px; }
+  .m-items li { color: #aaa; padding: 3px 0; font-size: 12.5px; display: flex; gap: 8px; }
+  .m-items li::before { content: '·'; color: #444; flex-shrink: 0; font-family: 'IBM Plex Mono', monospace; }
+  .effort { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--muted); display: flex; align-items: center; gap: 5px; }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: #333; }
+  .dot.on { background: var(--accent); }
+
+  .hbox { border-left: 3px solid var(--accent); padding: 11px 14px; background: rgba(200,240,58,0.03); border-radius: 0 4px 4px 0; margin: 14px 0; color: #bbb; font-size: 13px; }
+
+  .crit { display: flex; gap: 12px; padding: 9px 0; border-bottom: 1px solid var(--border); color: #bbb; font-size: 13px; align-items: flex-start; }
+  .crit:last-child { border-bottom: none; }
+  .cbox { width: 14px; height: 14px; border: 1.5px solid #333; border-radius: 3px; flex-shrink: 0; margin-top: 2px; }
+
+  .risk { display: grid; grid-template-columns: 200px 1fr; gap: 16px; padding: 11px 0; border-bottom: 1px solid var(--border); }
+  .risk:last-child { border-bottom: none; }
+  .risk-label { font-weight: 500; color: var(--white); font-size: 13px; }
+  .risk-desc { color: #999; font-size: 12.5px; line-height: 1.6; }
+
+  .brutal { background: #120d0d; border: 1px solid rgba(232,70,58,0.25); border-radius: 5px; padding: 24px; }
+  .brutal p { color: #b89090; }
+  .brutal-verdict { font-size: 17px; font-weight: 600; color: var(--white); margin-bottom: 16px; line-height: 1.4; }
+  .brutal-verdict span { color: var(--accent); }
+
+  .skill-row { display: grid; grid-template-columns: 185px 1fr; border-bottom: 1px solid var(--border); }
+  .skill-row:last-child { border-bottom: none; }
+  .skill-name { padding: 9px 12px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--accent); background: rgba(200,240,58,0.03); border-right: 1px solid var(--border); }
+  .skill-desc { padding: 9px 12px; color: #999; font-size: 12.5px; }
+
+  code { font-family: 'IBM Plex Mono', monospace; font-size: 11.5px; background: rgba(255,255,255,0.06); padding: 1px 5px; border-radius: 3px; color: #ddd; }
+  hr { border: none; border-top: 1px solid var(--border); margin: 44px 0; }
+  .footer { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: #333; text-align: center; padding-top: 8px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-tag">Phase 1 · Iteration Brief</div>
+  <h1>cashflow-tracker</h1>
+  <div class="header-meta">Private · Polish SMB · 3 users · SQLite sandbox → Azure PostgreSQL · March 2026</div>
+</div>
+
+<!-- 01 ─────────────────────────────────── -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-num">01</span>
+    <h2>Repository Assessment</h2>
+  </div>
+
+  <div class="grid-2" style="margin-bottom:12px">
+    <div class="card">
+      <div class="card-label lbl-green">What is built</div>
+      <ul class="plain">
+        <li>Complete project knowledge base — concept, architecture, build phases, reporting, agents &amp; skills</li>
+        <li>All 17 design decisions closed and documented in the risk review v2</li>
+        <li>CLAUDE.md agent constitution — non-negotiable rules before touching any code</li>
+        <li>project.md — live state tracker for agentic handoffs</li>
+        <li>Full schema designed: users, categories, transactions, settings, settings_audit</li>
+        <li>Category list fixed: 4 income + 18 expense categories with correct Polish VAT defaults</li>
+        <li>Skill layer defined: 6 generic + 9 cashflow-specific skills with enforcement boundaries</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-label lbl-amber">What is not yet built</div>
+      <ul class="plain">
+        <li>No application code exists</li>
+        <li>No <code>db/schema.sql</code> or <code>db/seed.sql</code></li>
+        <li>No FastAPI backend or routes</li>
+        <li>No login page or session handling</li>
+        <li>No transaction entry form</li>
+        <li>No transaction list or void flow</li>
+        <li>No opening balance setup screen</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="hbox">
+    <strong>Intended product:</strong> A private, Polish-VAT-aware cash flow notebook for a 3-person service business. Gross transactions in, correct VAT extracted, monthly summaries out for the accountant. Input via web form now, Telegram bot Phase 5, LLM extraction Phase 6. Deliberately not a SaaS product — private, precise, opinionated on Polish tax rules.
+  </div>
+
+  <div class="card" style="margin-top:10px">
+    <div class="card-label lbl-accent">Active skills for Phase 1</div>
+    <div class="skill-row"><div class="skill-name">transaction_validator</div><div class="skill-desc">All 10 domain rules — single source of truth for what a valid transaction looks like</div></div>
+    <div class="skill-row"><div class="skill-name">schema</div><div class="skill-desc">Full table structure + SQLite/PostgreSQL boundary; which constraints live in DB vs app layer</div></div>
+    <div class="skill-row"><div class="skill-name">form_logic</div><div class="skill-desc">Field visibility rules, category auto-defaults, income_type locking, 3 mandatory guardrails</div></div>
+    <div class="skill-row"><div class="skill-name">auth_logic</div><div class="skill-desc">Session-based web login; <code>logged_by</code> always <code>users.id</code> from session — never typed text</div></div>
+    <div class="skill-row"><div class="skill-name">error_handling</div><div class="skill-desc">No silent failures; inline errors; block save on any validation failure</div></div>
+    <div class="skill-row"><div class="skill-name">deterministic_logic</div><div class="skill-desc">No LLM in validation, calculation, or reporting — all financial logic is deterministic Python</div></div>
+  </div>
+</div>
+
+<!-- 02 ─────────────────────────────────── -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-num">02</span>
+    <h2>Phase 1 Scope</h2>
+  </div>
+
+  <div class="grid-3" style="margin-bottom:12px">
+    <div class="card">
+      <div class="card-label lbl-accent">Core problem</div>
+      <p>A small Polish service business has no reliable way to log daily income and expenses with correct VAT logic, card reconciliation awareness, and a traceable audit trail. Notebook and spreadsheet both fail on VAT correctness.</p>
+    </div>
+    <div class="card">
+      <div class="card-label lbl-accent">Target user</div>
+      <p>3 people — owner, assistant, wife. Non-technical. Need fast daily entry. Must feel simple on first use. Polish VAT rules apply. All 3 use the web form in Phases 1–4. Telegram arrives in Phase 5.</p>
+    </div>
+    <div class="card">
+      <div class="card-label lbl-accent">Phase 1 definition</div>
+      <p>All 3 users can log any transaction via web form. Data stored correctly: gross, VAT, category FK. Corrections possible with full audit trail. Opening balance set. Running on SQLite locally.</p>
+    </div>
+  </div>
+
+  <div class="hbox">
+    <strong>Phase 1 is the sandbox.</strong> SQLite only. All data is non-production and may be discarded at go-live. The app must show a visible <strong>SANDBOX</strong> banner on every page so no one treats this data as real. Go-live = switch to Azure PostgreSQL — schema is identical, only the connection string changes.
+  </div>
+</div>
+
+<!-- 03 ─────────────────────────────────── -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-num">03</span>
+    <h2>Feature Prioritization</h2>
+  </div>
+
+  <table>
+    <thead><tr><th>Feature</th><th>Priority</th><th>Reason</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Login page</strong> — username + password, 3 user accounts</td><td><span class="tag t-green">MUST</span></td><td>Every transaction needs a real <code>logged_by users.id</code> — free text is never acceptable</td></tr>
+      <tr><td><strong>Transaction form</strong> — all fields, direction toggle, smart field behaviour</td><td><span class="tag t-green">MUST</span></td><td>Core data entry — the entire purpose of Phase 1</td></tr>
+      <tr><td><strong>Category dropdown</strong> from reference table, filtered by direction</td><td><span class="tag t-green">MUST</span></td><td>Free-text category corrupts all reporting permanently; FK reference is non-negotiable</td></tr>
+      <tr><td><strong>Category auto-defaults</strong> — VAT rate + deductible % from selection</td><td><span class="tag t-green">MUST</span></td><td>Prevents silent data errors on every entry; users should not have to remember VAT rules</td></tr>
+      <tr><td><strong>income_type = internal → locks VAT to 0%</strong></td><td><span class="tag t-green">MUST</span></td><td>Hard business rule; enforced in API — not just UI; a future Telegram message must also fail if this is violated</td></tr>
+      <tr><td><strong>Expense deductibility mandatory</strong> — default 100%, never NULL</td><td><span class="tag t-green">MUST</span></td><td>NULL silently breaks every VAT reclaimable calculation with no error</td></tr>
+      <tr><td><strong>Gross amount reminder</strong> + card commission banner</td><td><span class="tag t-green">MUST</span></td><td>Most common user error — must be prevented in the UI from day 1</td></tr>
+      <tr><td><strong>Description mandatory on other_expense / other_income</strong></td><td><span class="tag t-green">MUST</span></td><td>Enforced in API; "other" without description is a permanent reporting black hole</td></tr>
+      <tr><td><strong>Transaction list</strong> — active rows, category label, logged_by, created_at</td><td><span class="tag t-green">MUST</span></td><td>Users must be able to see what they entered and in what order</td></tr>
+      <tr><td><strong>Void flow</strong> — soft delete with mandatory reason and voided_by</td><td><span class="tag t-green">MUST</span></td><td>Financial audit trail — no hard deletes ever, not even in sandbox phase</td></tr>
+      <tr><td><strong>Opening balance setup screen</strong> — blocks form until set</td><td><span class="tag t-green">MUST</span></td><td>Phase 7 cash flow statement is impossible without it; must be set day 1 — warn is not enough, gate is required</td></tr>
+      <tr><td><strong>SANDBOX banner</strong> on all pages</td><td><span class="tag t-green">MUST</span></td><td>Prevents real business data being entered into non-production environment</td></tr>
+      <tr><td>Advanced VAT mode (manual VAT amount for mixed-rate invoices)</td><td><span class="tag t-amber">NICE</span></td><td>Rare edge case — add when first real need appears, not before</td></tr>
+      <tr><td>Admin view showing voided transactions</td><td><span class="tag t-amber">NICE</span></td><td>Useful but not blocking — active-only list is enough for Phase 1</td></tr>
+      <tr><td>Basic monthly totals summary</td><td><span class="tag t-amber">NICE</span></td><td>Phase 2 officially — add late in Phase 1 only if form is fully stable and time allows</td></tr>
+      <tr><td>Unusual value detection / warnings</td><td><span class="tag t-amber">NICE</span></td><td>Needs 1 month of real data to establish a baseline; useless before that</td></tr>
+      <tr><td>Telegram bot</td><td><span class="tag t-muted">OUT</span></td><td>Phase 5 — explicitly deferred. Web form is the only input method in Phases 1–4.</td></tr>
+      <tr><td>WBSB integration / Monday report</td><td><span class="tag t-muted">OUT</span></td><td>Phase 4 — needs stable production data first</td></tr>
+      <tr><td>LLM extraction (Haiku / Sonnet)</td><td><span class="tag t-muted">OUT</span></td><td>Phase 6 — structured form makes it unnecessary now; no LLM in any logic layer</td></tr>
+      <tr><td>PostgreSQL migration</td><td><span class="tag t-muted">OUT</span></td><td>Happens at go-live — Phase 1 is SQLite sandbox by definition</td></tr>
+      <tr><td>Any JavaScript framework or SPA</td><td><span class="tag t-muted">OUT</span></td><td>CLAUDE.md forbids it — Jinja2 server-side templates only</td></tr>
+    </tbody>
+  </table>
+</div>
+
+<!-- 04 ─────────────────────────────────── -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-num">04</span>
+    <h2>Technical Direction</h2>
+  </div>
+
+  <div class="grid-2" style="margin-bottom:10px">
+    <div class="card">
+      <div class="card-label lbl-accent">Stack — locked per CLAUDE.md</div>
+      <ul class="plain">
+        <li>Python + FastAPI — async, clean REST, easy Azure deploy, Pydantic validation built-in</li>
+        <li>SQLite — sandbox only; schema identical to PostgreSQL production target</li>
+        <li>Jinja2 — server-side templates; no SPA; no client-side framework</li>
+        <li>Vanilla JS — form behaviour only: auto-defaults, field locking, banners</li>
+        <li>bcrypt — password hashing; cookie-based sessions via FastAPI middleware</li>
+      </ul>
+    </div>
+    <div class="card">
+      <div class="card-label lbl-amber">No architecture changes needed</div>
+      <p>The architecture is fully decided. Schema, stack, VAT model, category list, and auth are all closed decisions. The task for Phase 1 is implementation — not design.</p>
+      <p>The one open question in CLAUDE.md is <strong>Flask vs FastAPI</strong>. FastAPI is recommended: async by default, Pydantic validation reduces boilerplate, cleaner foundation for Phase 5 API expansion to Telegram.</p>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-label lbl-red">Critical rule — must not be broken</div>
+    <p style="margin-bottom:8px">Every business rule must be enforced in the FastAPI route handler — not only in the HTML form. The form is a convenience layer. The API is the contract. Rules enforced only in the UI will be silently bypassed when Phase 5 (Telegram) and Phase 6 (LLM) skip the form entirely.</p>
+    <p style="margin-bottom:0">Rules that must live in the API: <code>income_type=internal → vat_rate=0</code> · <code>expense → vat_deductible_pct NOT NULL</code> · <code>other_* → description NOT NULL</code> · <code>amount &gt; 0</code> · <code>vat_rate IN (0,5,8,23)</code> · <code>void → void_reason NOT NULL + voided_by</code></p>
+  </div>
+
+  <div class="card" style="margin-top:10px">
+    <div class="card-label lbl-amber">Technical risks</div>
+    <div class="risk">
+      <div class="risk-label">SQLite constraint gap</div>
+      <div class="risk-desc">SQLite does not support conditional CHECK constraints. The <code>vat_deductible_pct NOT NULL on expenses</code> constraint must be enforced in the app layer only during sandbox. The PostgreSQL CHECK is added at go-live — flagged in architecture.md with a comment.</div>
+    </div>
+    <div class="risk">
+      <div class="risk-label">Session persistence</div>
+      <div class="risk-desc">Cookie-based sessions need a stable secret key in <code>.env</code>. If the key is not persisted, every redeploy invalidates all sessions. Configure this correctly from day 1.</div>
+    </div>
+    <div class="risk">
+      <div class="risk-label">Seed idempotency</div>
+      <div class="risk-desc">If seed runs twice, duplicate category rows corrupt the FK reference table. Use <code>INSERT OR IGNORE</code> or existence checks in the seed script.</div>
+    </div>
+    <div class="risk">
+      <div class="risk-label">Opening balance gate</div>
+      <div class="risk-desc">A reminder banner can be dismissed. The form must be hard-blocked — redirect to setup screen — until <code>opening_balance</code> exists in the settings table. A warning is not sufficient.</div>
+    </div>
+  </div>
+</div>
+
+<!-- 05 ─────────────────────────────────── -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-num">05</span>
+    <h2>Execution Plan — 2–3 weeks</h2>
+  </div>
+
+  <div class="milestone">
+    <div class="m-week">Days 1–3 · Week 1</div>
+    <div class="m-title">Foundation — schema, seed data, auth</div>
+    <ul class="m-items">
+      <li>Create <code>db/schema.sql</code> — all 5 tables: users, categories, transactions, settings, settings_audit</li>
+      <li>Create <code>db/seed.sql</code> — 3 users with bcrypt-hashed placeholder passwords, all 22 categories with correct VAT and deductibility defaults</li>
+      <li>FastAPI project skeleton — <code>app/main.py</code>, routes/, templates/, static/, <code>requirements.txt</code>, <code>.env.example</code></li>
+      <li>Auth routes: POST /auth/login, POST /auth/logout, GET /auth/me with session middleware</li>
+      <li>Login page template — clean HTML form, session persists across requests, error display on bad credentials</li>
+      <li>Route guard — redirect to /login if no active session on any protected route</li>
+    </ul>
+    <div class="effort"><span class="dot on"></span><span class="dot on"></span><span class="dot"></span> medium</div>
+  </div>
+
+  <div class="milestone">
+    <div class="m-week">Days 4–8 · Week 2</div>
+    <div class="m-title">Transaction form + API validation</div>
+    <ul class="m-items">
+      <li>GET /categories — returns full list filtered by direction query param</li>
+      <li>POST /transactions — full server-side validation of all 6 business rules; returns structured errors; never saves silently</li>
+      <li>Transaction form template — all fields, direction radio toggle shows/hides correct field groups</li>
+      <li><code>form.js</code> — on category select: fetch defaults from /categories, auto-fill VAT rate and deductible %; income_type=internal locks VAT field; card shows commission banner</li>
+      <li>Opening balance setup screen — hard redirects to this screen if no <code>opening_balance</code> in settings; form is inaccessible until set</li>
+      <li>Description mandatory logic — enforced in form.js AND in POST /transactions; both must reject missing description on other_* categories</li>
+      <li>SANDBOX banner — persistent, visible on every page in the base template</li>
+    </ul>
+    <div class="effort"><span class="dot on"></span><span class="dot on"></span><span class="dot on"></span> high</div>
+  </div>
+
+  <div class="milestone">
+    <div class="m-week">Days 9–12 · Week 3</div>
+    <div class="m-title">Transaction list + void flow</div>
+    <ul class="m-items">
+      <li>GET /transactions — returns active rows only (<code>WHERE is_active = TRUE</code>), ordered by <code>created_at DESC</code></li>
+      <li>POST /transactions/{id}/void — requires <code>void_reason</code> and sets <code>voided_by</code> from session; rejects empty reason</li>
+      <li>Transaction list template — table with date, category label, direction, amount, VAT rate, payment method, logged_by username, created_at</li>
+      <li>Void button per row — inline modal asking for reason; submits to void route; row disappears from list on success</li>
+      <li>Settings routes — GET /settings/{key}, POST /settings/{key} with audit write to settings_audit on every change</li>
+    </ul>
+    <div class="effort"><span class="dot on"></span><span class="dot on"></span><span class="dot"></span> medium</div>
+  </div>
+
+  <div class="milestone">
+    <div class="m-week">Days 13–15 · Buffer</div>
+    <div class="m-title">Validation, testing, commit</div>
+    <ul class="m-items">
+      <li>All 3 users log in, enter transactions across representative categories, void and correct one entry</li>
+      <li>Verify all 6 API-level business rules fire correctly on direct POST — not just form validation</li>
+      <li>Verify opening balance gate cannot be bypassed by navigating directly to /form</li>
+      <li>Verify every stored transaction has <code>logged_by</code> as a valid integer FK — inspect DB directly</li>
+      <li>Verify no net amounts are stored — all <code>amount</code> values are gross</li>
+      <li>README update — how to run locally, seed, and reset the database</li>
+      <li>Git commit on branch: <code>feat: Phase 1 web form complete</code> — do not push, do not merge without review</li>
+    </ul>
+    <div class="effort"><span class="dot on"></span><span class="dot"></span><span class="dot"></span> low</div>
+  </div>
+</div>
+
+<!-- 06 ─────────────────────────────────── -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-num">06</span>
+    <h2>Success Criteria</h2>
+  </div>
+
+  <div class="card">
+    <div class="crit"><div class="cbox"></div><span>All 3 users can log in with separate credentials and maintain independent sessions</span></div>
+    <div class="crit"><div class="cbox"></div><span>A transaction can be entered for every combination of direction × category × payment method without a form or API error</span></div>
+    <div class="crit"><div class="cbox"></div><span>Selecting <code>internal_transfer</code> income category automatically sets VAT to 0% and the field is locked — user cannot override it in the UI or via a direct API call</span></div>
+    <div class="crit"><div class="cbox"></div><span>Submitting an expense transaction without <code>vat_deductible_pct</code> is rejected by the API with a descriptive error — it is never silently saved with NULL</span></div>
+    <div class="crit"><div class="cbox"></div><span>Submitting <code>other_expense</code> without a description is rejected at the API level — a direct POST bypassing the form also fails</span></div>
+    <div class="crit"><div class="cbox"></div><span>Card payment method shows the commission reminder banner</span></div>
+    <div class="crit"><div class="cbox"></div><span>Voiding a transaction without a reason is rejected — the row is never deactivated without <code>void_reason</code> and <code>voided_by</code></span></div>
+    <div class="crit"><div class="cbox"></div><span>Voided transaction disappears from the default list — it is not hard-deleted and remains in the database with <code>is_active = FALSE</code></span></div>
+    <div class="crit"><div class="cbox"></div><span>Opening balance setup screen appears on first visit and the main form is hard-blocked until it is set</span></div>
+    <div class="crit"><div class="cbox"></div><span>Every stored transaction has <code>logged_by</code> as a valid integer FK to <code>users.id</code> — no text strings in that column, verified by direct DB query</span></div>
+    <div class="crit"><div class="cbox"></div><span>Every stored transaction amount is the gross cash amount — no net amounts in the database</span></div>
+    <div class="crit"><div class="cbox"></div><span>SANDBOX banner is visible on every page while SQLite is active</span></div>
+  </div>
+</div>
+
+<!-- 07 ─────────────────────────────────── -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-num">07</span>
+    <h2>Risks &amp; Failure Modes</h2>
+  </div>
+
+  <div class="card">
+    <div class="risk">
+      <div class="risk-label">Business logic in UI only</div>
+      <div class="risk-desc">Validation only in the HTML form works in Phase 1 but is silently bypassed by Phase 5 Telegram and Phase 6 LLM extraction. This is the highest-probability failure mode. Every rule must live in the FastAPI handler, not the template.</div>
+    </div>
+    <div class="risk">
+      <div class="risk-label">Opening balance skipped</div>
+      <div class="risk-desc">Users dismiss banners. The form must hard-redirect to the setup screen — not show a warning. Without opening balance, Phase 7 cash flow statement is permanently incorrect and cannot be fixed retroactively.</div>
+    </div>
+    <div class="risk">
+      <div class="risk-label">Category as free text</div>
+      <div class="risk-desc">Any code path that accepts a category name string instead of <code>category_id</code> integer destroys reporting consistency permanently. Schema FK is the backstop — but the API must also reject category strings explicitly.</div>
+    </div>
+    <div class="risk">
+      <div class="risk-label">Real data in sandbox</div>
+      <div class="risk-desc">If any user starts entering real transactions during Phase 1 SQLite testing, go-live migration becomes complicated and trust in the data becomes unclear. SANDBOX banner is not decoration — it sets user expectations.</div>
+    </div>
+    <div class="risk">
+      <div class="risk-label">Over-engineering the UI</div>
+      <div class="risk-desc">This is a 3-user internal tool on a local SQLite sandbox. Time spent on visual polish, responsive layouts, or JS enhancements is wasted Phase 1 time. The form must be correct and fast to use — not beautiful.</div>
+    </div>
+    <div class="risk">
+      <div class="risk-label">Hard deletes in sandbox "just this once"</div>
+      <div class="risk-desc">Bad patterns introduced in sandbox survive into production. The soft-delete model must be implemented correctly from the first transaction. Any code that calls DELETE on a transaction row is wrong and must be caught in code review.</div>
+    </div>
+    <div class="risk">
+      <div class="risk-label">Agentic session drift</div>
+      <div class="risk-desc">Claude Code sessions that run without re-reading CLAUDE.md will drift from the rules — adding free-text fields "for now", skipping void_reason "it's just sandbox", or proposing a JS framework. Every session must start with <code>project.md</code> and <code>CLAUDE.md</code>.</div>
+    </div>
+  </div>
+</div>
+
+<!-- 08 ─────────────────────────────────── -->
+<div class="section">
+  <div class="section-header">
+    <span class="section-num">08</span>
+    <h2>Brutal Feedback</h2>
+  </div>
+
+  <div class="brutal">
+    <div class="brutal-verdict">This project has genuine real-world value — <span>precisely because it refuses to be generic.</span></div>
+
+    <p>Most small Polish service businesses run their finances on a notebook, a spreadsheet, or nothing at all. Their accountant gets a bag of receipts at month end. The owner has no idea what their VAT position is mid-month, card reconciliation is a mystery, and every correction is done by crossing out a line. This tool solves that specific, painful, real problem — for one business, with domain precision.</p>
+
+    <p>The VAT model is the strongest part of the entire design. Always gross, derived calculations never stored, income_type separated from expense deductibility, the internal income rule as a hard enforced constraint — this is the kind of precision that generic tools get wrong. Fakturownia, inFakt, and every Polish SMB accounting SaaS either requires an accountant to configure, conflates VAT tracking with tax submission, or silently stores net amounts. This tool does none of that, and it knows what it is.</p>
+
+    <p><strong>The real differentiator is not Phase 1.</strong> The web form is a prerequisite. The actual product is Phase 5 + 6: a Telegram group bot where the owner sends a voice note or a receipt photo and it is correctly extracted, VAT-assigned, confirmed, and saved in 15 seconds. That is the thing no existing Polish SMB tool does at all, and the data model built here is exactly right to support it.</p>
+
+    <p><strong>What would waste the most time:</strong> polishing the Phase 1 UI, debating Flask vs FastAPI for more than one hour, adding features not in the brief, or allowing any session to proceed without re-reading CLAUDE.md. The design is genuinely good. The failure mode is implementation discipline, not design quality.</p>
+
+    <p><strong>What would make it competitive beyond one business:</strong> the skill layer and CLAUDE.md approach is the real transferable asset here. This is a replicable framework for building private, domain-correct financial tools agentically — the cashflow tracker is the first instance. If it works cleanly, the same pattern applies to any Polish SMB with different category lists and VAT rules. That is the product if there ever is one.</p>
+
+    <p style="margin-bottom:0"><strong>Bottom line:</strong> Build Phase 1 exactly as specified. Do not add features. Do not polish. Get all 3 users entering real transactions for 2–4 weeks on the sandbox, then go-live on PostgreSQL. Phase 5 is where this becomes genuinely useful every day. Phase 6 is where it becomes hard to replicate.</p>
+  </div>
+</div>
+
+<hr>
+<div class="footer">cashflow-tracker · Phase 1 Iteration Brief · March 2026 · All 17 design decisions closed</div>
+
+</body>
+</html>
