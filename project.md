@@ -7,17 +7,19 @@ A private cash flow tracker for a small Polish business. 3 users: owner, assista
 Internal use only. No public access. All 3 users interact via web form (Phases 1–4) and Telegram group bot (Phase 5+).
 
 ## What is built
-- Project knowledge base complete: concept, architecture, build phases, agents & skills
-- All 17 design decisions closed (cashflow-tracker-risk-review-v2.html)
-- Category list defined and fixed: 4 income + 18 expense categories
-- Full schema designed: users, categories, transactions, settings tables
+
+### P1-I1 — Foundation (merged to main 2026-03-21)
+- SQLite schema: `users`, `categories`, `transactions`, `settings`, `settings_audit` — 22 categories, 3 bcrypt-hashed users, idempotent init
+- FastAPI app with `SECRET_KEY` guard, session middleware, opening balance gate (hard redirect for all unprotected routes)
+- Opening balance route: GET/POST `/settings/opening-balance` with full settings_audit trail
+- Jinja2 base template with SANDBOX banner + opening balance form
+- 11 passing tests, ruff clean
 
 ## What comes next
-**Phase 1 — Web form (current)**
-- SQLite database initialised with schema
-- Username/password login (one account per user)
-- Transaction entry form with category auto-defaults and required guardrails
-- Opening balance setup screen
+**Phase 1 — Web form (in progress)**
+- P1-I2: Username/password login (session-based, one account per user)
+- P1-I3: Transaction entry form with category auto-defaults and required guardrails
+- P1-I4: Monthly summary / reporting view
 
 ## Stack (locked)
-Python backend (Flask or FastAPI) · SQLite sandbox → Azure PostgreSQL production · Jinja2 templates · python-telegram-bot (Phase 5) · Claude Haiku/Sonnet (Phase 6 only)
+Python · FastAPI · SQLite sandbox → Azure PostgreSQL production · Jinja2 templates · python-telegram-bot (Phase 5) · Claude Haiku/Sonnet (Phase 6 only)
