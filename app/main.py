@@ -22,13 +22,35 @@ if not SECRET_KEY:
     )
 
 
+_memory_keeper: sqlite3.Connection | None = None
+
+
+def _connect(url: str) -> sqlite3.Connection:
+    """Open a SQLite connection, using shared-cache URI for :memory: databases.
+
+    :memory: uses file::memory:?cache=shared so all connections in the process
+    share the same in-memory database. A module-level keeper connection is held
+    open so SQLite does not destroy the database between request connections.
+    """
+    global _memory_keeper
+    if url == ":memory:":
+        if _memory_keeper is None:
+            _memory_keeper = sqlite3.connect(
+                "file::memory:?cache=shared", uri=True, check_same_thread=False
+            )
+        return sqlite3.connect(
+            "file::memory:?cache=shared", uri=True, check_same_thread=False
+        )
+    return sqlite3.connect(url, check_same_thread=False)
+
+
 def get_db() -> sqlite3.Connection:
     """FastAPI dependency — returns a live SQLite connection.
 
     Usage in route:
         db: sqlite3.Connection = Depends(get_db)
     """
-    conn = sqlite3.connect(DATABASE_URL)
+    conn = _connect(DATABASE_URL)
     conn.row_factory = sqlite3.Row
     try:
         yield conn
@@ -49,7 +71,7 @@ class OpeningBalanceGate(BaseHTTPMiddleware):
 
     async def dispatch(self, request: Request, call_next):
         if request.url.path not in self.EXEMPT_PATHS:
-            conn = sqlite3.connect(DATABASE_URL)
+            conn = _connect(DATABASE_URL)
             try:
                 row = conn.execute(
                     "SELECT value FROM settings WHERE key = 'opening_balance'"
@@ -67,7 +89,7 @@ class OpeningBalanceGate(BaseHTTPMiddleware):
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Initialise database on startup."""
-    conn = sqlite3.connect(DATABASE_URL)
+    conn = _connect(DATABASE_URL)
     initialise_db(conn)
     conn.close()
     yield
@@ -83,13 +105,20 @@ def create_app(database_url: str | None = None) -> FastAPI:
     if database_url:
         DATABASE_URL = database_url
 
+    # Eager init — idempotent (CREATE IF NOT EXISTS / INSERT OR IGNORE).
+    # Runs here so TestClient without a context manager has a ready schema.
+    # Lifespan runs the same call again on production startup — harmless.
+    conn = _connect(DATABASE_URL)
+    initialise_db(conn)
+    conn.close()
+
     app = FastAPI(title="cashflow-tracker", lifespan=lifespan)
 
     app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
     app.add_middleware(OpeningBalanceGate)
 
-    # Register routers — settings router registered after I1-T3 merges
-    # app.include_router(settings_router)
+    from app.routes.settings import router as settings_router
+    app.include_router(settings_router)
 
     return app
 
