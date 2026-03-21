@@ -270,3 +270,17 @@ gh pr create --base feature/phase-1/iteration-1 --head feature/p1-i1/t1-schema \
 - [ ] All 5 tables exist: users, categories, transactions, settings, settings_audit
 - [ ] No `vat_rate` CHECK constraint in schema
 - [ ] `.env` is in `.gitignore`
+
+---
+
+## Self-review
+
+When the acceptance checklist above is complete, read and execute the review at:
+
+```
+iterations/p1-i1/reviews/review-t1.md
+```
+
+Work through every step in the review file exactly as written. Produce the full required output (Verdict, What's Correct, Problems Found, Scope Violations, Acceptance Criteria Check, Exact Fixes Required).
+
+If the verdict is `CHANGES REQUIRED` or `BLOCKED`: fix every listed issue, re-run tests and ruff, commit the fix, then re-execute the review from Step 1. Do not stop until the verdict is `PASS`.

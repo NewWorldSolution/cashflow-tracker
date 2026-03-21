@@ -235,3 +235,17 @@ Update `iterations/p1-i1/tasks.md` — set I1-T3 to ✅ DONE.
 - [ ] POST with `as_of_date = "2026-01-01"` → accepted
 - [ ] No hard-coded strings for error routing — redirect to `/` on success only
 - [ ] No `except: pass`
+
+---
+
+## Self-review
+
+When the acceptance checklist above is complete, read and execute the review at:
+
+```
+iterations/p1-i1/reviews/review-t3.md
+```
+
+Work through every step in the review file exactly as written. Produce the full required output (Verdict, What's Correct, Problems Found, Scope Violations, Acceptance Criteria Check, Exact Fixes Required).
+
+If the verdict is `CHANGES REQUIRED` or `BLOCKED`: fix every listed issue, re-run tests and ruff, commit the fix, then re-execute the review from Step 1. Do not stop until the verdict is `PASS`.
