@@ -53,11 +53,14 @@ Schema is identical between both engines. Only the connection string changes.
 ## Stack (locked — do not propose alternatives)
 | Layer | Choice |
 |---|---|
-| Backend | Python — Flask or FastAPI |
+| Backend | Python — FastAPI (not Flask; decision closed) |
 | Database | SQLite (sandbox) / PostgreSQL (production) |
 | Templates | Jinja2 — server-side rendering only, no SPA |
+| Client-side JS | Vanilla JS only — form behaviour, field locking, auto-defaults |
 | Telegram | python-telegram-bot |
 | LLM (Phase 6 only) | Claude Haiku (text) / Claude Sonnet (images) |
+
+FastAPI rationale: Phase 5 (Telegram) and Phase 6 (LLM) bypass the HTML form entirely and call the same validation layer. FastAPI serves both Jinja2 templates (Phase 1–4) and JSON responses (Phase 5+) cleanly. Pydantic validation reduces boilerplate for the transaction_validator rules. Flask would require retrofitting an API layer later.
 
 ---
 

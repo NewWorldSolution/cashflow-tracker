@@ -1,9 +1,9 @@
 # Phase 1 Plan — Web Form & Transaction Capture
 
 **Status:** Ready to execute
-**Timeline:** 14–18 working days across 4 iterations
+**Timeline:** 13–15 working days across 4 iterations
 **Database:** SQLite (sandbox — all data non-production)
-**Stack decision (locked):** Flask, not "Flask or FastAPI." This is server-rendered CRUD with 3 known users. FastAPI adds no value here and introduces unnecessary complexity. Decision closed.
+**Stack decision (locked):** FastAPI, not Flask. Decision closed. Rationale: Phase 5 (Telegram) and Phase 6 (LLM) bypass the HTML form and call the same validation layer. FastAPI serves Jinja2 templates now and JSON responses later without retrofitting. Pydantic validation maps directly to transaction_validator rules.
 
 ---
 
@@ -20,7 +20,7 @@ Phase 1 is **not** done when the form works. It is done when the correction flow
 ```
 cashflow-tracker/
 ├── app/
-│   ├── __init__.py          # Flask app factory
+│   ├── main.py              # FastAPI app, router registration, session middleware
 │   ├── models/
 │   │   ├── user.py
 │   │   ├── transaction.py
@@ -33,20 +33,24 @@ cashflow-tracker/
 │   │   ├── transactions.py  # create, list, void, correct
 │   │   └── settings.py      # opening balance setup
 │   └── templates/
-│       ├── base.html
+│       ├── base.html        # SANDBOX banner lives here — visible on every page
 │       ├── auth/
 │       ├── transactions/
 │       └── settings/
+├── static/
+│   └── form.js              # category auto-defaults, field locking, card banner — vanilla JS only
 ├── seed/
-│   ├── categories.py        # all 22 categories with defaults
-│   └── users.py             # 3 users with hashed passwords
+│   ├── categories.sql       # all 22 categories with defaults — INSERT OR IGNORE
+│   └── users.sql            # 3 users with bcrypt-hashed passwords — INSERT OR IGNORE
 ├── tests/
 │   ├── test_validation.py
 │   └── test_calculations.py
 ├── db/
-│   └── init_db.py           # schema creation + seed runner
-├── config.py
-└── run.py
+│   ├── schema.sql           # all 5 tables: users, categories, transactions, settings, settings_audit
+│   └── init_db.py           # schema creation + seed runner (idempotent)
+├── .env.example             # SECRET_KEY, DATABASE_URL — never commit .env
+├── requirements.txt
+└── README.md
 ```
 
 **Key structure rules:**
@@ -79,21 +83,25 @@ run.py
 ### Skills to inject
 - `skills/cash-flow/schema`
 - `skills/cash-flow/auth_logic`
+- `skills/cash-flow/error_handling`
 
 ### Deliverables
-- Flask app factory with SQLite connection
-- `db/init_db.py` creates all tables from the schema (users, categories, transactions, settings)
-- `seed/categories.py` inserts all 22 categories with correct defaults (4 income, 18 expense — from docs/concept.md Category Reference)
-- `seed/users.py` inserts 3 users with bcrypt-hashed passwords (owner, assistant, wife)
-- Opening balance setup page — captures `opening_balance` (PLN) and `as_of_date`, stored in settings table
-- System warns if opening balance is not set
+- FastAPI app with SQLite connection, session middleware, and secret key loaded from `.env`
+- `db/schema.sql` creates all 5 tables: users, categories, transactions, settings, settings_audit
+- `db/init_db.py` runs schema + seed (idempotent — safe to run multiple times)
+- `seed/categories.sql` inserts all 22 categories using `INSERT OR IGNORE` — never duplicates on re-run
+- `seed/users.sql` inserts 3 users with bcrypt-hashed passwords using `INSERT OR IGNORE`
+- `.env.example` with `SECRET_KEY` and `DATABASE_URL` — `.env` added to `.gitignore`
+- Opening balance setup page — captures `opening_balance` (PLN) and `as_of_date`, stored in settings table; every change writes an audit row to `settings_audit`
+- Hard redirect to setup screen if opening balance not set — warning is not enough
 
 ### Acceptance criteria
-- `python db/init_db.py` runs without error and produces all 4 tables
+- `python db/init_db.py` runs twice without error or duplicate rows (idempotent)
+- All 5 tables exist: users, categories, transactions, settings, settings_audit
 - All 22 categories present with correct `default_vat_rate` and `default_vat_deductible_pct`
-- 3 users present with hashed passwords (passwords never stored in plaintext)
-- Opening balance page saves to settings table and can be retrieved
-- `settings` table correctly stores `opening_balance` and `as_of_date`
+- 3 users present with bcrypt-hashed passwords — plaintext never stored
+- Opening balance page saves to settings table; every change creates a row in settings_audit
+- Navigating to `/transactions/new` without opening balance set redirects to setup screen
 
 ### Constraints (from CLAUDE.md)
 - `category_id` is an integer PK — seed data must use the exact names from concept.md
@@ -176,7 +184,8 @@ app/templates/transactions/list.html   (basic recent list)
 **Required guardrails (non-optional):**
 - Persistent label on amount: "Enter gross amount (VAT included)"
 - Card reminder when payment_method = card: "Log gross amount. Card commission is logged separately at month end from terminal invoice"
-- Category selection auto-fills VAT rate and deductible % from category defaults
+- Category selection auto-fills VAT rate and deductible % from category defaults (via `GET /categories` endpoint)
+- **SANDBOX banner** — persistent on every page in `base.html`; removed only at go-live (PostgreSQL switch)
 
 **Validation rules enforced (server-side — all mandatory):**
 - `income_type = internal` → `vat_rate` must be 0 (reject any other value)
@@ -313,9 +322,12 @@ Phase 1 is complete when:
 
 | Risk | Mitigation |
 |---|---|
-| Business rules duplicated across routes, templates, and DB | All rules live in `services/validation.py` only — enforced by code_reviewer skill |
+| Business rules in UI only | Every rule must live in the FastAPI route handler — the form is a convenience layer; Phase 5 Telegram and Phase 6 LLM skip it entirely |
 | Void flow skipped as "nice to have" | It is must-have — without it, mistakes destroy audit trail |
 | VAT edge cases missed in testing | qa_runner skill mandates specific edge cases regardless of scope |
 | Phase 2 features creeping into Phase 1 | Deferred list above is explicit — code_reviewer flags scope violations |
 | SQLite quirks masking PostgreSQL issues | Use standard SQL only — avoid SQLite-specific syntax |
+| Seed script runs twice, creating duplicate categories | Use `INSERT OR IGNORE` — seed must be idempotent from day 1 |
+| Session secret key not persisted across restarts | Set `SECRET_KEY` in `.env` from day 1 — if it changes, all sessions invalidate |
+| Real data entered during sandbox phase | SANDBOX banner is not decoration — it sets expectations; users must know this data may be discarded |
 | Over-indexing on planning, under-executing | Phase 1 brief is now locked. Start Iteration 1 today. |
