@@ -1,8 +1,8 @@
 # P1-I2 — Authentication: Login, Logout, Session Protection
 ## Task Board
 
-**Status:** 🔄 IN PROGRESS — T1/T2/T3/T4 done, T5 unblocked
-**Last updated:** 2026-03-21 — T1–T4 merged; T5 can start
+**Status:** ✔ COMPLETE
+**Last updated:** 2026-03-21 — all tasks merged, 25 tests pass, ruff clean
 **Iteration branch:** `feature/phase-1/iteration-2` ← all task PRs target this branch
 **Final PR:** `feature/phase-1/iteration-2` → `main` ← QA agent approves before merge
 
@@ -30,7 +30,7 @@ T5 closes the iteration — runs last.
 | I2-T2 | Auth routes + placeholder dashboard | Claude Code | ✅ DONE    | I2-T1        | `feature/p1-i2/t2-auth-routes`  |
 | I2-T3 | Login template                 | Codex       | ✅ DONE    | I2-T1        | `feature/p1-i2/t3-login-template` |
 | I2-T4 | Middleware + base template     | Codex       | ✅ DONE    | I2-T2, I2-T3 | `feature/p1-i2/t4-middleware`   |
-| I2-T5 | Tests + ruff + PR ready        | Claude Code | 🔄 IN PROGRESS | I2-T4        | `feature/p1-i2/t5-tests`        |
+| I2-T5 | Tests + ruff + PR ready        | Claude Code | ✅ DONE    | I2-T4        | `feature/p1-i2/t5-tests`        |
 
 ---
 
