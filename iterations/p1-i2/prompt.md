@@ -57,7 +57,7 @@ User (web form) → FastAPI route → services/validation.py → SQLite → Jinj
 
 ## Task Goal
 
-This iteration adds session-based authentication to the application. After P1-I2, every route except `/settings/opening-balance` and `/auth/login` requires a valid authenticated session. Unauthenticated requests redirect to `/auth/login`. Authenticated requests that hit `/auth/login` redirect to the dashboard (or opening balance setup if not yet configured).
+This iteration adds session-based authentication to the application. After P1-I2, every route except `/settings/opening-balance`, `/auth/login`, and `/auth/logout` requires a valid authenticated session. Unauthenticated requests redirect to `/auth/login`. Authenticated requests that hit `/auth/login` redirect to the dashboard (or opening balance setup if not yet configured).
 
 Authentication is username/password only. No OAuth, no magic links, no token-based auth. This is a private 3-user internal tool — simplicity and reliability matter more than sophistication.
 
