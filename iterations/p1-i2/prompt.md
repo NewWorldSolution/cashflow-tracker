@@ -126,9 +126,16 @@ Do not rewrite files that already exist. Make only the changes specified for thi
 
 ```
 app/routes/auth.py
-  ← GET  /auth/login   — login form (redirect to dashboard if already authenticated)
-  ← POST /auth/login   — validate credentials, create session, redirect
+  ← GET  /auth/login   — login form (redirect to / if already authenticated)
+  ← POST /auth/login   — validate credentials, create session, redirect to /
   ← POST /auth/logout  — clear session, redirect to /auth/login
+
+app/routes/dashboard.py
+  ← GET /  — placeholder dashboard (protected route; shows "Logged in as: {username}")
+  ← This is a minimal landing page for P1-I2. Full dashboard comes in a later iteration.
+
+app/templates/dashboard.html
+  ← extends base.html; displays username from request.state.user; no data queries needed
 
 app/services/auth_service.py
   ← get_user_by_username(db, username) → users row or None
@@ -149,7 +156,7 @@ tests/test_auth.py
 
 ```
 app/main.py
-  ← register auth router
+  ← register auth router and dashboard router
   ← replace OpeningBalanceGate with a single AuthGate middleware that enforces
     both opening balance and authentication in the correct sequence (see Auth middleware section)
 
@@ -415,11 +422,12 @@ This task touches more than 2 files. Present the full implementation plan (which
 
 Build in this order:
 1. `app/services/auth_service.py` — service layer first, no routes yet
-2. `app/routes/auth.py` — routes after service is complete
-3. `app/templates/auth/login.html` — template after routes
-4. `app/main.py` — register router + auth middleware after routes exist
-5. `app/templates/base.html` — add logout link + username display
-6. `tests/test_auth.py` — tests last, after all implementation complete
+2. `app/routes/auth.py` — login/logout routes after service is complete
+3. `app/routes/dashboard.py` + `app/templates/dashboard.html` — placeholder dashboard (GET /)
+4. `app/templates/auth/login.html` — login template
+5. `app/main.py` — register auth + dashboard routers, replace middleware
+6. `app/templates/base.html` — add logout link + username display
+7. `tests/test_auth.py` — tests last, after all implementation complete
 
 ### Step 5 — Test and lint
 

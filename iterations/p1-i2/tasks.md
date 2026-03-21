@@ -94,15 +94,17 @@ python -c "from app.services.auth_service import get_user_by_username, verify_pa
 
 ---
 
-### I2-T2 — Auth routes (Claude Code)
+### I2-T2 — Auth routes + placeholder dashboard (Claude Code)
 
-**Goal:** Login and logout route handlers. Builds on T1 service layer.
+**Goal:** Login/logout route handlers and a minimal placeholder dashboard at `/`.
 
 **Depends on:** I2-T1 (auth_service.py must exist and be importable)
 
 **Allowed files:**
 ```
 app/routes/auth.py
+app/routes/dashboard.py
+app/templates/dashboard.html
 ```
 
 **Routes to implement:**
@@ -110,6 +112,21 @@ app/routes/auth.py
 GET  /auth/login   → render login form (redirect to / if already authenticated)
 POST /auth/login   → validate credentials, set session, redirect to /
 POST /auth/logout  → clear session, redirect to /auth/login
+GET  /             → placeholder dashboard: render dashboard.html (protected by AuthGate middleware)
+```
+
+**Dashboard route (app/routes/dashboard.py):**
+```python
+# Minimal placeholder — full dashboard is out of scope for P1-I2.
+# GET / renders dashboard.html with request.state.user (set by AuthGate).
+# No DB queries needed. No data — just confirms authenticated access.
+```
+
+**Dashboard template (app/templates/dashboard.html):**
+```
+- Extends base.html (inherits SANDBOX banner and nav)
+- Shows: "Logged in as: {{ request.state.user['username'] }}"
+- No tables, no forms beyond the inherited logout button
 ```
 
 **Login POST logic (exact sequence):**
@@ -194,6 +211,10 @@ app.include_router(auth_router)
 # In create_app():
 #   Replace: app.add_middleware(OpeningBalanceGate)
 #   With:    app.add_middleware(AuthGate)
+#
+# Also register dashboard router:
+#   from app.routes.dashboard import router as dashboard_router
+#   app.include_router(dashboard_router)
 ```
 
 **Changes to app/templates/base.html:**
@@ -207,8 +228,8 @@ app.include_router(auth_router)
 
 **Acceptance check:**
 - App starts without error
-- GET / without session → redirects to /auth/login
-- GET / with valid session → 200
+- GET / without session → redirects to /auth/login (AuthGate blocks it)
+- GET / with valid session → 200 (dashboard_router handles it, returns dashboard.html)
 
 ---
 
