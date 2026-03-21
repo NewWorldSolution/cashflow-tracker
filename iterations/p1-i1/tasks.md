@@ -28,8 +28,8 @@ T5 closes the iteration — runs last.
 |-------|-------------------------|-------------|------------|--------------|-------------------------------|
 | I1-T1 | Schema + seed data      | Codex       | ✅ DONE    | —            | `feature/p1-i1/t1-schema`    |
 | I1-T2 | FastAPI skeleton        | Claude Code | ✅ DONE    | I1-T1        | `feature/p1-i1/t2-fastapi`   |
-| I1-T3 | Opening balance route   | Codex       | ⏳ WAITING | I1-T1        | `feature/p1-i1/t3-balance`   |
-| I1-T4 | Base template + UI      | Claude Code | ⏳ WAITING | I1-T2, I1-T3 | `feature/p1-i1/t4-ui`        |
+| I1-T3 | Opening balance route   | Codex       | ✅ DONE    | I1-T1        | `feature/p1-i1/t3-balance`   |
+| I1-T4 | Base template + UI      | Claude Code | ✅ DONE    | I1-T2, I1-T3 | `feature/p1-i1/t4-ui`        |
 | I1-T5 | Tests + ruff + PR ready | Claude Code | ⏳ WAITING | I1-T4        | `feature/p1-i1/t5-tests`     |
 
 ---
