@@ -1,6 +1,14 @@
 {% extends "base.html" %}
 {% block content %}
-  <a href="/transactions/new">New transaction</a>
+  <p>
+    <a href="/transactions/new">+ New transaction</a>
+    &nbsp;|&nbsp;
+    {% if show_all %}
+      <a href="/transactions/">Show active only</a>
+    {% else %}
+      <a href="/transactions/?show_all=true">Show all (including voided)</a>
+    {% endif %}
+  </p>
 
   {% if transactions %}
     <table>
@@ -14,19 +22,32 @@
           <th>Effective cost</th>
           <th>Payment</th>
           <th>Logged by</th>
+          {% if show_all %}<th>Status</th>{% endif %}
         </tr>
       </thead>
       <tbody>
         {% for t in transactions %}
-          <tr>
+          <tr{% if not t.is_active %} style="opacity:0.5;"{% endif %}>
             <td><a href="/transactions/{{ t.id }}">{{ t.date }}</a></td>
             <td>{{ t.category_label }}</td>
             <td>{{ t.direction }}</td>
-            <td>{{ t.amount }}</td>
+            <td>{% if not t.is_active %}<s>{% endif %}{{ t.amount }}{% if not t.is_active %}</s>{% endif %}</td>
             <td>{{ t.va }}</td>
             <td>{{ t.ec if t.ec else '—' }}</td>
             <td>{{ t.payment_method }}</td>
             <td>{{ t.logged_by_username }}</td>
+            {% if show_all %}
+              <td>
+                {% if t.is_active %}
+                  Active
+                {% else %}
+                  Voided by {{ t.voided_by_username }} — {{ t.void_reason }}
+                  {% if t.replacement_transaction_id %}
+                    → <a href="/transactions/{{ t.replacement_transaction_id }}">#{{ t.replacement_transaction_id }}</a>
+                  {% endif %}
+                {% endif %}
+              </td>
+            {% endif %}
           </tr>
         {% endfor %}
       </tbody>

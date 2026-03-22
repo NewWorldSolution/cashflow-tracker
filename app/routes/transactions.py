@@ -137,17 +137,21 @@ async def post_create_transaction(
 @router.get("/transactions/", response_class=HTMLResponse)
 async def get_transaction_list(
     request: Request,
+    show_all: bool = False,
     db: sqlite3.Connection = Depends(_get_db),
 ) -> HTMLResponse:
     user = require_auth(request)  # noqa: F841
+    where = "" if show_all else "WHERE t.is_active = TRUE "
     rows = db.execute(
-        "SELECT t.*, c.label AS category_label, u.username AS logged_by_username "
+        "SELECT t.*, c.label AS category_label, u.username AS logged_by_username, "
+        "vb.username AS voided_by_username "
         "FROM transactions t "
         "JOIN categories c ON t.category_id = c.category_id "
         "JOIN users u ON t.logged_by = u.id "
-        "WHERE t.is_active = TRUE "
+        "LEFT JOIN users vb ON t.voided_by = vb.id "
+        f"{where}"
         "ORDER BY t.created_at DESC "
-        "LIMIT 20"
+        "LIMIT 100"
     ).fetchall()
 
     transactions = []
@@ -167,7 +171,7 @@ async def get_transaction_list(
     return templates.TemplateResponse(
         request,
         "transactions/list.html",
-        {"transactions": transactions},
+        {"transactions": transactions, "show_all": show_all},
     )
 
 
