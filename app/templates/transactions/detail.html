@@ -49,6 +49,12 @@
   </div>
   {% endif %}
 
+  {% if original_id %}
+  <div class="callout callout-info mt-4">
+    This transaction is a correction of <a href="/transactions/{{ original_id }}">#{{ original_id }}</a>.
+  </div>
+  {% endif %}
+
   {% if t.is_active %}
   <div class="flex gap-3 mt-4 action-row">
     <a href="/transactions/{{ t.id }}/correct" class="btn btn-secondary">Correct</a>

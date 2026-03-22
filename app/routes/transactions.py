@@ -189,7 +189,15 @@ async def get_transaction_detail(
     t = get_transaction(transaction_id, db)
     if t is None:
         raise HTTPException(status_code=404)
-    return templates.TemplateResponse(request, "transactions/detail.html", {"t": t})
+    # Check if this transaction is a correction of another
+    original = db.execute(
+        "SELECT id FROM transactions WHERE replacement_transaction_id = ? AND is_active = 0",
+        (transaction_id,),
+    ).fetchone()
+    original_id = original["id"] if original else None
+    return templates.TemplateResponse(
+        request, "transactions/detail.html", {"t": t, "original_id": original_id}
+    )
 
 
 @router.get("/transactions/{transaction_id}/void", response_class=HTMLResponse)
