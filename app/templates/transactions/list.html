@@ -1,25 +1,28 @@
 {% extends "base.html" %}
 {% block content %}
-  <p>
-    <a href="/transactions/new">+ New transaction</a>
-    &nbsp;|&nbsp;
+<div class="container">
+  <div class="flex justify-between items-center mb-4 history-toolbar">
+    <h1>Transactions</h1>
+    <a href="/transactions/new" class="btn btn-primary">+ New Transaction</a>
+  </div>
+
+  <div class="mb-4">
     {% if show_all %}
-      <a href="/transactions/">Show active only</a>
+    <a href="/transactions/" class="btn btn-sm btn-secondary">Show Active Only</a>
     {% else %}
-      <a href="/transactions/?show_all=true">Show all (including voided)</a>
+    <a href="/transactions/?show_all=true" class="btn btn-sm btn-secondary">Show All (incl. voided)</a>
     {% endif %}
-  </p>
+  </div>
 
   {% if transactions %}
+  <div class="table-wrap">
     <table>
       <thead>
         <tr>
           <th>Date</th>
           <th>Category</th>
           <th>Direction</th>
-          <th>Amount (gross)</th>
-          <th>VAT amount</th>
-          <th>Effective cost</th>
+          <th class="text-right">Amount</th>
           <th>Payment</th>
           <th>Logged by</th>
           {% if show_all %}<th>Status</th>{% endif %}
@@ -27,32 +30,32 @@
       </thead>
       <tbody>
         {% for t in transactions %}
-          <tr{% if not t.is_active %} style="opacity:0.5;"{% endif %}>
-            <td><a href="/transactions/{{ t.id }}">{{ t.date }}</a></td>
-            <td>{{ t.category_label }}</td>
-            <td>{{ t.direction }}</td>
-            <td>{% if not t.is_active %}<s>{% endif %}{{ t.amount }}{% if not t.is_active %}</s>{% endif %}</td>
-            <td>{{ t.va }}</td>
-            <td>{{ t.ec if t.ec else '—' }}</td>
-            <td>{{ t.payment_method }}</td>
-            <td>{{ t.logged_by_username }}</td>
-            {% if show_all %}
-              <td>
-                {% if t.is_active %}
-                  Active
-                {% else %}
-                  Voided by {{ t.voided_by_username }} — {{ t.void_reason }}
-                  {% if t.replacement_transaction_id %}
-                    → <a href="/transactions/{{ t.replacement_transaction_id }}">#{{ t.replacement_transaction_id }}</a>
-                  {% endif %}
-                {% endif %}
-              </td>
+        <tr class="{{ 'row-voided' if not t.is_active else '' }}">
+          <td><a href="/transactions/{{ t.id }}">{{ t.date }}</a></td>
+          <td>{{ t.category_label }}</td>
+          <td>{{ t.direction }}</td>
+          <td class="text-right amount" data-amount="{{ t.amount }}">{{ "{:,.2f}".format(t.amount) }}</td>
+          <td>{{ t.payment_method }}</td>
+          <td>{{ t.logged_by_username }}</td>
+          {% if show_all %}
+          <td>
+            {% if t.is_active %}
+            <span class="badge badge-active">Active</span>
+            {% else %}
+            <span class="badge badge-voided">Voided</span>
             {% endif %}
-          </tr>
+          </td>
+          {% endif %}
+        </tr>
         {% endfor %}
       </tbody>
     </table>
+  </div>
   {% else %}
+  <div class="empty-state">
     <p>No transactions yet.</p>
+    <a href="/transactions/new" class="btn btn-primary mt-4">Create your first transaction</a>
+  </div>
   {% endif %}
+</div>
 {% endblock %}
