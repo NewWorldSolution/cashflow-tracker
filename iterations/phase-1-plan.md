@@ -1,6 +1,6 @@
 # Phase 1 Plan — Web Form & Transaction Capture
 
-**Status:** I1–I4 complete, I5–I6 planned
+**Status:** I1–I5 complete, I6 planned
 **Timeline:** 6 iterations
 **Database:** SQLite (sandbox — all data non-production)
 **Stack decision (locked):** FastAPI, not Flask. Decision closed. Rationale: Phase 5 (Telegram) and Phase 6 (LLM) bypass the HTML form and call the same validation layer. FastAPI serves Jinja2 templates now and JSON responses later without retrofitting. Pydantic validation maps directly to transaction_validator rules.
