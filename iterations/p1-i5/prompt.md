@@ -165,7 +165,6 @@ app/templates/transactions/list.html     ← modify: readability, formatting (T4
 app/templates/transactions/detail.html   ← modify: styling, audit visibility (T4)
 app/templates/transactions/void.html     ← modify: confirmation styling (T4)
 app/routes/transactions.py              ← modify: flash messages on success (T5)
-app/routes/settings.py                   ← modify: flash message on opening balance save (T5)
 app/main.py                              ← modify: flash message middleware if needed (T5)
 tests/test_transactions.py               ← extend: flash message tests (T5)
 iterations/p1-i5/tasks.md               ← status updates only
@@ -291,7 +290,6 @@ Add flash messages after:
 - Transaction created: "Transaction saved successfully."
 - Transaction voided: "Transaction voided."
 - Transaction corrected: "Transaction corrected. Original has been voided."
-- Opening balance saved: "Opening balance updated."
 
 Add/extend tests:
 - Test flash message appears after create
@@ -349,7 +347,7 @@ ruff check .
 - [ ] Show all mode clearly distinguishes active vs voided rows
 - [ ] Detail page shows full audit trail for voided transactions
 - [ ] Void page feels like a real confirmation (warning styling)
-- [ ] Flash messages appear after create, void, correct actions
+- [ ] Flash messages appear after create, void, correct
 - [ ] Flash messages clear after being displayed once
 - [ ] All pages usable on mobile (test at 375px width)
 - [ ] No broken form behavior — all JS interactions work as before

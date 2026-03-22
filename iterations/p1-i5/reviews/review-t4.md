@@ -22,7 +22,7 @@ Review only the changes in this task branch. Report precise problems with file r
 
 ## Review steps
 
-1. Confirm diff scope is limited to the three template files.
+1. Confirm diff scope is limited to the three template files and `static/style.css` (page-specific classes only).
 2. Verify list table has styled headers, hover states, proper alignment.
 3. Verify amount formatting: thousands separator, 2 decimal places.
 4. Verify show_all mode: active/voided badges, muted voided rows.
@@ -66,11 +66,11 @@ If none: `None.`
 
 ### 4. Scope Violations
 
-Files modified outside the three allowed template files.
+Files modified outside the three template files and `static/style.css`.
 
 ### 5. Acceptance Criteria Check
 
-- [PASS|FAIL] diff scope limited to list.html, detail.html, void.html
+- [PASS|FAIL] diff scope limited to list.html, detail.html, void.html, style.css
 - [PASS|FAIL] list table styled with headers and hover states
 - [PASS|FAIL] amounts formatted with thousands separator and 2 decimals
 - [PASS|FAIL] show_all mode: badges + muted voided rows

@@ -67,7 +67,6 @@ app/templates/transactions/list.html
 app/templates/transactions/detail.html
 app/templates/transactions/void.html
 app/routes/transactions.py
-app/routes/settings.py
 app/main.py
 tests/test_transactions.py
 ```
@@ -93,6 +92,7 @@ app/services/validation.py
 app/services/calculations.py
 app/services/transaction_service.py
 app/routes/auth.py
+app/routes/settings.py
 app/services/auth_service.py
 tests/test_auth.py
 tests/test_init_db.py
@@ -187,7 +187,7 @@ If none: `None.`
 - [PASS|FAIL] no schema changes
 - [PASS|FAIL] frozen files unchanged
 - [PASS|FAIL] mobile responsive on all pages
-- [PASS|FAIL] form.js business logic preserved — only toggle class management added
+- [PASS|FAIL] form.js: no business-rule changes — only minimal UI-state/class changes
 
 ### 6. Exact Fixes Required
 

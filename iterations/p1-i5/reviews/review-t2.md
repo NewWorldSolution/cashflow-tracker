@@ -21,7 +21,7 @@ Review only the changes in this task branch. Report precise problems with file r
 
 ## Review steps
 
-1. Confirm diff scope is only `app/templates/dashboard.html` and `app/routes/dashboard.py`.
+1. Confirm diff scope is only `app/templates/dashboard.html`, `app/routes/dashboard.py`, and `static/style.css` (dashboard-specific classes only).
 2. Verify route queries settings table key-value pairs for `opening_balance` and `as_of_date`.
 3. Verify route queries active/voided counts, income/expense totals (active only), and last 5 active transactions.
 4. Verify template shows: opening balance card, summary cards, recent transactions, quick action links.
@@ -62,11 +62,11 @@ If none: `None.`
 
 ### 4. Scope Violations
 
-Files modified outside `app/templates/dashboard.html` and `app/routes/dashboard.py`.
+Files modified outside `app/templates/dashboard.html`, `app/routes/dashboard.py`, and `static/style.css`.
 
 ### 5. Acceptance Criteria Check
 
-- [PASS|FAIL] diff scope limited to allowed files
+- [PASS|FAIL] diff scope limited to allowed files (dashboard.html, dashboard.py, style.css)
 - [PASS|FAIL] opening balance queried from settings key-value table
 - [PASS|FAIL] transaction counts (active + voided) queried
 - [PASS|FAIL] income/expense totals queried (active only)

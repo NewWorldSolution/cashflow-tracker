@@ -27,7 +27,7 @@ Review only the changes in this task branch. Report precise problems with file r
 4. Verify error summary box at top (required). No per-field error mapping via string matching.
 5. Verify card reminder styled as info callout (`.callout-info`).
 6. Verify `form_action | default('/transactions/new')` preserved for correct flow.
-7. Verify `form.js` changes are minimal — only toggle button active class management added.
+7. Verify no business-rule changes in `form.js` — only minimal UI-state/class changes allowed (e.g., toggle button active class, adjustments for new markup structure).
 8. Verify all existing JS selectors still match the new HTML structure:
    - `input[name="direction"]` radio inputs
    - `select[name="category_id"]`, `select[name="income_type"]`, etc.
@@ -77,7 +77,7 @@ Files modified outside `create.html` and `form.js`.
 - [PASS|FAIL] error summary box at top (no per-field string matching)
 - [PASS|FAIL] card reminder as info callout
 - [PASS|FAIL] form_action variable preserved
-- [PASS|FAIL] form.js changes minimal — only toggle class management
+- [PASS|FAIL] form.js: no business-rule changes — only minimal UI-state/class changes
 - [PASS|FAIL] all JS selectors/IDs preserved (direction radios, category select, income-type-row, etc.)
 - [PASS|FAIL] gross amount helper text visible
 - [PASS|FAIL] submit + cancel button hierarchy

@@ -93,6 +93,7 @@ app/templates/base.html     ← modify
 ```
 app/templates/dashboard.html    ← rewrite
 app/routes/dashboard.py         ← extend
+static/style.css                ← extend (dashboard-specific classes only)
 ```
 
 **Dashboard content:**
@@ -161,6 +162,7 @@ static/form.js                            ← modify (no business-rule changes; 
 app/templates/transactions/list.html      ← modify
 app/templates/transactions/detail.html    ← modify
 app/templates/transactions/void.html      ← modify
+static/style.css                          ← extend (page-specific classes only)
 ```
 
 **List improvements:**
@@ -202,7 +204,6 @@ app/templates/transactions/void.html      ← modify
 **Allowed files:**
 ```
 app/routes/transactions.py     ← modify (add flash on success)
-app/routes/settings.py         ← modify (add flash on opening balance save)
 app/main.py                    ← modify (flash middleware if needed)
 app/templates/base.html        ← modify (flash rendering if not done in T1)
 tests/test_transactions.py     ← extend
@@ -212,7 +213,6 @@ tests/test_transactions.py     ← extend
 - After create: "Transaction saved successfully."
 - After void: "Transaction voided."
 - After correct: "Transaction corrected. Original has been voided."
-- After opening balance save: "Opening balance updated."
 
 **Implementation:**
 - Store: `request.session["flash"] = {"type": "success", "message": "..."}`
@@ -226,7 +226,7 @@ tests/test_transactions.py     ← extend
 - `test_flash_clears_after_display` — GET list (with flash) → GET list again → no flash
 
 **Acceptance check:**
-- Flash messages appear after create, void, correct, opening balance
+- Flash messages appear after create, void, correct
 - Flash clears after one display
 - All 94+ existing tests still pass
 - New flash tests pass

@@ -30,6 +30,7 @@ static/style.css                 (available component classes)
 ```
 app/templates/dashboard.html    ← rewrite
 app/routes/dashboard.py         ← extend
+static/style.css                ← extend (add dashboard-specific classes only: .dashboard-grid, .card-value, etc.)
 ```
 
 Do NOT modify any other file.
@@ -99,7 +100,7 @@ Use CSS classes from T1 (`static/style.css`). Layout:
 </div>
 ```
 
-Add `.dashboard-grid` and `.card-value` styles inline or in a `<style>` block if T1 doesn't cover them. Prefer adding to `style.css` if scope allows.
+Add `.dashboard-grid` and `.card-value` classes to `static/style.css`. Do not use inline `<style>` blocks — all styles belong in the shared stylesheet.
 
 **Quick actions:**
 ```html

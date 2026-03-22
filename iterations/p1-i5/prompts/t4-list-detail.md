@@ -31,6 +31,7 @@ static/style.css                         (T1 classes available)
 app/templates/transactions/list.html      ← modify
 app/templates/transactions/detail.html    ← modify
 app/templates/transactions/void.html      ← modify
+static/style.css                          ← extend (add page-specific classes only: .detail-grid, etc.)
 ```
 
 Do NOT modify any other file.
@@ -180,7 +181,7 @@ Do NOT modify any other file.
 {% endblock %}
 ```
 
-Add `.detail-grid` styles — either in `style.css` (if allowed) or inline `<style>` block in template:
+Add `.detail-grid` styles to `static/style.css`. Do not use inline `<style>` blocks — all styles belong in the shared stylesheet:
 ```css
 .detail-grid { display: grid; grid-template-columns: 140px 1fr; gap: 8px 16px; }
 .detail-grid dt { font-weight: 500; color: var(--color-muted-fg); }

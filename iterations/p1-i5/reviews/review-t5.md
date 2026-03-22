@@ -15,7 +15,6 @@ Review only the changes in this task branch. Report precise problems with file r
 ## What was supposed to be built
 
 - Modified: `app/routes/transactions.py` — flash messages after create, void, correct
-- Modified: `app/routes/settings.py` — flash message after opening balance save
 - Modified: `app/main.py` — flash middleware/context processor if needed
 - Modified: `app/templates/base.html` — flash rendering adjustment if needed
 - Extended: `tests/test_transactions.py` — 4 new flash tests
@@ -72,7 +71,6 @@ Files modified outside the allowed files.
 - [PASS|FAIL] flash after create with correct message
 - [PASS|FAIL] flash after void with correct message
 - [PASS|FAIL] flash after correct with correct message
-- [PASS|FAIL] flash after opening balance save with correct message
 - [PASS|FAIL] flash pop in Python, not Jinja2
 - [PASS|FAIL] 4 new tests added and passing
 - [PASS|FAIL] flash clears after one display (tested)

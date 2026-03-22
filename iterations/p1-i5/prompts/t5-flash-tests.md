@@ -18,7 +18,6 @@ Add session-based flash messages for success feedback after every major action. 
 CLAUDE.md
 iterations/p1-i5/prompt.md
 app/routes/transactions.py
-app/routes/settings.py
 app/main.py
 app/templates/base.html          (flash rendering block from T1)
 tests/test_transactions.py
@@ -30,7 +29,6 @@ tests/test_transactions.py
 
 ```
 app/routes/transactions.py     ← modify (add flash on success)
-app/routes/settings.py         ← modify (add flash on opening balance save)
 app/main.py                    ← modify (if flash middleware needed)
 app/templates/base.html        ← modify (if flash rendering needs adjustment)
 tests/test_transactions.py     ← extend (+4 tests)
@@ -79,13 +77,6 @@ After successful correct (POST /transactions/{id}/correct):
 ```python
 request.session["flash"] = {"type": "success", "message": "Transaction corrected. Original has been voided."}
 return RedirectResponse("/transactions/", status_code=302)
-```
-
-**`app/routes/settings.py`:**
-
-After opening balance save:
-```python
-request.session["flash"] = {"type": "success", "message": "Opening balance updated."}
 ```
 
 ### 3. Add tests
@@ -157,7 +148,6 @@ Update `iterations/p1-i5/tasks.md`: I5-T5 → ✅ DONE.
 - [ ] Flash message appears after create → redirects to list
 - [ ] Flash message appears after void → redirects to list
 - [ ] Flash message appears after correct → redirects to list
-- [ ] Flash message appears after opening balance save
 - [ ] Flash clears after being displayed once (does not persist)
 - [ ] All 98 tests pass
 - [ ] ruff clean
