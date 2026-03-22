@@ -450,3 +450,63 @@ def test_correct_on_voided_rejected(client):
     r = client.get(f"/transactions/{transaction_id}/correct")
 
     assert r.status_code == 404
+
+
+def test_show_all_includes_voided(client):
+    transaction_id = insert_transaction(client, amount="999.99")
+    client.post(
+        f"/transactions/{transaction_id}/void",
+        data={"void_reason": "Test void"},
+    )
+
+    r_active = client.get("/transactions/")
+    r_all = client.get("/transactions/?show_all=true")
+
+    assert r_active.status_code == 200
+    assert "999.99" not in r_active.text
+    assert r_all.status_code == 200
+    assert "999.99" in r_all.text
+
+
+def test_void_form_404_on_already_voided(client):
+    transaction_id = insert_transaction(
+        client,
+        is_active=0,
+        void_reason="Already voided",
+        voided_by=1,
+    )
+
+    r = client.get(f"/transactions/{transaction_id}/void")
+
+    assert r.status_code == 404
+
+
+def test_internal_income_vat_zero_saves(client):
+    r = client.post(
+        "/transactions/new",
+        data=valid_income_form(income_type="internal", vat_rate="0"),
+    )
+
+    assert r.status_code == 302
+
+    conn = sqlite3.connect(client.db_path)
+    conn.row_factory = sqlite3.Row
+    row = conn.execute(
+        "SELECT income_type, vat_rate FROM transactions ORDER BY id DESC LIMIT 1"
+    ).fetchone()
+    conn.close()
+
+    assert row["income_type"] == "internal"
+    assert row["vat_rate"] == 0.0
+
+
+def test_correct_validation_failure_rerenders_422(client):
+    transaction_id = insert_transaction(client)
+
+    r = client.post(
+        f"/transactions/{transaction_id}/correct",
+        data=valid_expense_form(amount="", category_id=""),
+    )
+
+    assert r.status_code == 422
+    assert "Amount must be a positive number." in r.text

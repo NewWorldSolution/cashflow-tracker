@@ -9,6 +9,7 @@ from db.init_db import initialise_db
 
 INCOME_CATEGORY_ID = 1
 EXPENSE_CATEGORY_ID = 5
+INTERNAL_TRANSFER_CATEGORY_ID = 3
 OTHER_INCOME_CATEGORY_ID = 4
 OTHER_EXPENSE_CATEGORY_ID = 22
 
@@ -239,3 +240,23 @@ def test_multiple_errors_returned_together(db):
     assert "Payment method must be cash, card, or transfer." in errors
     assert "VAT rate must be one of 0, 5, 8, or 23." in errors
     assert len(errors) >= 2
+
+
+def test_invalid_income_type_rejected(db):
+    data = valid_income()
+    data["income_type"] = "bogus"
+
+    errors = validate_transaction(data, db)
+
+    assert "Income type must be internal or external." in errors
+
+
+def test_internal_transfer_category_rejected(db):
+    data = valid_income()
+    data["category_id"] = INTERNAL_TRANSFER_CATEGORY_ID
+    data["income_type"] = "internal"
+    data["vat_rate"] = 0.0
+
+    errors = validate_transaction(data, db)
+
+    assert "This category is not available for manual transactions." in errors

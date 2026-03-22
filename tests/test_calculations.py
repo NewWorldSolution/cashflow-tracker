@@ -46,3 +46,11 @@ def test_effective_cost_100pct():
 
 def test_effective_cost_50pct():
     assert effective_cost(Decimal("123"), 23, 50) == Decimal("111.50")
+
+
+def test_net_amount_rate_0():
+    assert net_amount(Decimal("100"), 0) == Decimal("100.00")
+
+
+def test_effective_cost_0pct():
+    assert effective_cost(Decimal("123"), 23, 0) == Decimal("123.00")

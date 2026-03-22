@@ -13,14 +13,8 @@ document.addEventListener('DOMContentLoaded', function () {
     field.style.pointerEvents = '';
   }
 
-  // 1. Fetch /categories on load and build lookup map
-  //    Response fields: category_id, name, label, direction, default_vat_rate, default_vat_deductible_pct
+  // 1. Category lookup map — populated by the fetch in step 5d
   let categoryMap = {};
-  fetch('/categories')
-    .then(r => r.json())
-    .then(cats => {
-      cats.forEach(c => { categoryMap[c.category_id] = c; });
-    });
 
   // 2. Filter category options to match the selected direction
   function filterCategories(direction) {
@@ -68,6 +62,40 @@ document.addEventListener('DOMContentLoaded', function () {
   if (checkedOnLoad) {
     applyDirection(checkedOnLoad.value);
   }
+
+  // 5b. Restore income_type=internal VAT lock on load
+  const incomeTypeOnLoad = document.querySelector('select[name="income_type"]');
+  if (incomeTypeOnLoad && incomeTypeOnLoad.value === 'internal') {
+    const vatRateField = document.querySelector('select[name="vat_rate"]');
+    if (vatRateField) {
+      vatRateField.value = '0';
+      _lockVatRate(vatRateField);
+    }
+  }
+
+  // 5c. Restore card reminder on load
+  const paymentOnLoad = document.querySelector('select[name="payment_method"]');
+  const reminderOnLoad = document.getElementById('card-reminder');
+  if (paymentOnLoad && reminderOnLoad && paymentOnLoad.value === 'card') {
+    reminderOnLoad.style.display = '';
+  }
+
+  // 5d. Restore desc-required indicator on load (needs categoryMap from fetch)
+  fetch('/categories')
+    .then(r => r.json())
+    .then(cats => {
+      cats.forEach(c => { categoryMap[c.category_id] = c; });
+      const catSelect = document.querySelector('select[name="category_id"]');
+      if (catSelect && catSelect.value) {
+        const cat = categoryMap[catSelect.value];
+        if (cat) {
+          const descReq = document.getElementById('desc-required');
+          if (descReq) {
+            descReq.style.display = (cat.name === 'other_expense' || cat.name === 'other_income') ? '' : 'none';
+          }
+        }
+      }
+    });
 
   // 6. Category change: set defaults and update desc-required indicator
   const categorySelect = document.querySelector('select[name="category_id"]');

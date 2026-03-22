@@ -9,6 +9,8 @@ ALLOWED_DIRECTIONS = {"income", "expense"}
 ALLOWED_PAYMENT_METHODS = {"cash", "card", "transfer"}
 ALLOWED_VAT_RATES = {Decimal("0"), Decimal("5"), Decimal("8"), Decimal("23")}
 ALLOWED_VAT_DEDUCTIBLE_PCTS = {Decimal("0"), Decimal("50"), Decimal("100")}
+ALLOWED_INCOME_TYPES = {"internal", "external"}
+BLOCKED_CATEGORY_NAMES = {"internal_transfer"}
 
 
 def _parse_decimal(value) -> Decimal | None:
@@ -94,6 +96,8 @@ def validate_transaction(data: dict, db: sqlite3.Connection) -> list[str]:
     if direction == "income":
         if income_type is None:
             errors.append("Income type is required for income transactions.")
+        elif income_type not in ALLOWED_INCOME_TYPES:
+            errors.append("Income type must be internal or external.")
         if raw_vat_deductible_pct is not None:
             errors.append(
                 "VAT deductible percentage must be empty for income transactions."
@@ -122,6 +126,8 @@ def validate_transaction(data: dict, db: sqlite3.Connection) -> list[str]:
     if category_row is not None and direction in ALLOWED_DIRECTIONS:
         if category_row["direction"] != direction:
             errors.append("Category direction must match transaction direction.")
+        if category_row["name"] in BLOCKED_CATEGORY_NAMES:
+            errors.append("This category is not available for manual transactions.")
         if category_row["name"] in {"other_expense", "other_income"}:
             if description is None or str(description).strip() == "":
                 errors.append(
