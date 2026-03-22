@@ -41,7 +41,7 @@ T5 closes the iteration — runs last.
 | I3-T1 | `iterations/p1-i3/prompts/t1-services.md`        | `iterations/p1-i3/reviews/review-t1.md`  | Claude Code |
 | I3-T2 | `iterations/p1-i3/prompts/t2-routes.md`          | `iterations/p1-i3/reviews/review-t2.md`  | Codex       |
 | I3-T3 | `iterations/p1-i3/prompts/t3-create-template.md` | `iterations/p1-i3/reviews/review-t3.md`  | Claude Code |
-| I3-T4 | `iterations/p1-i3/prompts/t4-list-and-js.md`     | `iterations/p1-i3/reviews/review-t4.md`  | Claude Code |
+| I3-T4 | `iterations/p1-i3/prompts/t4-list-and-js.md`     | `iterations/p1-i3/reviews/review-t4.md`  | Codex       |
 | I3-T5 | `iterations/p1-i3/prompts/t5-tests.md`           | `iterations/p1-i3/reviews/review-t5.md`  | Claude Code |
 | —     | —                                                | `iterations/p1-i3/reviews/review-iteration.md` | Claude Code (QA) |
 
