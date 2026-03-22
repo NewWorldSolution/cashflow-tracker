@@ -2,7 +2,7 @@
 **Reviewer:** QA agent
 **Branch:** `feature/phase-1/iteration-5`
 **PR target:** `main`
-**Trigger:** Run only after ALL tasks (T1–T5) show ✅ DONE in `iterations/p1-i5/tasks.md`
+**Trigger:** Run only after ALL tasks (T1–T6) show ✅ DONE in `iterations/p1-i5/tasks.md`
 
 ---
 
@@ -24,7 +24,8 @@ You are the QA agent for Phase 1 Iteration 5. Individual task reviews verify eac
 6. Session-based flash messages after create, void, correct
 7. 4 new flash tests (total 98)
 8. Mobile-responsive layout on all pages
-9. No business logic changes, no validation changes, no schema changes
+9. UX improvements: #ID column in list, "Corrected" badge, bidirectional correction links, income type above category, desktop split view
+10. No business logic changes, no validation changes, no schema changes
 
 ---
 
@@ -134,10 +135,16 @@ Verify by code inspection:
 - [ ] Form preserves all JS selector IDs (income-type-row, vat-deductible-row, card-reminder, desc-required)
 - [ ] Error summary box at top of form
 - [ ] List table has formatted amounts, hover states, badges in show_all mode
+- [ ] List has #ID column as first column
+- [ ] List shows "Corrected" badge (amber) for corrected transactions in show_all mode
 - [ ] Detail page shows audit trail for voided transactions
+- [ ] Detail page shows bidirectional correction link (replacement → original)
 - [ ] Void page has warning callout and destructive button
 - [ ] Flash messages set in routes before redirect
 - [ ] Flash messages rendered in base.html from context (not direct session access)
+- [ ] Income type field appears above category in form Section 3
+- [ ] Split view toggle hidden on mobile, visible on desktop (>= 768px)
+- [ ] Split view JS is inline in list.html (not in form.js)
 - [ ] Responsive: form-row collapses to single column, table scrolls horizontally
 
 ---
@@ -179,10 +186,14 @@ If none: `None.`
 - [PASS|FAIL] form restructured into 5 sections with toggle buttons
 - [PASS|FAIL] error display: summary box at top (no per-field string matching)
 - [PASS|FAIL] list: formatted amounts, badges, empty state, responsive
+- [PASS|FAIL] list: #ID column + "Corrected" badge in show_all mode
 - [PASS|FAIL] detail: card layout, audit trail
+- [PASS|FAIL] detail: bidirectional correction links
 - [PASS|FAIL] void: warning callout, destructive button
 - [PASS|FAIL] flash messages work and clear after one display
 - [PASS|FAIL] 4 new flash tests pass
+- [PASS|FAIL] form: income type above category in Section 3
+- [PASS|FAIL] list: split view toggle (desktop only, inline JS in list.html)
 - [PASS|FAIL] no business logic changes (validation.py, calculations.py, transaction_service.py unchanged)
 - [PASS|FAIL] no schema changes
 - [PASS|FAIL] frozen files unchanged

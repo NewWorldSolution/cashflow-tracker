@@ -16,6 +16,7 @@ I5-T1 (CSS system + base template)
   ├── I5-T3 (form UX)
   └── I5-T4 (list, detail & void styling)
         └── I5-T5 (flash messages + tests)
+              └── I5-T6 (UX improvements: list tracking, form order, split view)
 ```
 
 T1 is the foundation. T2, T3, T4 can run in parallel after T1. T5 depends on T4 because it tests create/void/correct flows end-to-end after styled pages exist, and its flash rendering depends on the base template work from T1 (transitively satisfied via T4).
@@ -31,6 +32,7 @@ T1 is the foundation. T2, T3, T4 can run in parallel after T1. T5 depends on T4 
 | I5-T3 | Transaction form UX                | Claude Code | ✅ DONE | I5-T1      | `feature/p1-i5/t3-form-ux`              |
 | I5-T4 | List, detail & void styling        | Codex       | ✅ DONE | I5-T1      | `feature/p1-i5/t4-list-detail-void`     |
 | I5-T5 | Flash messages + tests             | Codex       | ✅ DONE | I5-T4      | `feature/p1-i5/t5-flash-tests`          |
+| I5-T6 | UX improvements (list, form, split)| Claude Code | ✅ DONE | I5-T3, I5-T4, I5-T5 | `feature/p1-i5/t6-ux-improvements`      |
 
 ---
 
@@ -43,6 +45,7 @@ T1 is the foundation. T2, T3, T4 can run in parallel after T1. T5 depends on T4 
 | I5-T3 | `iterations/p1-i5/prompts/t3-form-ux.md`      | `iterations/p1-i5/reviews/review-t3.md`  | —        |
 | I5-T4 | `iterations/p1-i5/prompts/t4-list-detail.md`  | `iterations/p1-i5/reviews/review-t4.md`  | —        |
 | I5-T5 | `iterations/p1-i5/prompts/t5-flash-tests.md`  | `iterations/p1-i5/reviews/review-t5.md`  | —        |
+| I5-T6 | `iterations/p1-i5/prompts/t6-ux-improvements.md` | `iterations/p1-i5/reviews/review-t6.md`  | —        |
 | —     | —                                               | `iterations/p1-i5/reviews/review-iteration.md` | — (QA) |
 
 ---
@@ -230,6 +233,36 @@ tests/test_transactions.py     ← extend
 - Flash clears after one display
 - All 94+ existing tests still pass
 - New flash tests pass
+- ruff clean
+
+---
+
+### I5-T6 — UX improvements (list tracking, form order, split view)
+
+**Goal:** Improve transaction tracking and form usability based on user feedback. Four UI-only changes.
+
+**Depends on:** I5-T3 ✅ DONE, I5-T4 ✅ DONE, I5-T5 ✅ DONE
+
+**Allowed files:**
+```
+app/templates/transactions/list.html     ← modify
+app/templates/transactions/detail.html   ← modify
+app/templates/transactions/create.html   ← modify
+app/routes/transactions.py               ← modify (minimal — read-only queries)
+static/form.js                           ← modify (minimal)
+static/style.css                         ← extend (split-view + badge-corrected)
+```
+
+**Changes:**
+1. **List: `#ID` column + "Corrected" badge** — distinguish corrected from voided in show_all mode using `replacement_transaction_id`
+2. **Detail: bidirectional correction links** — replacement transaction shows link back to original
+3. **Form: income type above category** — move `#income-type-row` before the category/payment row in Section 3
+4. **List: split view toggle** — desktop button to split income/expense into side-by-side tables
+
+**Acceptance check:**
+- All four changes working
+- All existing tests pass
+- No schema changes, no business logic changes
 - ruff clean
 
 ---

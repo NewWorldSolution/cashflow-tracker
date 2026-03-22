@@ -44,6 +44,15 @@ Read the task prompt first and follow it exactly.
 Confirm I5-T4 is ✅ DONE in iterations/p1-i5/tasks.md before writing any code.
 After finishing, run pytest and ruff, then update tasks.md to COMPLETE.
 
+Implement task I5-T6.
+
+Branch: feature/p1-i5/t6-ux-improvements (from feature/phase-1/iteration-5)
+Task prompt: iterations/p1-i5/prompts/t6-ux-improvements.md
+
+Read the task prompt first and follow it exactly.
+Confirm I5-T3, I5-T4, I5-T5 are ✅ DONE in iterations/p1-i5/tasks.md before writing any code.
+After finishing, verify the acceptance checklist before requesting review.
+
 ---
 Review prompts
 
@@ -92,8 +101,17 @@ Read the review prompt first and follow its procedure exactly.
 Review only the changes in this branch.
 Output the required review format defined in the review prompt.
 
+Review task I5-T6.
+
+Branch: feature/p1-i5/t6-ux-improvements
+Review prompt: iterations/p1-i5/reviews/review-t6.md
+
+Read the review prompt first and follow its procedure exactly.
+Review only the changes in this branch.
+Output the required review format defined in the review prompt.
+
 ---
-QA review (run after all T1–T5 are DONE)
+QA review (run after all T1–T6 are DONE)
 
 QA review for P1-I5.
 
