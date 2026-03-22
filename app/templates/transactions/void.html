@@ -3,37 +3,37 @@
 {% block title %}Void transaction #{{ t.id }} — cashflow-tracker{% endblock %}
 
 {% block content %}
+<div class="container-narrow">
+  <a href="/transactions/{{ t.id }}" class="text-sm text-muted">← Cancel</a>
+  <h1 class="mt-2">Void Transaction</h1>
 
-<p><a href="/transactions/{{ t.id }}">← Back to transaction</a></p>
+  <div class="callout callout-warning mb-4">
+    This action cannot be undone. The transaction will be marked as voided.
+  </div>
 
-<h2>Void transaction #{{ t.id }}</h2>
+  <div class="card mb-4 transaction-summary-card">
+    <p><strong>{{ t.date }}</strong> - {{ t.category_label }} - {{ "{:,.2f}".format(t.amount) }}</p>
+  </div>
 
-<table>
-  <tr><th>Date</th><td>{{ t.date }}</td></tr>
-  <tr><th>Direction</th><td>{{ t.direction | capitalize }}</td></tr>
-  <tr><th>Category</th><td>{{ t.category_label }}</td></tr>
-  <tr><th>Gross amount</th><td>{{ t.amount }}</td></tr>
-  <tr><th>Payment method</th><td>{{ t.payment_method | capitalize }}</td></tr>
-</table>
+  {% if errors %}
+  <div class="error-summary">
+    <ul>
+      {% for e in errors %}
+      <li>{{ e }}</li>
+      {% endfor %}
+    </ul>
+  </div>
+  {% endif %}
 
-{% if errors %}
-<ul class="errors" style="color:#cc0000;background:#fff0f0;border:1px solid #ffcccc;padding:8px 16px;border-radius:4px;margin-bottom:16px;">
-  {% for error in errors %}
-    <li>{{ error }}</li>
-  {% endfor %}
-</ul>
-{% endif %}
-
-<form method="post" action="/transactions/{{ t.id }}/void">
-  <p>
-    <label for="void_reason">Reason for voiding</label><br>
-    <textarea id="void_reason" name="void_reason" rows="3" cols="50" required>{{ form_data.get('void_reason', '') }}</textarea>
-  </p>
-  <p>
-    <button type="submit">Void transaction</button>
-    &nbsp;
-    <a href="/transactions/{{ t.id }}">Cancel</a>
-  </p>
-</form>
-
+  <form method="post" action="/transactions/{{ t.id }}/void">
+    <div class="form-group">
+      <label for="void_reason" class="form-label">Reason for voiding (required)</label>
+      <textarea id="void_reason" name="void_reason" rows="2" placeholder="Why is this transaction being voided?">{{ form_data.get('void_reason', '') }}</textarea>
+    </div>
+    <div class="flex gap-3 mt-4 action-row">
+      <button type="submit" class="btn btn-destructive btn-lg">Void Transaction</button>
+      <a href="/transactions/{{ t.id }}" class="btn btn-secondary btn-lg">Cancel</a>
+    </div>
+  </form>
+</div>
 {% endblock %}

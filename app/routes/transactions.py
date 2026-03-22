@@ -131,6 +131,10 @@ async def post_create_transaction(
         ),
     )
     db.commit()
+    request.session["flash"] = {
+        "type": "success",
+        "message": "Transaction saved successfully.",
+    }
     return RedirectResponse(url="/transactions/", status_code=302)
 
 
@@ -185,7 +189,15 @@ async def get_transaction_detail(
     t = get_transaction(transaction_id, db)
     if t is None:
         raise HTTPException(status_code=404)
-    return templates.TemplateResponse(request, "transactions/detail.html", {"t": t})
+    # Check if this transaction is a correction of another
+    original = db.execute(
+        "SELECT id FROM transactions WHERE replacement_transaction_id = ? AND is_active = 0",
+        (transaction_id,),
+    ).fetchone()
+    original_id = original["id"] if original else None
+    return templates.TemplateResponse(
+        request, "transactions/detail.html", {"t": t, "original_id": original_id}
+    )
 
 
 @router.get("/transactions/{transaction_id}/void", response_class=HTMLResponse)
@@ -226,6 +238,7 @@ async def post_void_transaction(
             status_code=422,
         )
     db.commit()
+    request.session["flash"] = {"type": "success", "message": "Transaction voided."}
     return RedirectResponse(url="/transactions/", status_code=302)
 
 
@@ -363,6 +376,10 @@ async def post_correct_transaction(
         (user["id"], new_id, transaction_id),
     )
     db.commit()
+    request.session["flash"] = {
+        "type": "success",
+        "message": "Transaction corrected. Original has been voided.",
+    }
     return RedirectResponse(url="/transactions/", status_code=302)
 
 

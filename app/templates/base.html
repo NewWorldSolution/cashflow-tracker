@@ -2,52 +2,33 @@
 <html lang="pl">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{% block title %}cashflow-tracker{% endblock %}</title>
-    <style>
-        .sandbox-banner {
-            background: #ff4444;
-            color: white;
-            text-align: center;
-            padding: 8px;
-            font-weight: bold;
-            font-size: 14px;
-        }
-        nav {
-            background: #f5f5f5;
-            border-bottom: 1px solid #ddd;
-            padding: 8px 16px;
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
-        nav span { font-size: 14px; color: #555; }
-        nav button {
-            font-size: 13px;
-            padding: 4px 10px;
-            cursor: pointer;
-        }
-        /* minimal base styles only */
-        body { font-family: sans-serif; margin: 0; padding: 0; }
-        main { max-width: 900px; margin: 24px auto; padding: 0 16px; }
-        .error { color: #cc0000; background: #fff0f0; border: 1px solid #ffcccc; padding: 8px; border-radius: 4px; margin-bottom: 12px; }
-    </style>
+    <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
     <div class="sandbox-banner">
         SANDBOX — this is a test environment. Data may be discarded.
     </div>
     {% if request.state.user %}
-    <nav>
-        <span>{{ request.state.user["username"] }}</span>
-        <a href="/transactions/" style="font-size:13px;">Transactions</a>
-        <a href="/transactions/new" style="font-size:13px;">+ New transaction</a>
-        <form method="post" action="/auth/logout" style="margin:0">
-            <button type="submit">Sign out</button>
-        </form>
+    <nav class="nav">
+        <a href="/" class="nav-brand">cashflow-tracker</a>
+        <div class="nav-links">
+            <a href="/transactions/">Transactions</a>
+            <a href="/transactions/new">+ New</a>
+        </div>
+        <div class="nav-right">
+            <span>{{ request.state.user["username"] }}</span>
+            <form method="post" action="/auth/logout" style="margin:0">
+                <button type="submit">Sign out</button>
+            </form>
+        </div>
     </nav>
     {% endif %}
-    <main>
+    <main class="container" style="padding-top: 24px; padding-bottom: 24px;">
+        {% if request.state.flash is defined and request.state.flash %}
+        <div class="flash flash-{{ request.state.flash.type }}">{{ request.state.flash.message }}</div>
+        {% endif %}
         {% block content %}{% endblock %}
     </main>
 </body>

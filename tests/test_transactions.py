@@ -159,6 +159,17 @@ def test_create_transaction_saves_to_db(client):
     assert row["vat_deductible_pct"] == 100.0
 
 
+def test_flash_after_create(client):
+    """POST create -> redirect -> GET list -> flash message in response."""
+    r = client.post("/transactions/new", data=valid_income_form())
+
+    assert r.status_code == 302
+
+    list_r = client.get("/transactions/")
+
+    assert "Transaction saved successfully." in list_r.text
+
+
 def test_logged_by_set_from_session_not_form(client):
     response = client.post(
         "/transactions/new",
@@ -357,6 +368,21 @@ def test_void_success(client):
     assert row["voided_by"] == 1
 
 
+def test_flash_after_void(client):
+    """POST void -> redirect -> GET list -> flash message in response."""
+    transaction_id = insert_transaction(client)
+    r = client.post(
+        f"/transactions/{transaction_id}/void",
+        data={"void_reason": "Test void"},
+    )
+
+    assert r.status_code == 302
+
+    list_r = client.get("/transactions/")
+
+    assert "Transaction voided." in list_r.text
+
+
 def test_voided_transaction_excluded_from_list(client):
     transaction_id = insert_transaction(client, amount="777.77")
 
@@ -439,6 +465,21 @@ def test_correct_creates_new_voids_original(client):
     assert replacement["amount"] == 650
 
 
+def test_flash_after_correct(client):
+    """POST correct -> redirect -> GET list -> flash message in response."""
+    transaction_id = insert_transaction(client)
+    r = client.post(
+        f"/transactions/{transaction_id}/correct",
+        data=valid_expense_form(description="Corrected"),
+    )
+
+    assert r.status_code == 302
+
+    list_r = client.get("/transactions/")
+
+    assert "Transaction corrected." in list_r.text
+
+
 def test_correct_on_voided_rejected(client):
     transaction_id = insert_transaction(
         client,
@@ -466,6 +507,17 @@ def test_show_all_includes_voided(client):
     assert "999.99" not in r_active.text
     assert r_all.status_code == 200
     assert "999.99" in r_all.text
+
+
+def test_flash_clears_after_display(client):
+    """Flash message appears once, then disappears on next load."""
+    client.post("/transactions/new", data=valid_income_form())
+
+    first_load = client.get("/transactions/")
+    assert "Transaction saved successfully." in first_load.text
+
+    second_load = client.get("/transactions/")
+    assert "Transaction saved successfully." not in second_load.text
 
 
 def test_void_form_404_on_already_voided(client):
