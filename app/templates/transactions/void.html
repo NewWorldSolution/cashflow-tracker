@@ -1,0 +1,39 @@
+{% extends "base.html" %}
+
+{% block title %}Void transaction #{{ t.id }} — cashflow-tracker{% endblock %}
+
+{% block content %}
+
+<p><a href="/transactions/{{ t.id }}">← Back to transaction</a></p>
+
+<h2>Void transaction #{{ t.id }}</h2>
+
+<table>
+  <tr><th>Date</th><td>{{ t.date }}</td></tr>
+  <tr><th>Direction</th><td>{{ t.direction | capitalize }}</td></tr>
+  <tr><th>Category</th><td>{{ t.category_label }}</td></tr>
+  <tr><th>Gross amount</th><td>{{ t.amount }}</td></tr>
+  <tr><th>Payment method</th><td>{{ t.payment_method | capitalize }}</td></tr>
+</table>
+
+{% if errors %}
+<ul class="errors" style="color:#cc0000;background:#fff0f0;border:1px solid #ffcccc;padding:8px 16px;border-radius:4px;margin-bottom:16px;">
+  {% for error in errors %}
+    <li>{{ error }}</li>
+  {% endfor %}
+</ul>
+{% endif %}
+
+<form method="post" action="/transactions/{{ t.id }}/void">
+  <p>
+    <label for="void_reason">Reason for voiding</label><br>
+    <textarea id="void_reason" name="void_reason" rows="3" cols="50" required>{{ form_data.get('void_reason', '') }}</textarea>
+  </p>
+  <p>
+    <button type="submit">Void transaction</button>
+    &nbsp;
+    <a href="/transactions/{{ t.id }}">Cancel</a>
+  </p>
+</form>
+
+{% endblock %}

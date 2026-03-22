@@ -14,7 +14,7 @@
 
 <h2>New transaction</h2>
 
-<form method="post" action="/transactions/new">
+<form method="post" action="{{ form_action | default('/transactions/new') }}">
 
   <p>
     <label>
