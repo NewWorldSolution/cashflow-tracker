@@ -513,6 +513,28 @@ dl {
 }
 
 /* ---------------------------------------------------------------
+   Dashboard
+   --------------------------------------------------------------- */
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+.card-value {
+  font-size: var(--font-size-2xl);
+  font-weight: 500;
+  line-height: 1.3;
+}
+
+.dashboard-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* ---------------------------------------------------------------
    Utility classes
    --------------------------------------------------------------- */
 
@@ -570,6 +592,14 @@ dl {
 
   .nav-links {
     gap: var(--space-4);
+  }
+
+  .dashboard-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .dashboard-actions {
+    flex-direction: row;
   }
 }
 
