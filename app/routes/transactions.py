@@ -210,7 +210,7 @@ async def post_void_transaction(
 ):
     user = require_auth(request)
     t = get_transaction(transaction_id, db)
-    if t is None or not t["is_active"]:
+    if t is None:
         raise HTTPException(status_code=404)
     try:
         void_transaction(transaction_id, void_reason, user["id"], db)
@@ -245,9 +245,9 @@ async def get_correct_transaction(
         "amount": t["amount"],
         "category_id": str(t["category_id"]),
         "payment_method": t["payment_method"],
-        "vat_rate": str(t["vat_rate"]),
+        "vat_rate": str(int(t["vat_rate"])),
         "income_type": t["income_type"] or "",
-        "vat_deductible_pct": str(t["vat_deductible_pct"]) if t["vat_deductible_pct"] is not None else "",
+        "vat_deductible_pct": str(int(t["vat_deductible_pct"])) if t["vat_deductible_pct"] is not None else "",
         "description": t["description"] or "",
     }
     return templates.TemplateResponse(
