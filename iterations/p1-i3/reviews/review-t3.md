@@ -1,6 +1,6 @@
 # Review — I3-T3: Create Template
-**Reviewer:** Claude Code
-**Implemented by:** Codex
+**Reviewer:** Codex
+**Implemented by:** Claude Code
 **Branch:** `feature/p1-i3/t3-create-template`
 **PR target:** `feature/phase-1/iteration-3`
 
