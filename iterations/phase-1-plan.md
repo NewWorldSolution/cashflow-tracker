@@ -1,7 +1,7 @@
 # Phase 1 Plan — Web Form & Transaction Capture
 
-**Status:** Ready to execute
-**Timeline:** 13–15 working days across 4 iterations
+**Status:** I1–I4 complete, I5–I6 planned
+**Timeline:** 6 iterations
 **Database:** SQLite (sandbox — all data non-production)
 **Stack decision (locked):** FastAPI, not Flask. Decision closed. Rationale: Phase 5 (Telegram) and Phase 6 (LLM) bypass the HTML form and call the same validation layer. FastAPI serves Jinja2 templates now and JSON responses later without retrofitting. Pydantic validation maps directly to transaction_validator rules.
 
@@ -286,6 +286,172 @@ README.md                        (local setup + demo credentials)
 
 ---
 
+## Iteration 5 — UI/UX Polish
+**After I4**
+
+### Goal
+Make the app feel usable and clear without changing core business rules. Users should be able to work comfortably on desktop and mobile without needing developer guidance.
+
+### Scope
+```
+app/templates/base.html              (CSS system, flash messages, nav)
+app/templates/dashboard.html         (real dashboard)
+app/templates/transactions/create.html
+app/templates/transactions/list.html
+app/templates/transactions/detail.html
+app/templates/transactions/void.html
+static/style.css                     (or classless CSS framework)
+static/form.js                       (no logic changes — spacing/grouping only)
+app/routes/dashboard.py              (dashboard data)
+app/routes/transactions.py           (flash messages on success)
+```
+
+### Deliverables
+
+**1. Minimal styling system**
+- Add a lightweight CSS approach compatible with Jinja2 server-side rendering
+- Framework choice is an implementation detail — Pico CSS, Simple.css, or hand-rolled are all acceptable
+- Must not introduce any JS framework or build step
+
+**2. Real dashboard**
+Replace the placeholder with useful summary content:
+- Opening balance and as-of date
+- Recent transactions preview (last 5)
+- Active vs voided transaction counts
+- Quick links to create transaction and full transaction list
+
+**3. Transaction form UX**
+- Better spacing and grouping of fields
+- Clear separation of always-visible vs conditional fields (income type, VAT deductible)
+- Clearer labels and helper text
+- Strong error presentation (inline errors near the field, not just top-of-form)
+- Keep all current business logic and JS rules intact
+
+**4. Transaction list readability**
+- Amount formatting (thousands separator, consistent decimals)
+- Clearer active/voided state in show_all mode
+- Better column balance and alignment
+- Good empty state message
+- Responsive behaviour for smaller screens
+
+**5. Detail and void view improvements**
+- Detail page clearly shows active vs voided state with visual distinction
+- Audit trail (created by, voided by, reason, replacement link, timestamps) easy to read
+- Void page feels like a real confirmation screen — warning styling, clear consequences
+
+**6. Flash messages (session-based)**
+- Implement server-rendered flash messages via `request.session["flash"]`
+- Read and clear in `base.html` on next page load
+- Show after: create, void, correct, opening balance save
+- No extra dependencies — pure session + Jinja2
+
+**7. Responsive layout**
+- All transaction pages usable on mobile
+- Explicit mobile behaviour for lists (horizontal scroll or card layout) and detail pages
+- Form must be comfortable to fill on a phone screen
+
+**8. Audit visibility**
+- Who created and when
+- Who voided, why, and when
+- Replacement link when corrected
+- Timestamps visible on detail view
+
+### Non-goals
+- No business rule changes (unless already approved and merged)
+- No translation pass — English UI only
+- No JS framework migration
+- No new routes beyond dashboard data and flash messages
+
+### Acceptance criteria
+- UI is visually consistent across dashboard, form, list, detail, void
+- Success/error feedback is clear (flash messages work)
+- Mobile layout is usable on a phone-sized screen
+- All existing tests still pass (94+)
+- ruff clean
+
+### Constraints (from CLAUDE.md)
+- Vanilla JS only — no frameworks
+- Jinja2 server-side rendering only — no SPA
+- No business logic in templates
+
+---
+
+## Iteration 6 — Multi-Language Foundation + Polish UI
+**After I5**
+
+### Goal
+Prepare the app for multiple languages and deliver Polish as the first complete translation. The assistant and wife users work in Polish — the UI must speak their language.
+
+### Scope
+```
+app/i18n/                            (new — translation dictionaries)
+app/i18n/en.py                       (English messages — canonical keys)
+app/i18n/pl.py                       (Polish translation)
+app/templates/**/*.html              (all templates — use translation keys)
+app/routes/*.py                      (pass locale/translator to templates)
+app/main.py                          (language selection middleware)
+```
+
+### Deliverables
+
+**1. Lightweight i18n structure**
+- Simple message dictionary approach (Python dicts, one per language)
+- Supported languages: `en`, `pl` (later `tr`)
+- No heavy i18n framework unless complexity demands it
+
+**2. Move all user-facing text into translation dictionaries**
+Cover all UI text:
+- Navigation labels
+- Page headings
+- Form labels and helper text
+- Button text
+- Empty state messages
+- Flash messages
+- Audit labels (created by, voided by, etc.)
+- Status labels (Active, Voided)
+
+**3. Translate validation messages at render time (Option A)**
+- Validation service (`validation.py`) continues to return English error strings — no changes to frozen service layer
+- Translation happens at the route/template layer before rendering to the user
+- English strings serve as canonical keys for the translation lookup
+- Zero test breakage — all existing assertions remain valid
+
+**4. Polish UI — first complete translation**
+- All UI text translated to Polish
+- Polish becomes the primary language for the 3 business users
+- English remains available as the default/fallback
+
+**5. Locale-aware formatting**
+- Date display in Polish convention (e.g., `22 marca 2026` or `22.03.2026`)
+- Number/amount formatting consistent with Polish locale (e.g., `1 234,56 zł`)
+- Currency formatting can be extended later if needed
+
+**6. Language selection mechanism**
+- Session-based or user-setting based
+- App default with optional switcher in nav
+- No heavy infrastructure — simple and practical
+
+### Non-goals
+- No LLM-based translation workflow
+- No full enterprise i18n framework unless needed
+- Free-text content (descriptions) remains user-entered as-is — not translated
+- No changes to validation.py or calculations.py logic
+
+### Acceptance criteria
+- App renders all UI text from translation dictionaries
+- Polish UI is complete — every label, button, message, heading translated
+- Architecture supports adding Turkish later without rewriting templates or services
+- Switching language changes all UI text without losing session or data
+- All existing tests still pass (validation assertions remain English)
+- ruff clean
+
+### Constraints (from CLAUDE.md)
+- No LLM calls in validation, calculation, or reporting
+- Jinja2 server-side rendering only
+- Deterministic Python for all logic layers
+
+---
+
 ## Deferred to later phases
 
 | Item | Phase |
@@ -298,7 +464,7 @@ README.md                        (local setup + demo credentials)
 | PostgreSQL / Azure go-live | Between phases |
 | CSV export | Phase 2 buffer |
 | Search / filter by date or category | Phase 2 |
-| Responsive mobile styling | Phase 2 buffer |
+| Responsive mobile styling | P1-I5 (moved from Phase 2) |
 | Role permissions beyond basic session auth | Not planned |
 
 ---
@@ -313,6 +479,8 @@ Phase 1 is complete when:
 5. A mistaken entry can be voided and corrected without deleting history
 6. 30+ realistic transactions have been entered end-to-end with no schema changes
 7. A user can review the recent ledger and trust what was entered
+8. The UI is visually clean, responsive, and gives clear feedback on every action (I5)
+9. The assistant and wife can use the app in Polish (I6)
 
 **The real test:** users choose this over WhatsApp, notes, or paper for daily logging. If they do not, Phase 1 is not done regardless of what the code does.
 
