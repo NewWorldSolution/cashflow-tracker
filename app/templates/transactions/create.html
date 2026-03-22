@@ -91,6 +91,7 @@
       <label for="income_type">Income type</label><br>
       <select id="income_type" name="income_type">
         <option value="">— select —</option>
+        <option value="internal" {% if form_data.get('income_type') == 'internal' %}selected{% endif %}>Internal</option>
         <option value="external" {% if form_data.get('income_type') == 'external' %}selected{% endif %}>External</option>
       </select>
     </p>
