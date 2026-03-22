@@ -47,6 +47,7 @@
       <option value="">— select —</option>
       {% for cat in categories %}
         <option value="{{ cat.category_id }}"
+          data-direction="{{ cat.direction }}"
           {% if form_data.get('category_id') | string == cat.category_id | string %}selected{% endif %}>
           {{ cat.label }}
         </option>
