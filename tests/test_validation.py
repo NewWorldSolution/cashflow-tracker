@@ -70,6 +70,7 @@ def test_internal_income_vat_zero_accepted(db):
     data = valid_income()
     data["income_type"] = "internal"
     data["vat_rate"] = 0.0
+    data["payment_method"] = "cash"
 
     assert validate_transaction(data, db) == []
 
@@ -260,3 +261,36 @@ def test_internal_transfer_category_rejected(db):
     errors = validate_transaction(data, db)
 
     assert "This category is not available for manual transactions." in errors
+
+
+def test_internal_income_card_rejected(db):
+    data = valid_income()
+    data["income_type"] = "internal"
+    data["vat_rate"] = 0.0
+    data["payment_method"] = "card"
+
+    errors = validate_transaction(data, db)
+
+    assert "Internal income must use cash as payment method." in errors
+
+
+def test_internal_income_transfer_rejected(db):
+    data = valid_income()
+    data["income_type"] = "internal"
+    data["vat_rate"] = 0.0
+    data["payment_method"] = "transfer"
+
+    errors = validate_transaction(data, db)
+
+    assert "Internal income must use cash as payment method." in errors
+
+
+def test_internal_income_cash_accepted(db):
+    data = valid_income()
+    data["income_type"] = "internal"
+    data["vat_rate"] = 0.0
+    data["payment_method"] = "cash"
+
+    errors = validate_transaction(data, db)
+
+    assert errors == []

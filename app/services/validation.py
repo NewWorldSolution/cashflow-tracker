@@ -123,6 +123,9 @@ def validate_transaction(data: dict, db: sqlite3.Connection) -> list[str]:
     if income_type == "internal" and vat_rate is not None and vat_rate != Decimal("0"):
         errors.append("Internal income must use a VAT rate of 0.")
 
+    if income_type == "internal" and payment_method != "cash":
+        errors.append("Internal income must use cash as payment method.")
+
     if category_row is not None and direction in ALLOWED_DIRECTIONS:
         if category_row["direction"] != direction:
             errors.append("Category direction must match transaction direction.")

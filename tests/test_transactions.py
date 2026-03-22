@@ -484,7 +484,7 @@ def test_void_form_404_on_already_voided(client):
 def test_internal_income_vat_zero_saves(client):
     r = client.post(
         "/transactions/new",
-        data=valid_income_form(income_type="internal", vat_rate="0"),
+        data=valid_income_form(income_type="internal", vat_rate="0", payment_method="cash"),
     )
 
     assert r.status_code == 302
@@ -492,12 +492,13 @@ def test_internal_income_vat_zero_saves(client):
     conn = sqlite3.connect(client.db_path)
     conn.row_factory = sqlite3.Row
     row = conn.execute(
-        "SELECT income_type, vat_rate FROM transactions ORDER BY id DESC LIMIT 1"
+        "SELECT income_type, vat_rate, payment_method FROM transactions ORDER BY id DESC LIMIT 1"
     ).fetchone()
     conn.close()
 
     assert row["income_type"] == "internal"
     assert row["vat_rate"] == 0.0
+    assert row["payment_method"] == "cash"
 
 
 def test_correct_validation_failure_rerenders_422(client):
@@ -510,3 +511,33 @@ def test_correct_validation_failure_rerenders_422(client):
 
     assert r.status_code == 422
     assert "Amount must be a positive number." in r.text
+
+
+def test_internal_income_cash_saves(client):
+    r = client.post(
+        "/transactions/new",
+        data=valid_income_form(income_type="internal", vat_rate="0", payment_method="cash"),
+    )
+
+    assert r.status_code == 302
+
+    conn = sqlite3.connect(client.db_path)
+    conn.row_factory = sqlite3.Row
+    row = conn.execute(
+        "SELECT income_type, payment_method, vat_rate FROM transactions ORDER BY id DESC LIMIT 1"
+    ).fetchone()
+    conn.close()
+
+    assert row["income_type"] == "internal"
+    assert row["payment_method"] == "cash"
+    assert row["vat_rate"] == 0.0
+
+
+def test_internal_income_non_cash_rejected(client):
+    r = client.post(
+        "/transactions/new",
+        data=valid_income_form(income_type="internal", vat_rate="0", payment_method="card"),
+    )
+
+    assert r.status_code == 422
+    assert "Internal income must use cash as payment method." in r.text
