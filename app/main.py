@@ -9,6 +9,9 @@ from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.sessions import SessionMiddleware
 
+from jinja2 import pass_context
+
+from app.i18n import DEFAULT_LOCALE, translate
 from db.init_db import initialise_db
 
 load_dotenv()
@@ -96,6 +99,14 @@ class AuthGate(BaseHTTPMiddleware):
         return await call_next(request)
 
 
+class LocaleMiddleware(BaseHTTPMiddleware):
+    """Read locale from session and expose on request state."""
+
+    async def dispatch(self, request: Request, call_next):
+        request.state.locale = request.session.get("locale", DEFAULT_LOCALE)
+        return await call_next(request)
+
+
 class FlashMessageMiddleware(BaseHTTPMiddleware):
     """Pop flash data from the session and expose it on the request state."""
 
@@ -133,6 +144,7 @@ def create_app(database_url: str | None = None) -> FastAPI:
     app = FastAPI(title="cashflow-tracker", lifespan=lifespan)
 
     app.add_middleware(AuthGate)
+    app.add_middleware(LocaleMiddleware)
     app.add_middleware(FlashMessageMiddleware)
     app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 
@@ -145,6 +157,22 @@ def create_app(database_url: str | None = None) -> FastAPI:
     app.include_router(auth_router)
     app.include_router(dashboard_router)
     app.include_router(transactions_router)
+
+    # Register t() as a Jinja2 global on every route module's template env.
+    # Uses @pass_context so {{ t('key') }} can read locale from request.state.
+    @pass_context
+    def _t(context, key: str) -> str:
+        request = context.get("request")
+        locale = getattr(getattr(request, "state", None), "locale", DEFAULT_LOCALE)
+        return translate(key, locale)
+
+    from app.routes.settings import templates as settings_tpl
+    from app.routes.auth import templates as auth_tpl
+    from app.routes.dashboard import templates as dashboard_tpl
+    from app.routes.transactions import templates as transactions_tpl
+
+    for tpl in (settings_tpl, auth_tpl, dashboard_tpl, transactions_tpl):
+        tpl.env.globals["t"] = _t
 
     app.mount("/static", StaticFiles(directory="static"), name="static")
 
