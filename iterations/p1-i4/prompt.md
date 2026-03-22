@@ -84,9 +84,9 @@ skills/cash-flow/error_handling/SKILL.md
 | Task | Also read |
 |------|-----------|
 | I4-T1 | `app/services/validation.py`, `app/services/calculations.py`, `app/routes/transactions.py` |
-| I4-T2 | `iterations/p1-i4/prompts/t1-transaction-service.md` |
-| I4-T3 | `app/templates/transactions/create.html`, `app/templates/transactions/list.html`, `iterations/p1-i4/prompts/t2-routes.md` |
-| I4-T4 | `iterations/p1-i4/prompts/t2-routes.md`, `iterations/p1-i4/prompts/t3-templates.md`, `tests/test_transactions.py`, `app/services/calculations.py` |
+| I4-T2 | `iterations/p1-i4/prompts/t2-routes.md` |
+| I4-T3 | `app/templates/transactions/create.html`, `app/templates/transactions/list.html`, `iterations/p1-i4/prompts/t3-templates.md` |
+| I4-T4 | `iterations/p1-i4/prompts/t4-tests.md`, `tests/test_transactions.py`, `app/services/calculations.py` |
 
 ---
 
