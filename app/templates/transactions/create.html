@@ -89,12 +89,7 @@
       <label for="income_type">Income type</label><br>
       <select id="income_type" name="income_type">
         <option value="">— select —</option>
-        {% for it in ['internal', 'external'] %}
-          <option value="{{ it }}"
-            {% if form_data.get('income_type') == it %}selected{% endif %}>
-            {{ it | capitalize }}
-          </option>
-        {% endfor %}
+        <option value="external" {% if form_data.get('income_type') == 'external' %}selected{% endif %}>External</option>
       </select>
     </p>
   </div>

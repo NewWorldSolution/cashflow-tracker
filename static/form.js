@@ -1,5 +1,18 @@
 document.addEventListener('DOMContentLoaded', function () {
 
+  // Helpers: visually lock/unlock vat_rate without using disabled
+  // (disabled fields are excluded from form submission)
+  function _lockVatRate(field) {
+    field.dataset.locked = 'true';
+    field.style.opacity = '0.5';
+    field.style.pointerEvents = 'none';
+  }
+  function _unlockVatRate(field) {
+    delete field.dataset.locked;
+    field.style.opacity = '';
+    field.style.pointerEvents = '';
+  }
+
   // 1. Fetch /categories on load and build lookup map
   //    Response fields: category_id, name, label, direction, default_vat_rate, default_vat_deductible_pct
   let categoryMap = {};
@@ -46,7 +59,7 @@ document.addEventListener('DOMContentLoaded', function () {
       const vd = document.querySelector('select[name="vat_deductible_pct"]');
       if (vd) vd.value = '';
       const vatRateField = document.querySelector('select[name="vat_rate"]');
-      if (vatRateField) vatRateField.disabled = false;
+      if (vatRateField) _unlockVatRate(vatRateField);
     });
   });
 
@@ -64,7 +77,7 @@ document.addEventListener('DOMContentLoaded', function () {
       if (!cat) return;
 
       const vatRateField = document.querySelector('select[name="vat_rate"]');
-      if (vatRateField && !vatRateField.disabled) {
+      if (vatRateField && !vatRateField.dataset.locked) {
         vatRateField.value = cat.default_vat_rate;
       }
 
@@ -90,9 +103,9 @@ document.addEventListener('DOMContentLoaded', function () {
       if (!vatRateField) return;
       if (this.value === 'internal') {
         vatRateField.value = '0';
-        vatRateField.disabled = true;
+        _lockVatRate(vatRateField);
       } else {
-        vatRateField.disabled = false;
+        _unlockVatRate(vatRateField);
       }
     });
   }
