@@ -1,8 +1,8 @@
 # P1-I3 — Transaction Capture: Entry Form, Validation, Recent List
 ## Task Board
 
-**Status:** 🔄 IN PROGRESS
-**Last updated:** 2026-03-22 — I3-T4 merged; I3-T5 ready to start
+**Status:** ✔ COMPLETE
+**Last updated:** 2026-03-22 — I3-T5 complete; tests and ruff green
 **Iteration branch:** `feature/phase-1/iteration-3` ← all task PRs target this branch
 **Final PR:** `feature/phase-1/iteration-3` → `main` ← QA agent approves before merge
 
@@ -30,7 +30,7 @@ T5 closes the iteration — runs last.
 | I3-T2 | Transaction routes                         | Claude Code | ✅ DONE        | I3-T1    | `feature/p1-i3/t2-routes`           |
 | I3-T3 | Create template                            | Claude Code | ✅ DONE        | I3-T1    | `feature/p1-i3/t3-create-template`  |
 | I3-T4 | List template + form.js                   | Claude Code | ✅ DONE        | I3-T2, I3-T3 | `feature/p1-i3/t4-list-and-js`      |
-| I3-T5 | Tests + ruff + PR ready                    | Codex       | 🔄 IN PROGRESS | I3-T4    | `feature/p1-i3/t5-tests`            |
+| I3-T5 | Tests + ruff + PR ready                    | Codex       | ✅ DONE    | I3-T4    | `feature/p1-i3/t5-tests`            |
 
 ---
 
