@@ -24,10 +24,25 @@ Internal use only. No public access. All 3 users interact via web form (Phases 1
 - `base.html` nav: username display + POST logout button for authenticated users
 - 25 passing tests (11 P1-I1 + 14 new), ruff clean
 
+### P1-I3 — Transaction Capture (merged to main 2026-03-22)
+- Validation service: `app/services/validation.py` — 15 rules, single enforcement point
+- Calculations service: `app/services/calculations.py` — vat_amount, net_amount, vat_reclaimable, effective_cost (Decimal, never stored)
+- Transaction routes: `GET/POST /transactions/new`, `GET /transactions/`, `GET /categories`
+- Create template: all fields, inline errors, preserved input, card reminder, income/expense field toggling
+- List template: last 20 active transactions with derived va/ec columns
+- `static/form.js`: category auto-defaults, income_type VAT lock, card reminder, direction row toggling
+- 61 passing tests (25 P1-I1/I2 + 36 new), ruff clean
+
+### P1-I4 — Corrections, Hardening & Acceptance (merged to main 2026-03-22)
+- Transaction service: `app/services/transaction_service.py` — `get_transaction` (joined lookup), `void_transaction` (single source of truth for soft-delete preconditions)
+- 5 new routes: `GET /transactions/{id}`, `GET/POST /transactions/{id}/void`, `GET/POST /transactions/{id}/correct`
+- Templates: `detail.html` (read-only view, active/voided states), `void.html` (reason form); `create.html` and `list.html` minimal updates
+- 81 passing tests (61 P1-I1/I2/I3 + 20 new), ruff clean
+
 ## What comes next
 **Phase 1 — Web form (in progress)**
-- P1-I3: Transaction entry form with category auto-defaults and required guardrails
-- P1-I4: Monthly summary / reporting view
+- P1-I5: UI polish (CSS, layout, usability improvements)
+- P1-I6: Polish language UI for assistant and wife users
 
 ## Stack (locked)
 Python · FastAPI · SQLite sandbox → Azure PostgreSQL production · Jinja2 templates · python-telegram-bot (Phase 5) · Claude Haiku/Sonnet (Phase 6 only)
