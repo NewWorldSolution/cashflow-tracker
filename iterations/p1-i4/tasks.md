@@ -198,7 +198,7 @@ iterations/p1-i4/tasks.md        ← status update only
 1. **Read this file first.** Find your task. Confirm status is WAITING before starting.
 2. **Update status to IN PROGRESS** before writing a line of code.
 3. **Check dependencies.** Never start if any dep is not ✅ DONE.
-4. **Worktree:** check out `feature/phase-1/iteration-4` first, then create your task branch from it.
+4. **Branch:** check out `feature/phase-1/iteration-4` first, then create your task branch from it. No worktrees needed — tasks are sequential.
 5. **PR targets the iteration branch**, not `main`. One task per PR.
 6. **After completing:** set status to ✅ DONE. Add one-line note: what you produced.
 7. **Never touch another agent's task.** Add notes under your own task only.
