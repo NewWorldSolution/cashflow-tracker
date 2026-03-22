@@ -26,7 +26,7 @@ T1 is the foundation. T2, T3, T4 can run in parallel after T1. T5 depends on T4 
 
 | ID    | Title                              | Owner       | Status     | Depends on | Branch                                    |
 |-------|------------------------------------|-------------|------------|------------|-------------------------------------------|
-| I5-T1 | CSS system + base template         | —           | ⏳ WAITING | —          | `feature/p1-i5/t1-css-base`              |
+| I5-T1 | CSS system + base template         | Claude Code | ✅ DONE | —          | `feature/p1-i5/t1-css-base`              |
 | I5-T2 | Real dashboard                     | —           | ⏳ WAITING | I5-T1      | `feature/p1-i5/t2-dashboard`             |
 | I5-T3 | Transaction form UX                | —           | ⏳ WAITING | I5-T1      | `feature/p1-i5/t3-form-ux`              |
 | I5-T4 | List, detail & void styling        | —           | ⏳ WAITING | I5-T1      | `feature/p1-i5/t4-list-detail-void`     |
