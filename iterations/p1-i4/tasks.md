@@ -1,8 +1,8 @@
 # P1-I4 — Corrections, Hardening & Acceptance
 ## Task Board
 
-**Status:** ⏳ WAITING
-**Last updated:** 2026-03-22 — branch created, iteration ready to start
+**Status:** ✔ COMPLETE
+**Last updated:** 2026-03-22 — I4-T4 complete; tests and ruff green
 **Iteration branch:** `feature/phase-1/iteration-4` ← all task PRs target this branch
 **Final PR:** `feature/phase-1/iteration-4` → `main` ← QA agent approves before merge
 
@@ -28,7 +28,7 @@ Sequential: each task depends on the previous one being ✅ DONE.
 | I4-T1 | Transaction service                | Codex       | ✅ DONE    | —          | `feature/p1-i4/t1-transaction-service`    |
 | I4-T2 | Void/correct routes                | Claude Code | ✅ DONE        | I4-T1  | `feature/p1-i4/t2-routes`                |
 | I4-T3 | Void/correct templates             | Claude Code | ✅ DONE        | I4-T2  | `feature/p1-i4/t3-templates`             |
-| I4-T4 | Tests + ruff + PR ready            | Codex       | ⏳ WAITING | I4-T3      | `feature/p1-i4/t4-tests`                 |
+| I4-T4 | Tests + ruff + PR ready            | Codex       | ✅ DONE    | I4-T3      | `feature/p1-i4/t4-tests`                 |
 
 ---
 
