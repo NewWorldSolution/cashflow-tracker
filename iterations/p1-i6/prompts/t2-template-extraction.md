@@ -146,7 +146,7 @@ Then use `STRINGS.splitView` etc. in the JS code instead of hardcoded strings.
 
 ```bash
 ruff check .
-pytest -v   # all 98 existing tests must pass
+pytest -v   # all existing tests must pass (98 before T5 merges, 101 after)
 ```
 
 - [ ] Every user-facing string in every template uses `{{ t('key') }}`
@@ -156,5 +156,5 @@ pytest -v   # all 98 existing tests must pass
 - [ ] Free-text content, category labels, and dynamic values NOT wrapped in `t()`
 - [ ] Any new keys discovered during extraction added to `en.py`
 - [ ] Inline JS strings in list.html use template-rendered variables
-- [ ] All 98 tests pass
+- [ ] All existing tests pass (98 before T5 merges, 101 after)
 - [ ] ruff clean

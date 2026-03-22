@@ -285,7 +285,7 @@ Pass `t` into every template context via middleware or a context processor patte
 
 ```bash
 ruff check .
-pytest -v   # all 98 existing tests must pass
+pytest -v   # all existing tests must pass (98 before T5 merges, 101 after)
 ```
 
 - [ ] `app/i18n/__init__.py` exists with `translate()`, `translate_error()`, `get_messages()`
@@ -294,5 +294,5 @@ pytest -v   # all 98 existing tests must pass
 - [ ] `LocaleMiddleware` sets `request.state.locale` (default `pl`)
 - [ ] `t()` function available in Jinja2 templates
 - [ ] No template changes (that's T2)
-- [ ] All 98 tests pass
+- [ ] All existing tests pass (98 before T5 merges, 101 after)
 - [ ] ruff clean

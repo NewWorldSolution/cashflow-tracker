@@ -144,7 +144,7 @@ This is explicit and avoids needing to pass locale through filter context. Choos
 
 ```bash
 ruff check .
-pytest -v   # all 98 existing tests must pass
+pytest -v   # all existing tests must pass (98 before T5 merges, 101 after)
 ```
 
 - [ ] Polish locale: dates show as `dd.mm.yyyy`
@@ -153,5 +153,5 @@ pytest -v   # all 98 existing tests must pass
 - [ ] English locale: amounts show as `1,234.56`
 - [ ] Form input values remain in standard format (ISO date, decimal amount)
 - [ ] Dashboard, list, and detail pages all use formatting
-- [ ] All 98 tests pass
+- [ ] All existing tests pass (98 before T5 merges, 101 after)
 - [ ] ruff clean

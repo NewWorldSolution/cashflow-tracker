@@ -181,7 +181,7 @@ Add `/lang/en` and `/lang/pl` to `EXEMPT_PATHS` in `app/main.py` so they work wi
 
 ```bash
 ruff check .
-pytest -v   # all 98 existing tests must pass
+pytest -v   # all existing tests must pass (98 before T5 merges, 101 after)
 ```
 
 - [ ] `app/i18n/pl.py` exists with complete `MESSAGES` and `VALIDATION_ERRORS`
@@ -192,5 +192,5 @@ pytest -v   # all 98 existing tests must pass
 - [ ] Language preference persists across page loads (session)
 - [ ] Validation errors display in the selected language
 - [ ] Flash messages display in the selected language
-- [ ] All 98 existing tests pass (validation assertions remain English internally)
+- [ ] All existing tests pass — 98 before T5 merges, 101 after (validation assertions remain English internally)
 - [ ] ruff clean

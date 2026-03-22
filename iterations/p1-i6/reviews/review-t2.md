@@ -38,7 +38,7 @@ Review only the changes in this task branch. Report precise problems with file r
 15. Run:
 
 ```bash
-pytest -v   # all 98 tests must pass
+pytest -v   # all existing tests must pass (98 before T5 merges, 101 after)
 ruff check .
 ```
 
@@ -87,7 +87,7 @@ Files modified outside templates and `app/i18n/en.py`.
 - [PASS|FAIL] HTML structure and CSS classes unchanged
 - [PASS|FAIL] Jinja2 logic blocks intact
 - [PASS|FAIL] app renders identically (English output unchanged)
-- [PASS|FAIL] all 98 tests pass
+- [PASS|FAIL] all existing tests pass (98 before T5 merges, 101 after)
 - [PASS|FAIL] ruff clean
 
 ### 6. Exact Fixes Required

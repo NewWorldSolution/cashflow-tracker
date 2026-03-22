@@ -70,7 +70,7 @@ app/main.py              ← modify (locale middleware, Jinja2 global)
 - `t('key')` works in templates (verified by loading any page)
 - Default locale is `pl`
 - Fallback to English works when Polish key is missing
-- All 98 existing tests pass
+- All existing tests pass (98 before T5 merges, 101 after)
 - ruff clean
 
 ---
@@ -103,7 +103,7 @@ app/i18n/en.py                                 ← extend (add any missing keys)
 **Acceptance check:**
 - Every user-facing string in templates uses `{{ t('key') }}`
 - App renders identically to before (English output unchanged)
-- All 98 existing tests pass
+- All existing tests pass (98 before T5 merges, 101 after)
 - ruff clean
 
 ---
@@ -137,7 +137,7 @@ static/style.css                      ← extend (switcher styling if needed)
 - Switching to English shows all text in English
 - Language preference persists across page loads (session)
 - Validation errors appear in the selected language
-- All 98 existing tests pass (assertions remain English)
+- All existing tests pass — 98 before T5 merges, 101 after (assertions remain English)
 - ruff clean
 
 ---
@@ -166,7 +166,7 @@ app/templates/dashboard.html                   ← modify (use format filters)
 **Acceptance check:**
 - Polish locale shows dates as `dd.mm.yyyy` and amounts with space/comma
 - English locale shows dates as `yyyy-mm-dd` and amounts with comma/period
-- All 98 existing tests pass
+- All existing tests pass (98 before T5 merges, 101 after)
 - ruff clean
 
 ---

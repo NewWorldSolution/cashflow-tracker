@@ -44,7 +44,7 @@ Review only the changes in this task branch. Report precise problems with file r
 15. Run:
 
 ```bash
-pytest -v   # all 98 tests must pass
+pytest -v   # all existing tests must pass (98 before T5 merges, 101 after)
 ruff check .
 ```
 
@@ -92,7 +92,7 @@ Files modified outside allowed list.
 - [PASS|FAIL] `/lang/en` and `/lang/pl` in EXEMPT_PATHS
 - [PASS|FAIL] app defaults to Polish
 - [PASS|FAIL] switching language changes all UI text
-- [PASS|FAIL] all 98 tests pass (validation assertions remain English internally)
+- [PASS|FAIL] all existing tests pass — 98 before T5 merges, 101 after (validation assertions remain English internally)
 - [PASS|FAIL] ruff clean
 
 ### 6. Exact Fixes Required
