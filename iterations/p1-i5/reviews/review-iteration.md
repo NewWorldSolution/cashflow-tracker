@@ -21,7 +21,7 @@ You are the QA agent for Phase 1 Iteration 5. Individual task reviews verify eac
 3. Real dashboard with opening balance, transaction counts/totals, recent 5, quick actions
 4. Restructured transaction form with 5 sections, toggle buttons, and clear error display
 5. Styled transaction list, detail, and void pages
-6. Session-based flash messages after create, void, correct, opening balance save
+6. Session-based flash messages after create, void, correct
 7. 4 new flash tests (total 98)
 8. Mobile-responsive layout on all pages
 9. No business logic changes, no validation changes, no schema changes
