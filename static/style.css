@@ -624,14 +624,13 @@ dl {
 
 .detail-grid {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: 140px 1fr;
   gap: var(--space-2) var(--space-4);
 }
 
 .detail-grid dt {
   font-weight: 500;
   color: var(--color-muted-fg);
-  margin-top: var(--space-2);
 }
 
 .detail-grid dd {
@@ -655,13 +654,13 @@ dl {
   flex-wrap: wrap;
 }
 
-@media (min-width: 768px) {
+@media (max-width: 767px) {
   .detail-grid {
-    grid-template-columns: 140px 1fr;
+    grid-template-columns: 1fr;
   }
 
   .detail-grid dt {
-    margin-top: 0;
+    margin-top: var(--space-2);
   }
 }
 
