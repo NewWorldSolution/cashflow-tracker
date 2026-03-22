@@ -16,14 +16,11 @@ document.addEventListener('DOMContentLoaded', function () {
       const isIncome = this.value === 'income';
       document.getElementById('income-type-row').style.display = isIncome ? '' : 'none';
       document.getElementById('vat-deductible-row').style.display = isIncome ? 'none' : '';
-      // Clear and unlock on switch
-      if (!isIncome) {
-        const it = document.querySelector('select[name="income_type"]');
-        if (it) it.value = '';
-      } else {
-        const vd = document.querySelector('select[name="vat_deductible_pct"]');
-        if (vd) vd.value = '';
-      }
+      // Clear both dependent fields on every switch
+      const it = document.querySelector('select[name="income_type"]');
+      if (it) it.value = '';
+      const vd = document.querySelector('select[name="vat_deductible_pct"]');
+      if (vd) vd.value = '';
       const vatRateField = document.querySelector('select[name="vat_rate"]');
       if (vatRateField) vatRateField.disabled = false;
     });
@@ -41,8 +38,10 @@ document.addEventListener('DOMContentLoaded', function () {
         vatRateField.value = cat.default_vat_rate;
       }
 
+      const checkedDirection = document.querySelector('input[name="direction"]:checked');
+      const isExpense = checkedDirection && checkedDirection.value === 'expense';
       const vdField = document.querySelector('select[name="vat_deductible_pct"]');
-      if (vdField && cat.default_vat_deductible_pct != null) {
+      if (vdField && isExpense && cat.default_vat_deductible_pct != null) {
         vdField.value = cat.default_vat_deductible_pct;
       }
 
