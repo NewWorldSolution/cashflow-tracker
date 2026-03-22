@@ -24,19 +24,10 @@ Internal use only. No public access. All 3 users interact via web form (Phases 1
 - `base.html` nav: username display + POST logout button for authenticated users
 - 25 passing tests (11 P1-I1 + 14 new), ruff clean
 
-### P1-I3 — Transaction Capture (merged to main 2026-03-22)
-- Validation service: `app/services/validation.py` — 15 rules, single enforcement point
-- Calculations service: `app/services/calculations.py` — vat_amount, net_amount, vat_reclaimable, effective_cost (Decimal, never stored)
-- Transaction routes: `GET/POST /transactions/new`, `GET /transactions/`, `GET /categories`
-- Create template: all fields, inline errors, preserved input, card reminder, income/expense field toggling
-- List template: last 20 active transactions with derived va/ec columns
-- `static/form.js`: category auto-defaults, income_type VAT lock, card reminder, direction row toggling
-- 61 passing tests (25 P1-I1/I2 + 36 new), ruff clean
-
 ## What comes next
 **Phase 1 — Web form (in progress)**
-- P1-I4: Corrections, hardening & acceptance — void/correct flow, calculation unit tests
-- P1-I5: UI polish
+- P1-I3: Transaction entry form with category auto-defaults and required guardrails
+- P1-I4: Monthly summary / reporting view
 
 ## Stack (locked)
 Python · FastAPI · SQLite sandbox → Azure PostgreSQL production · Jinja2 templates · python-telegram-bot (Phase 5) · Claude Haiku/Sonnet (Phase 6 only)
