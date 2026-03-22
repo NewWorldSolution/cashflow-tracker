@@ -129,10 +129,12 @@ def create_app(database_url: str | None = None) -> FastAPI:
     from app.routes.settings import router as settings_router
     from app.routes.auth import router as auth_router
     from app.routes.dashboard import router as dashboard_router
+    from app.routes.transactions import router as transactions_router
 
     app.include_router(settings_router)
     app.include_router(auth_router)
     app.include_router(dashboard_router)
+    app.include_router(transactions_router)
 
     return app
 
