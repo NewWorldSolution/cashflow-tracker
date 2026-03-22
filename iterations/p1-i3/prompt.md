@@ -59,6 +59,8 @@ User (web form) → FastAPI route → services/validation.py → SQLite → Jinj
 
 This iteration adds the transaction entry form, all server-side validation rules, VAT-derived calculations (for display only — never stored), and a recent transaction list. After P1-I3, authenticated users can log income and expense transactions with all VAT rules enforced, see category-triggered auto-defaults, and review the last 20 active transactions.
 
+**Execution model:** This iteration uses 5 task branches executed by multiple agents per tasks.md. If you are an individual agent, read your task prompt file (`iterations/p1-i3/prompts/t[N]-[name].md`) — it contains the precise scope and acceptance criteria for your task. This file is the full reference; task prompt files are the execution guides.
+
 ---
 
 ## Files to Read Before Starting
@@ -79,7 +81,7 @@ skills/cash-flow/deterministic_logic/SKILL.md          ← no LLM anywhere in th
 
 ```
 docs/concept.md                                        ← full category list (4 income, 18 expense) with VAT defaults
-docs/architecture.md                                   ← VAT formulas (vat_amount, net_amount, vat_reclaimable, effective_cost)
+docs/architecture.md                                   ← VAT formulas (canonical source — use exactly as written)
 ```
 
 ---
@@ -89,7 +91,9 @@ docs/architecture.md                                   ← VAT formulas (vat_amo
 ```python
 # Authentication — already wired, do not modify
 # AuthGate middleware: all routes except /settings/opening-balance, /auth/login, /auth/logout
-#   are protected. Auth is guaranteed for any route not in EXEMPT_PATHS.
+#   are protected. Auth is guaranteed for any non-exempt route.
+# /categories, /transactions/new, /transactions/ are all protected by AuthGate — no special
+# handling needed in route handlers; middleware guarantees it.
 
 # Available in app/services/auth_service.py — use as-is:
 from app.services.auth_service import require_auth
@@ -112,7 +116,7 @@ def get_db() -> sqlite3.Connection: ...   # returns a live db connection
 ## Existing Code This Task Builds On
 
 ```
-app/main.py              ← register transactions router here; do not modify middleware
+app/main.py              ← register transactions router here; do not modify middleware or AuthGate
 app/templates/base.html  ← already has SANDBOX banner, nav, logout — do not modify
 ```
 
@@ -126,53 +130,50 @@ Do not rewrite files that already exist. Make only the changes specified for thi
 
 ```
 app/services/validation.py
-  ← validate_transaction(data: dict, db) → list[str]  (returns list of error strings, empty = valid)
-  ← This is the single enforcement point for ALL transaction rules.
+  ← validate_transaction(data: dict, db: sqlite3.Connection) -> list[str]
+  ← This is the ONLY enforcement point for ALL transaction rules.
   ← Route handlers call this function; they do not re-implement any rule inline.
+  ← db is the live connection passed from the route handler — do not open a new connection inside.
 
 app/services/calculations.py
-  ← vat_amount(gross: Decimal, vat_rate: float) → Decimal
-  ← net_amount(gross: Decimal, vat_rate: float) → Decimal
-  ← vat_reclaimable(gross: Decimal, vat_rate: float, vat_deductible_pct: float) → Decimal
-  ← effective_cost(gross: Decimal, vat_rate: float, vat_deductible_pct: float) → Decimal
+  ← vat_amount(gross: Decimal, vat_rate: float) -> Decimal
+  ← net_amount(gross: Decimal, vat_rate: float) -> Decimal
+  ← vat_reclaimable(gross: Decimal, vat_rate: float, vat_deductible_pct: float) -> Decimal
+  ← effective_cost(gross: Decimal, vat_rate: float, vat_deductible_pct: float) -> Decimal
   ← All return Decimal. None of these values are ever stored in the database.
-  ← For P1-I3: used for form preview display only (passed to template context).
+  ← Used only by the list route (to show derived columns in the transaction list).
 
 app/routes/transactions.py
-  ← GET  /transactions/new     — render create form (empty, or re-render with errors + preserved input)
+  ← GET  /transactions/new     — render create form (empty form, categories loaded)
   ← POST /transactions/new     — validate, save, redirect to /transactions/ on success
-  ← GET  /transactions/        — render list of last 20 active transactions
-  ← GET  /categories           — JSON: list of all categories with defaults (used by form.js auto-defaults)
+  ← GET  /transactions/        — render list of last 20 active transactions with derived columns
+  ← GET  /categories           — JSON: list of all categories (used by form.js)
 
 app/templates/transactions/create.html
   ← extends base.html
-  ← full transaction entry form (all fields per spec)
+  ← full transaction entry form (all fields per spec below)
   ← inline error display, all errors shown together, form input preserved on error
   ← gross amount label persistent: "Enter gross amount (VAT included)"
-  ← card payment reminder shown/hidden via JS (form.js)
-  ← income_type field shown only for income rows (via JS)
-  ← vat_deductible_pct shown only for expense rows (via JS)
-  ← description required indicator shown when category is other_expense or other_income (via JS)
+  ← card payment reminder element (hidden by default — form.js manages visibility)
+  ← income_type row hidden by default (form.js shows when direction=income)
+  ← vat_deductible_pct row hidden by default (form.js shows when direction=expense)
+  ← description required indicator hidden by default (form.js shows for other_expense/other_income)
 
 app/templates/transactions/list.html
   ← extends base.html
-  ← shows last 20 active transactions (WHERE is_active = TRUE ORDER BY created_at DESC)
-  ← columns: date, category label, direction, amount (gross), payment method, logged by (username)
+  ← shows last 20 active transactions
+  ← includes derived columns (vat_amount, effective_cost)
   ← link to /transactions/new
 
 static/form.js
-  ← category auto-defaults: on category change, fetch /categories and set vat_rate and vat_deductible_pct
-  ← field locking: income_type = internal → vat_rate forced to 0 and field greyed out
-  ← field visibility: income_type shown only when direction = income
-  ← field visibility: vat_deductible_pct shown only when direction = expense
-  ← card reminder: shown/hidden based on payment_method = card
+  ← category auto-defaults, field locking, field visibility, card reminder
   ← vanilla JS only — no frameworks, no build step
 
 tests/test_validation.py
-  ← all validation rule tests listed in "Tests Required" section below
+  ← validation rule tests (see "Tests Required" section)
 
 tests/test_transactions.py
-  ← route-level tests listed in "Tests Required" section below
+  ← route-level tests (see "Tests Required" section)
 ```
 
 ### Modified files
@@ -183,7 +184,7 @@ app/main.py
   ← no other changes
 
 app/services/__init__.py
-  ← ensure package marker exists (may already exist from P1-I2)
+  ← ensure package marker exists (already exists from P1-I2 — check before creating)
 ```
 
 ### Files that must NOT be modified
@@ -210,58 +211,112 @@ tests/test_init_db.py            ← P1-I1 deliverable — do not touch
 
 | Field | Type | Default | Notes |
 |-------|------|---------|-------|
-| `date` | date | today | Required |
+| `date` | date (YYYY-MM-DD) | today | Required |
 | `direction` | radio: income / expense | — | Required |
 | `amount` | decimal | — | Required. Always gross. Persistent label: "Enter gross amount (VAT included)" |
 | `category_id` | dropdown (from categories table) | — | Required. Integer FK only. |
 | `payment_method` | select: cash / card / transfer | — | Required. Card triggers reminder. |
-| `vat_rate` | select: 0 / 5 / 8 / 23 | auto-filled from category | Required. Forced to 0 when income_type=internal. |
+| `vat_rate` | select: 0 / 5 / 8 / 23 | auto-filled from category | Required. Forced to 0 when income_type=internal. Override of category default is allowed for all other cases. |
 | `income_type` | select: internal / external | — | Shown only for income rows. Required for income. |
-| `vat_deductible_pct` | select: 0 / 50 / 100 | auto-filled from category | Shown only for expense rows. Required for expense. |
+| `vat_deductible_pct` | select: 0 / 50 / 100 | auto-filled from category | Shown only for expense rows. Required for expense. Override of category default is allowed. |
 | `description` | textarea | — | Optional (required indicator shown for other_expense / other_income). |
+
+---
+
+## Data Normalisation (applied before validation)
+
+Before calling `validate_transaction`, the route handler must normalise raw form data:
+
+```python
+# 1. Strip whitespace from all string fields
+# 2. Convert empty strings to None for optional fields:
+#    income_type, vat_deductible_pct, description → None if empty string
+# 3. Convert numeric fields:
+#    amount: Decimal(str(raw_amount))   ← NEVER Decimal(float(...))
+#    vat_rate: float(raw_vat_rate)
+#    vat_deductible_pct: float(raw) if not None
+#    category_id: int(raw_category_id)
+# 4. logged_by = user["id"]  ← from session, never from form input
+# 5. is_active = True         ← default, not a form field
+# 6. date: accept as string (YYYY-MM-DD) — validate format in validate_transaction
+```
 
 ---
 
 ## Validation Rules — All Mandatory (enforced in validation.py only)
 
 ```python
-# validate_transaction(data: dict, db) → list[str]
-# Returns a list of error strings. Empty list = valid. Never raises — always returns.
+# validate_transaction(data: dict, db: sqlite3.Connection) -> list[str]
+# Returns a list of human-readable error strings. Empty list = valid.
+# Never raises — catches conversion errors and adds them to the error list.
+# db is the live connection passed from the caller — do not open a new connection inside.
 
-# Rules:
-# 1. date is required
-# 2. direction must be 'income' or 'expense'
-# 3. amount must be positive Decimal — reject zero, negative, non-numeric
-# 4. category_id must be an integer present in categories table — free-text rejected
-# 5. category direction must match transaction direction — can't post income amount to expense category
-# 6. payment_method must be 'cash', 'card', or 'transfer'
-# 7. vat_rate must be in (0, 5, 8, 23) — no other values accepted
-# 8. income_type = 'internal' → vat_rate MUST be 0 — reject any other value
-# 9. income_type required when direction = 'income' — NULL rejected
-# 10. income_type must be None when direction = 'expense' — cannot be set on expense rows
-# 11. vat_deductible_pct required when direction = 'expense' — NULL rejected
-# 12. vat_deductible_pct must be None when direction = 'income' — cannot be set on income rows
+# Rules (all must be checked; collect ALL errors before returning):
+# 1.  date required; must be parseable as YYYY-MM-DD
+# 2.  direction must be 'income' or 'expense'
+# 3.  amount must be positive Decimal (> 0); reject zero, negative, non-numeric
+# 4.  category_id must be an integer present in categories table — free-text rejected
+#     Use: SELECT category_id, direction, name FROM categories WHERE category_id = ?
+# 5.  Category direction must match transaction direction
+#     e.g. income transaction cannot use an expense-only category
+# 6.  payment_method must be 'cash', 'card', or 'transfer'
+# 7.  vat_rate must be in (0, 5, 8, 23) — no other values accepted
+# 8.  income_type = 'internal' → vat_rate MUST be 0 (hard rule — reject any other value)
+# 9.  income_type required when direction = 'income' (None is not permitted)
+# 10. income_type must be None when direction = 'expense'
+# 11. vat_deductible_pct required when direction = 'expense' (None not permitted)
+# 12. vat_deductible_pct must be None when direction = 'income'
 # 13. vat_deductible_pct must be in (0, 50, 100) if present
-# 14. description required (non-empty string) when category is 'other_expense' or 'other_income'
-# 15. logged_by must be a valid integer present in users table — never a name string
-#     (set from session by route handler — never from form input)
+# 14. description required (non-empty string) when category name is 'other_expense' or 'other_income'
+# 15. logged_by must be an integer present in users table (SELECT id FROM users WHERE id = ?)
+
+# Important: category VAT default is a SUGGESTION, not a constraint.
+# A user may select a category with default_vat_rate=23 and submit vat_rate=5 — this is valid.
+# The only VAT override restriction is rule 8 (internal income → must be 0).
 ```
 
 ---
 
-## VAT Calculations — Display Only, Never Stored
+## VAT Calculations — Canonical Formulas (from docs/architecture.md)
+
+These are the exact formulas to implement in `calculations.py`. Do not use shorthands.
 
 ```python
-# From docs/architecture.md — exact formulas:
-# vat_amount      = gross * (vat_rate / (100 + vat_rate))
-# net_amount      = gross - vat_amount
-# vat_reclaimable = vat_amount * (vat_deductible_pct / 100)
-# effective_cost  = gross - vat_reclaimable
+from decimal import Decimal, ROUND_HALF_UP
 
-# For P1-I3: compute these in the route handler after successful save and pass to list template
-# for display. Also compute as preview in the create form response on GET (with sample values).
-# NEVER store these in the database. They are always re-derived at query time.
+TWO_PLACES = Decimal('0.01')
+
+def vat_amount(gross: Decimal, vat_rate: float) -> Decimal:
+    # gross - (gross / (1 + vat_rate/100))
+    rate = Decimal(str(vat_rate))
+    result = gross - (gross / (1 + rate / 100))
+    return result.quantize(TWO_PLACES, rounding=ROUND_HALF_UP)
+
+def net_amount(gross: Decimal, vat_rate: float) -> Decimal:
+    # gross - vat_amount
+    return (gross - vat_amount(gross, vat_rate)).quantize(TWO_PLACES, rounding=ROUND_HALF_UP)
+
+def vat_reclaimable(gross: Decimal, vat_rate: float, vat_deductible_pct: float) -> Decimal:
+    # vat_amount * vat_deductible_pct / 100
+    va = vat_amount(gross, vat_rate)
+    result = va * Decimal(str(vat_deductible_pct)) / 100
+    return result.quantize(TWO_PLACES, rounding=ROUND_HALF_UP)
+
+def effective_cost(gross: Decimal, vat_rate: float, vat_deductible_pct: float) -> Decimal:
+    # net_amount + (vat_amount * (1 - vat_deductible_pct / 100))
+    # Canonical formula from architecture.md — not a shorthand
+    va = vat_amount(gross, vat_rate)
+    na = net_amount(gross, vat_rate)
+    pct = Decimal(str(vat_deductible_pct))
+    result = na + (va * (1 - pct / 100))
+    return result.quantize(TWO_PLACES, rounding=ROUND_HALF_UP)
 ```
+
+**Rules:**
+- All intermediate calculations use `Decimal` — never `float`
+- Input conversion: `Decimal(str(float_or_string))` — never `Decimal(float(...))`
+- All results rounded to 2 decimal places with `ROUND_HALF_UP`
+- These functions are pure — no DB access, no side effects
 
 ---
 
@@ -271,10 +326,10 @@ tests/test_init_db.py            ← P1-I1 deliverable — do not touch
 
 ```
 → require_auth(request) — get user from request.state.user
-→ fetch all categories from db (for dropdown)
+→ fetch all categories from db ordered by direction, label
 → render create.html with:
     - categories list
-    - defaults: date=today, all other fields empty
+    - defaults: date=today (date.today().isoformat()), all other fields empty
     - errors=[] (no errors on fresh load)
     - form_data={} (no preserved values)
 ```
@@ -283,25 +338,32 @@ tests/test_init_db.py            ← P1-I1 deliverable — do not touch
 
 ```
 → require_auth(request) — get user from request.state.user
-→ read all form fields
-→ set logged_by = user["id"]  ← from session, never from form input
-→ validate_transaction(data, db) → errors
+→ read all form fields using Form(default="") or Form(default=None)
+→ normalise: strip strings, empty string → None for optional fields, cast numeric types
+→ set data["logged_by"] = user["id"]  ← from session, NEVER from form input
+→ set data["is_active"] = True
+→ errors = validate_transaction(data, db)
 → if errors:
+    re-fetch categories (needed to re-render dropdown)
     re-render create.html with:
     - categories list
-    - errors list (all shown together — not one at a time)
-    - form_data = submitted values (preserved so user sees what they typed)
-    return 422
+    - errors list (ALL errors shown at once — not one at a time)
+    - form_data = normalised submitted values (preserved so user sees what they typed)
+    return status_code=422
 → if valid:
-    INSERT INTO transactions (...) VALUES (...)
-    redirect to /transactions/  ← 302 redirect to list page
+    INSERT INTO transactions (
+        date, amount, direction, category_id, payment_method,
+        vat_rate, income_type, vat_deductible_pct, description, logged_by
+    ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    # is_active defaults to TRUE in schema; created_at defaults to CURRENT_TIMESTAMP
+    redirect to /transactions/  ← 302
 ```
 
 ### GET /transactions/
 
 ```
 → require_auth(request) — get user from request.state.user
-→ SELECT last 20 active transactions joined with categories and users:
+→ SELECT last 20 active transactions:
     SELECT t.*, c.label AS category_label, u.username AS logged_by_username
     FROM transactions t
     JOIN categories c ON t.category_id = c.category_id
@@ -309,8 +371,10 @@ tests/test_init_db.py            ← P1-I1 deliverable — do not touch
     WHERE t.is_active = TRUE
     ORDER BY t.created_at DESC
     LIMIT 20
-→ compute derived fields for display (vat_amount, net_amount, vat_reclaimable, effective_cost)
-→ render list.html with transactions
+→ for each row, compute derived fields using calculations.py:
+    vat_amt = vat_amount(Decimal(str(row["amount"])), row["vat_rate"])
+    eff_cost = effective_cost(...) for expense rows (income rows: not applicable / show dash)
+→ pass transactions + derived fields to list.html
 ```
 
 ### GET /categories
@@ -319,9 +383,18 @@ tests/test_init_db.py            ← P1-I1 deliverable — do not touch
 → SELECT category_id, name, label, direction, default_vat_rate, default_vat_deductible_pct
     FROM categories
     ORDER BY direction, label
-→ return JSONResponse
-→ Used by form.js to populate auto-defaults on category selection
-→ No auth required (category data is not sensitive — but AuthGate already protects all non-exempt routes)
+→ return JSONResponse([
+    {
+        "category_id": <int>,
+        "name": <str>,           ← internal code e.g. "petrol"
+        "label": <str>,          ← display name e.g. "Paliwo"
+        "direction": <str>,      ← "income" or "expense"
+        "default_vat_rate": <float>,
+        "default_vat_deductible_pct": <float | null>
+    },
+    ...
+  ])
+→ AuthGate protects this route — no special auth handling in the route handler
 ```
 
 ---
@@ -330,29 +403,32 @@ tests/test_init_db.py            ← P1-I1 deliverable — do not touch
 
 ```javascript
 // On DOMContentLoaded:
-// 1. Fetch /categories and build a lookup map: { category_id: {default_vat_rate, default_vat_deductible_pct, direction, name} }
+// 1. Fetch /categories → build lookup map: { category_id: {default_vat_rate, default_vat_deductible_pct, direction, name} }
+//    (response structure guaranteed by /categories route — see exact field names above)
 
 // On category change:
 // 2. Set vat_rate select to category default_vat_rate
-// 3. Set vat_deductible_pct select to category default_vat_deductible_pct
-// 4. If direction=expense and category default_vat_deductible_pct is null → do not set (leave as-is)
+// 3. If direction=expense: set vat_deductible_pct select to category default_vat_deductible_pct
+// 4. If category.default_vat_deductible_pct is null → do not change vat_deductible_pct
 
 // On income_type change:
-// 5. If income_type = internal → set vat_rate to 0, disable vat_rate field, add visual cue (greyed out)
-// 6. If income_type = external → re-enable vat_rate field, remove visual cue
+// 5. If income_type = "internal" → set vat_rate to "0", disable vat_rate field
+// 6. If income_type = "external" → re-enable vat_rate field (user may override)
+// 7. Clear the lock if user changes income_type back to "external"
 
 // On direction change:
-// 7. Show income_type row only when direction = income
-// 8. Show vat_deductible_pct row only when direction = expense
-// 9. If switching direction → clear income_type / vat_deductible_pct values
+// 8. Show income_type row (id="income-type-row") only when direction = "income"
+// 9. Show vat_deductible_pct row (id="vat-deductible-row") only when direction = "expense"
+// 10. On switch: clear income_type and vat_deductible_pct values; re-enable vat_rate if locked
 
 // On payment_method change:
-// 10. Show card reminder when payment_method = card
-// 11. Hide card reminder otherwise
+// 11. Show card reminder (id="card-reminder") when payment_method = "card"
+// 12. Hide card reminder otherwise
 
-// On category change (secondary check):
-// 12. If category is other_expense or other_income → show "(required)" indicator next to description
-// 13. Otherwise hide required indicator
+// On category change (secondary):
+// 13. Show description required indicator (id="desc-required") when category name is
+//     "other_expense" or "other_income"
+// 14. Hide otherwise
 ```
 
 ---
@@ -361,70 +437,78 @@ tests/test_init_db.py            ← P1-I1 deliverable — do not touch
 
 ### tests/test_validation.py — validation rule coverage
 
-```python
-# Each test calls validate_transaction(data, db) directly with an in-memory db.
+Each test calls `validate_transaction(data, db)` directly. Uses an in-memory SQLite db seeded with categories and users.
 
-def test_valid_income_transaction_accepted()
-def test_valid_expense_transaction_accepted()
-def test_internal_income_vat_rate_zero_accepted()
-def test_internal_income_nonzero_vat_rate_rejected()
+```python
+def test_valid_income_transaction_accepted()          # returns []
+def test_valid_expense_transaction_accepted()         # returns []
+def test_internal_income_vat_zero_accepted()          # income_type=internal, vat_rate=0 → accepted
+def test_internal_income_nonzero_vat_rejected()       # income_type=internal, vat_rate=23 → error
+def test_expense_vat_rate_override_accepted()         # category default 23%, user sets 5% → accepted
 def test_expense_without_vat_deductible_pct_rejected()
 def test_income_with_vat_deductible_pct_rejected()
-def test_expense_without_income_type_accepted()      # income_type should be None on expense
-def test_income_without_income_type_rejected()       # income_type is required on income
+def test_income_without_income_type_rejected()        # income_type=None on income row → error
+def test_expense_with_income_type_rejected()          # income_type set on expense row → error
 def test_other_expense_without_description_rejected()
 def test_other_income_without_description_rejected()
 def test_other_expense_with_description_accepted()
-def test_invalid_category_id_rejected()             # non-existent FK
-def test_invalid_vat_rate_rejected()                # e.g. vat_rate=7
-def test_invalid_payment_method_rejected()          # e.g. payment_method='cheque'
-def test_invalid_vat_deductible_pct_rejected()      # e.g. vat_deductible_pct=75
+def test_invalid_category_id_rejected()              # category_id not in table
+def test_direction_category_mismatch_rejected()      # income transaction with expense category
+def test_direction_category_match_accepted()         # income transaction with income category → []
+def test_invalid_vat_rate_rejected()                 # vat_rate=7
+def test_invalid_payment_method_rejected()           # payment_method='cheque'
+def test_invalid_vat_deductible_pct_rejected()       # vat_deductible_pct=75
 def test_zero_amount_rejected()
 def test_negative_amount_rejected()
-def test_direction_category_mismatch_rejected()     # income direction + expense category
+def test_invalid_date_format_rejected()              # date='not-a-date'
+def test_multiple_errors_returned_together()         # two invalid fields → both errors in list
 ```
 
 ### tests/test_transactions.py — route-level coverage
 
 ```python
-# Uses same client fixture as test_auth.py (opening balance pre-set, authenticated session).
-
 def test_create_form_loads(client)
     # GET /transactions/new → 200
 
-def test_create_transaction_success(client)
+def test_create_transaction_success_redirects(client)
     # POST /transactions/new with valid data → 302 redirect to /transactions/
 
 def test_create_transaction_saves_to_db(client)
-    # After POST, query db — transaction row exists with correct values
+    # After POST, query db — transaction row exists with all correct values
 
 def test_logged_by_set_from_session_not_form(client)
-    # logged_by in db matches session user id — not any value submitted in form
+    # POST with a forged logged_by in form data → saved row uses session user id
 
-def test_create_transaction_validation_error(client)
-    # POST with invalid data → 422, errors shown in response, form re-rendered with input preserved
+def test_create_transaction_shows_all_errors(client)
+    # POST with two invalid fields → 422, both errors present in response text
+
+def test_form_input_preserved_on_error(client)
+    # POST with description="test note" and one invalid field → "test note" present in response
 
 def test_internal_income_vat_rate_enforced(client)
-    # POST with income_type=internal and vat_rate=23 → 422, rejected
+    # POST with income_type=internal and vat_rate=23 → 422
 
 def test_other_expense_description_required(client)
-    # POST other_expense without description → 422, rejected
+    # POST other_expense without description → 422
 
 def test_transaction_list_loads(client)
     # GET /transactions/ → 200
 
 def test_transaction_list_shows_recent(client)
-    # Create transaction, then GET /transactions/ → transaction visible in response
+    # Create transaction, then GET /transactions/ → row visible in response
 
 def test_transaction_list_excludes_inactive(client)
-    # Mark transaction inactive, GET /transactions/ → not visible
+    # Insert inactive transaction directly in db → not visible in GET /transactions/
+
+def test_transaction_list_ordered_by_created_at(client)
+    # Insert two transactions → list shows them in created_at DESC order
 
 def test_categories_endpoint_returns_json(client)
-    # GET /categories → 200, JSON with category list
+    # GET /categories → 200, JSON array, each item has category_id/name/label/direction/default_vat_rate
 
-def test_unauthenticated_create_redirects(fresh_client)
+def test_unauthenticated_create_redirects(logged_out_client)
     # GET /transactions/new without session → redirect to /auth/login
-    # (fresh_client has opening balance set but no authenticated session)
+    # (logged_out_client: opening balance set, NOT authenticated — separate fixture)
 ```
 
 ---
@@ -441,6 +525,9 @@ def test_unauthenticated_create_redirects(fresh_client)
 - Do not add JavaScript frameworks — vanilla JS only
 - Do not accept `category_id` as a free-text string
 - Do not set `logged_by` from form input — always from session
+- Do not open new database connections inside `validate_transaction` — use the passed `db`
+- Do not use `float` arithmetic for monetary calculations — use `Decimal` throughout
+- Do not add `/categories` to EXEMPT_PATHS — AuthGate already protects it correctly
 - Do not modify frozen P1-I1 / P1-I2 files
 
 ---
@@ -448,26 +535,25 @@ def test_unauthenticated_create_redirects(fresh_client)
 ## Handoff: What P1-I4 Needs From This Iteration
 
 ```python
-# Transaction service available:
-# Transactions are stored and queryable.
-# validate_transaction() is the single enforcement point.
+# Transaction create and list are functional.
+# validate_transaction() is the single enforcement point — P1-I4 uses it too.
 
 # P1-I4 will add:
 # - GET  /transactions/<id>         — detail view
 # - POST /transactions/<id>/void    — soft-delete with void_reason
 # - POST /transactions/<id>/correct — void + pre-fill create form
 
-# P1-I4 must use the same validate_transaction() from this iteration.
+# P1-I4 must import and use validate_transaction from this iteration.
 # P1-I4 must not re-implement any validation rules.
 ```
 
 ---
 
-## Execution Workflow
+## Execution Workflow (single-agent path)
 
-Follow this sequence exactly. Do not skip or reorder steps.
+This workflow applies if a single agent is executing the full iteration. For multi-agent execution, see `iterations/p1-i3/tasks.md` — each task uses its own branch and PR.
 
-### Step 0 — Branch setup
+### Step 0 — Branch setup (single agent only)
 
 ```bash
 git checkout main
@@ -493,55 +579,33 @@ ruff check .
 # Expected: clean, exit code 0
 ```
 
-If either fails: stop. Do not proceed until baseline is clean.
+### Step 2 — Implement in order
 
-### Step 2 — Read before writing
+1. `app/services/validation.py`
+2. `app/services/calculations.py`
+3. `app/routes/transactions.py`
+4. `app/templates/transactions/create.html`
+5. `app/templates/transactions/list.html`
+6. `static/form.js`
+7. `tests/test_validation.py` + `tests/test_transactions.py`
 
-Read all files listed in "Files to Read Before Starting" in order. Do not write a line of implementation until you understand the validation rules and VAT formulas.
-
-### Step 3 — Plan before multi-file changes
-
-This task touches more than 2 files. Present the full implementation plan (which files, what changes, in what order) before writing any code. Wait for confirmation.
-
-### Step 4 — Implement
-
-Build in this order:
-1. `app/services/validation.py` — all validation rules first, no routes yet
-2. `app/services/calculations.py` — VAT formulas
-3. `app/routes/transactions.py` — routes after services are complete
-4. `app/templates/transactions/create.html` — create form
-5. `app/templates/transactions/list.html` — list template
-6. `static/form.js` — client-side behaviour last
-7. `tests/test_validation.py` + `tests/test_transactions.py` — tests last
-
-### Step 5 — Test and lint
+### Step 3 — Test and lint
 
 ```bash
 pytest
 # Must pass: all 25 P1-I2 tests + all new P1-I3 tests. Zero failures.
 
 ruff check .
-# Must be clean. Fix all issues before committing.
+# Must be clean.
 ```
 
-Do not submit if either command fails.
-
-### Step 6 — Verify scope
+### Step 4 — Verify scope
 
 ```bash
 git diff --name-only main
 ```
 
-Every file in the output must appear in the allowed files list. Revert any unexpected file before committing.
-
-### Step 7 — Commit and mark PR ready
-
-```bash
-git add <specific files — do not use git add -A>
-git commit -m "feat: transaction capture form with validation, VAT logic, and recent list (P1-I3)"
-
-gh pr ready feature/phase-1/iteration-3
-```
+Every file in the output must be in the allowed list.
 
 ---
 
@@ -551,20 +615,22 @@ This iteration is complete when ALL of the following are true:
 
 - [ ] GET `/transactions/new` renders form with all required fields for authenticated users
 - [ ] POST `/transactions/new` with valid data saves transaction and redirects to list
-- [ ] POST `/transactions/new` with invalid data re-renders form with all errors shown, input preserved
+- [ ] POST `/transactions/new` with invalid data re-renders with ALL errors shown, input preserved, 422
 - [ ] `logged_by` is always `users.id` from session — never from form input, never null
 - [ ] `income_type = internal` with any `vat_rate ≠ 0` is rejected server-side
 - [ ] Expense row without `vat_deductible_pct` is rejected server-side
 - [ ] `other_expense` / `other_income` without description is rejected server-side
+- [ ] VAT rate override of category default is accepted (only internal rule restricts it)
 - [ ] Category auto-defaults fire on category change (form.js + `/categories` endpoint)
 - [ ] Card payment reminder shown/hidden by form.js
 - [ ] Gross amount label "Enter gross amount (VAT included)" persistent at all times
-- [ ] GET `/transactions/` shows last 20 active transactions, correct columns, `created_at DESC`
-- [ ] Inactive transactions (`is_active = FALSE`) not shown in list
-- [ ] All test_validation.py tests pass
-- [ ] All test_transactions.py tests pass
+- [ ] GET `/transactions/` shows last 20 active transactions, `created_at DESC`, with derived columns
+- [ ] Inactive transactions not shown in list
+- [ ] Derived values (vat_amount, effective_cost) displayed but never stored in DB
+- [ ] All test_validation.py tests pass (22 tests)
+- [ ] All test_transactions.py tests pass (14 tests)
 - [ ] 25 P1-I2 regression tests still pass
 - [ ] Ruff clean
 - [ ] Only allowed files modified
 - [ ] No LLM calls anywhere
-- [ ] No derived values stored in database
+- [ ] No `Decimal(float(...))` — all monetary Decimal conversions via `Decimal(str(...))`
