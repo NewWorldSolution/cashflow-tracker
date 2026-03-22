@@ -4,5 +4,63 @@
 
 {% block content %}
 <h1>Dashboard</h1>
-<p>Logged in as: <strong>{{ request.state.user["username"] }}</strong></p>
+
+<div class="dashboard-grid">
+    <div class="card">
+        <div class="text-sm text-muted">Opening Balance</div>
+        <div class="card-value">{{ opening_balance | default('Not set', true) }}</div>
+        <div class="text-sm text-muted">as of {{ as_of_date | default('—', true) }}</div>
+    </div>
+    <div class="card">
+        <div class="text-sm text-muted">Total Income</div>
+        <div class="card-value">{{ "%.2f"|format(total_income) }}</div>
+    </div>
+    <div class="card">
+        <div class="text-sm text-muted">Total Expenses</div>
+        <div class="card-value">{{ "%.2f"|format(total_expense) }}</div>
+    </div>
+    <div class="card">
+        <div class="text-sm text-muted">Transactions</div>
+        <div class="card-value">{{ active_count }} active</div>
+        <div class="text-sm text-muted">{{ voided_count }} voided</div>
+    </div>
+</div>
+
+<div class="flex gap-3 mt-4 mb-6">
+    <a href="/transactions/new" class="btn btn-primary">+ New Transaction</a>
+    <a href="/transactions/" class="btn btn-secondary">View All Transactions</a>
+</div>
+
+<h2>Recent Transactions</h2>
+{% if recent %}
+<div class="table-wrap">
+    <table>
+        <thead>
+            <tr>
+                <th>Date</th>
+                <th>Category</th>
+                <th>Direction</th>
+                <th>Payment</th>
+                <th class="text-right">Amount</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for t in recent %}
+            <tr>
+                <td><a href="/transactions/{{ t.id }}">{{ t.date }}</a></td>
+                <td>{{ t.category_label }}</td>
+                <td>{{ t.direction }}</td>
+                <td>{{ t.payment_method }}</td>
+                <td class="text-right">{{ "%.2f"|format(t.amount) }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% else %}
+<div class="empty-state">
+    <p>No transactions yet.</p>
+    <a href="/transactions/new" class="btn btn-primary mt-4">+ New Transaction</a>
+</div>
+{% endif %}
 {% endblock %}
