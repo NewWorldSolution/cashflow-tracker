@@ -27,7 +27,7 @@ Sequential: each task depends on the previous one being ✅ DONE.
 |-------|------------------------------------|-------------|------------|------------|-------------------------------------------|
 | I4-T1 | Transaction service                | Codex       | ✅ DONE    | —          | `feature/p1-i4/t1-transaction-service`    |
 | I4-T2 | Void/correct routes                | Claude Code | ✅ DONE        | I4-T1  | `feature/p1-i4/t2-routes`                |
-| I4-T3 | Void/correct templates             | Claude Code | ✅ DONE        | I4-T2  | `feature/p1-i4/t3-templates`             |
+| I4-T3 | Void/correct templates             | Claude Code | 🔄 IN PROGRESS | I4-T2  | `feature/p1-i4/t3-templates`             |
 | I4-T4 | Tests + ruff + PR ready            | Codex       | ⏳ WAITING | I4-T3      | `feature/p1-i4/t4-tests`                 |
 
 ---
