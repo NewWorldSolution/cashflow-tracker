@@ -365,6 +365,11 @@ dl {
   color: #991b1b;
 }
 
+.badge-corrected {
+  background: #fef3c7;
+  color: #92400e;
+}
+
 /* ---------------------------------------------------------------
    Flash messages
    --------------------------------------------------------------- */
@@ -657,4 +662,18 @@ dl {
   .detail-grid dt {
     margin-top: var(--space-2);
   }
+}
+
+/* ---------------------------------------------------------------
+   Split view (list page — desktop only)
+   --------------------------------------------------------------- */
+
+.split-view {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 24px;
+}
+
+.split-view-col h3 {
+  margin-bottom: 12px;
 }

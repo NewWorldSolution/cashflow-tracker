@@ -6,12 +6,13 @@
     <a href="/transactions/new" class="btn btn-primary">+ New Transaction</a>
   </div>
 
-  <div class="mb-4">
+  <div class="mb-4 flex gap-3">
     {% if show_all %}
     <a href="/transactions/" class="btn btn-sm btn-secondary">Show Active Only</a>
     {% else %}
     <a href="/transactions/?show_all=true" class="btn btn-sm btn-secondary">Show All (incl. voided)</a>
     {% endif %}
+    <button id="split-view-toggle" class="btn btn-sm btn-secondary" style="display:none;">Split View</button>
   </div>
 
   {% if transactions %}
@@ -19,6 +20,7 @@
     <table>
       <thead>
         <tr>
+          <th>#</th>
           <th>Date</th>
           <th>Category</th>
           <th>Direction</th>
@@ -31,6 +33,7 @@
       <tbody>
         {% for t in transactions %}
         <tr class="{{ 'row-voided' if not t.is_active else '' }}">
+          <td><a href="/transactions/{{ t.id }}">#{{ t.id }}</a></td>
           <td><a href="/transactions/{{ t.id }}">{{ t.date }}</a></td>
           <td>{{ t.category_label }}</td>
           <td>{{ t.direction }}</td>
@@ -41,6 +44,8 @@
           <td>
             {% if t.is_active %}
             <span class="badge badge-active">Active</span>
+            {% elif t.replacement_transaction_id %}
+            <span class="badge badge-corrected">Corrected</span>
             {% else %}
             <span class="badge badge-voided">Voided</span>
             {% endif %}
@@ -58,4 +63,76 @@
   </div>
   {% endif %}
 </div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+  var toggle = document.getElementById('split-view-toggle');
+  if (!toggle) return;
+
+  if (window.innerWidth >= 768) {
+    toggle.style.display = '';
+  }
+
+  var splitActive = false;
+
+  toggle.addEventListener('click', function() {
+    splitActive = !splitActive;
+    var tableWrap = document.querySelector('.table-wrap');
+    if (!tableWrap) return;
+
+    if (splitActive) {
+      toggle.textContent = 'Combined View';
+      tableWrap.style.display = 'none';
+      buildSplitView();
+    } else {
+      toggle.textContent = 'Split View';
+      tableWrap.style.display = '';
+      var existing = document.getElementById('split-view-container');
+      if (existing) existing.remove();
+    }
+  });
+
+  function buildSplitView() {
+    var existing = document.getElementById('split-view-container');
+    if (existing) existing.remove();
+
+    var rows = document.querySelectorAll('.table-wrap tbody tr');
+    var incomeRows = [];
+    var expenseRows = [];
+
+    rows.forEach(function(row) {
+      var cells = row.querySelectorAll('td');
+      var direction = '';
+      cells.forEach(function(cell) {
+        var text = cell.textContent.trim().toLowerCase();
+        if (text === 'income' || text === 'expense') direction = text;
+      });
+      if (direction === 'income') incomeRows.push(row.cloneNode(true));
+      else expenseRows.push(row.cloneNode(true));
+    });
+
+    var container = document.createElement('div');
+    container.id = 'split-view-container';
+    container.className = 'split-view';
+
+    container.innerHTML = '<div class="split-view-col"><h3>Income</h3><div class="table-wrap">' +
+      '<table><thead>' + document.querySelector('.table-wrap thead').innerHTML + '</thead><tbody></tbody></table></div></div>' +
+      '<div class="split-view-col"><h3>Expenses</h3><div class="table-wrap">' +
+      '<table><thead>' + document.querySelector('.table-wrap thead').innerHTML + '</thead><tbody></tbody></table></div></div>';
+
+    var bodies = container.querySelectorAll('tbody');
+    incomeRows.forEach(function(r) { bodies[0].appendChild(r); });
+    expenseRows.forEach(function(r) { bodies[1].appendChild(r); });
+
+    if (incomeRows.length === 0) {
+      bodies[0].innerHTML = '<tr><td colspan="99" class="text-center text-muted" style="padding:24px;">No income transactions</td></tr>';
+    }
+    if (expenseRows.length === 0) {
+      bodies[1].innerHTML = '<tr><td colspan="99" class="text-center text-muted" style="padding:24px;">No expense transactions</td></tr>';
+    }
+
+    document.querySelector('.table-wrap').insertAdjacentElement('afterend', container);
+  }
+});
+</script>
 {% endblock %}

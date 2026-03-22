@@ -54,6 +54,15 @@
 
   <!-- Section 3 — Details -->
   <div class="form-section">
+    <!-- Income type row — shown/hidden by JS (above category because it determines locks) -->
+    <div class="form-group" id="income-type-row" style="display:none">
+      <label class="form-label" for="income_type">Income Type</label>
+      <select id="income_type" name="income_type">
+        <option value="">— select —</option>
+        <option value="internal" {% if form_data.get('income_type') == 'internal' %}selected{% endif %}>Internal</option>
+        <option value="external" {% if form_data.get('income_type') == 'external' %}selected{% endif %}>External</option>
+      </select>
+    </div>
     <div class="form-row">
       <div class="form-group">
         <label class="form-label" for="category_id">Category</label>
@@ -82,15 +91,6 @@
           {% endfor %}
         </select>
       </div>
-    </div>
-    <!-- Income type row — shown/hidden by JS -->
-    <div class="form-group" id="income-type-row" style="display:none">
-      <label class="form-label" for="income_type">Income Type</label>
-      <select id="income_type" name="income_type">
-        <option value="">— select —</option>
-        <option value="internal" {% if form_data.get('income_type') == 'internal' %}selected{% endif %}>Internal</option>
-        <option value="external" {% if form_data.get('income_type') == 'external' %}selected{% endif %}>External</option>
-      </select>
     </div>
     <!-- Card reminder — shown/hidden by JS -->
     <div id="card-reminder" class="callout callout-info mt-2" style="display:none">
