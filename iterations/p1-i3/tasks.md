@@ -26,9 +26,9 @@ T5 closes the iteration — runs last.
 
 | ID    | Title                                      | Owner       | Status     | Depends on   | Branch                              |
 |-------|--------------------------------------------|-------------|------------|--------------|-------------------------------------|
-| I3-T1 | Service layer (validation + calculations)  | Codex       | ⏳ WAITING | —            | `feature/p1-i3/t1-services`         |
-| I3-T2 | Transaction routes                         | Claude Code | ⏳ WAITING | I3-T1        | `feature/p1-i3/t2-routes`           |
-| I3-T3 | Create template                            | Codex       | ⏳ WAITING | I3-T1        | `feature/p1-i3/t3-create-template`  |
+| I3-T1 | Service layer (validation + calculations)  | Codex       | ✅ DONE    | —            | `feature/p1-i3/t1-services`         |
+| I3-T2 | Transaction routes                         | Claude Code | 🔄 IN PROGRESS | I3-T1    | `feature/p1-i3/t2-routes`           |
+| I3-T3 | Create template                            | Codex       | 🔄 IN PROGRESS | I3-T1    | `feature/p1-i3/t3-create-template`  |
 | I3-T4 | List template + form.js                   | Claude Code | ⏳ WAITING | I3-T2, I3-T3 | `feature/p1-i3/t4-list-and-js`      |
 | I3-T5 | Tests + ruff + PR ready                    | Codex       | ⏳ WAITING | I3-T4        | `feature/p1-i3/t5-tests`            |
 
