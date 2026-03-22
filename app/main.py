@@ -96,6 +96,14 @@ class AuthGate(BaseHTTPMiddleware):
         return await call_next(request)
 
 
+class FlashMessageMiddleware(BaseHTTPMiddleware):
+    """Pop flash data from the session and expose it on the request state."""
+
+    async def dispatch(self, request: Request, call_next):
+        request.state.flash = request.session.pop("flash", None)
+        return await call_next(request)
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Initialise database on startup."""
@@ -125,6 +133,7 @@ def create_app(database_url: str | None = None) -> FastAPI:
     app = FastAPI(title="cashflow-tracker", lifespan=lifespan)
 
     app.add_middleware(AuthGate)
+    app.add_middleware(FlashMessageMiddleware)
     app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
 
     from app.routes.settings import router as settings_router

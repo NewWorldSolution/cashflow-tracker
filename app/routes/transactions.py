@@ -131,6 +131,10 @@ async def post_create_transaction(
         ),
     )
     db.commit()
+    request.session["flash"] = {
+        "type": "success",
+        "message": "Transaction saved successfully.",
+    }
     return RedirectResponse(url="/transactions/", status_code=302)
 
 
@@ -226,6 +230,7 @@ async def post_void_transaction(
             status_code=422,
         )
     db.commit()
+    request.session["flash"] = {"type": "success", "message": "Transaction voided."}
     return RedirectResponse(url="/transactions/", status_code=302)
 
 
@@ -363,6 +368,10 @@ async def post_correct_transaction(
         (user["id"], new_id, transaction_id),
     )
     db.commit()
+    request.session["flash"] = {
+        "type": "success",
+        "message": "Transaction corrected. Original has been voided.",
+    }
     return RedirectResponse(url="/transactions/", status_code=302)
 
 
