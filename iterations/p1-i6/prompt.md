@@ -169,7 +169,7 @@ db/schema.sql                           ← modify: add voided_at column (T5)
 db/init_db.py                           ← modify: if migration logic needed (T5)
 app/services/transaction_service.py     ← modify: set voided_at on void/correct (T5)
 app/routes/transactions.py              ← modify: pass voided_at to template (T5)
-tests/test_transactions.py              ← extend: voided_at tests, language switch test (T5)
+tests/test_transactions.py              ← extend: voided_at tests (T5)
 static/style.css                        ← extend: language switcher styling if needed (T3)
 iterations/p1-i6/tasks.md               ← status updates only
 ```
