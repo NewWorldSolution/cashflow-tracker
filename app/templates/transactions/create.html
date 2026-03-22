@@ -5,128 +5,146 @@
 {% block content %}
 
 {% if errors %}
-<ul class="errors" style="color:#cc0000;background:#fff0f0;border:1px solid #ffcccc;padding:8px 16px;border-radius:4px;margin-bottom:16px;">
-  {% for error in errors %}
-    <li>{{ error }}</li>
-  {% endfor %}
-</ul>
+<div class="error-summary">
+  <strong>Please fix the following errors:</strong>
+  <ul>
+    {% for e in errors %}
+    <li>{{ e }}</li>
+    {% endfor %}
+  </ul>
+</div>
 {% endif %}
 
 <h2>New transaction</h2>
 
 <form method="post" action="{{ form_action | default('/transactions/new') }}">
 
-  <p>
-    <label>
-      <input type="radio" name="direction" value="income"
-        {% if form_data.get('direction') == 'income' %}checked{% endif %}>
-      Income
-    </label>
-    &nbsp;
-    <label>
-      <input type="radio" name="direction" value="expense"
-        {% if form_data.get('direction') == 'expense' %}checked{% endif %}>
-      Expense
-    </label>
-  </p>
-
-  <p>
-    <label for="date">Date</label><br>
-    <input type="date" id="date" name="date" value="{{ form_data.get('date', today) }}" required>
-  </p>
-
-  <p>
-    <label for="amount">Enter gross amount (VAT included)</label><br>
-    <input type="number" id="amount" name="amount" step="0.01" min="0.01"
-           value="{{ form_data.get('amount', '') }}" required>
-  </p>
-
-  <p>
-    <label for="category_id">Category</label><br>
-    <select id="category_id" name="category_id">
-      <option value="">— select —</option>
-      {% for cat in categories %}
-        {% if cat.name != 'internal_transfer' %}
-        <option value="{{ cat.category_id }}"
-          data-direction="{{ cat.direction }}"
-          {% if form_data.get('category_id') | string == cat.category_id | string %}selected{% endif %}>
-          {{ cat.label }}
-        </option>
-        {% endif %}
-      {% endfor %}
-    </select>
-  </p>
-
-  <p>
-    <label for="payment_method">Payment method</label><br>
-    <select id="payment_method" name="payment_method">
-      <option value="">— select —</option>
-      {% for pm in ['cash', 'card', 'transfer'] %}
-        <option value="{{ pm }}"
-          {% if form_data.get('payment_method') == pm %}selected{% endif %}>
-          {{ pm | capitalize }}
-        </option>
-      {% endfor %}
-    </select>
-  </p>
-
-  <div id="card-reminder" style="display:none;background:#fff8dc;border:1px solid #e0c000;padding:8px;border-radius:4px;margin-bottom:8px;">
-    Log gross amount. Card commission is logged separately at month end from terminal invoice
+  <!-- Section 1 — Basics -->
+  <div class="form-section">
+    <div class="form-group">
+      <label class="form-label" for="date">Date</label>
+      <input type="date" id="date" name="date" value="{{ form_data.get('date', today) }}" required>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Direction</label>
+      <div class="toggle-group">
+        <label class="toggle-btn {{ 'active' if form_data.get('direction') == 'income' else '' }}">
+          <input type="radio" name="direction" value="income"
+            {% if form_data.get('direction') == 'income' %}checked{% endif %} style="display:none">
+          Income
+        </label>
+        <label class="toggle-btn {{ 'active' if form_data.get('direction', 'expense') == 'expense' else '' }}">
+          <input type="radio" name="direction" value="expense"
+            {% if form_data.get('direction', 'expense') == 'expense' %}checked{% endif %} style="display:none">
+          Expense
+        </label>
+      </div>
+    </div>
   </div>
 
-  <p>
-    <label for="vat_rate">VAT rate (%)</label><br>
-    <select id="vat_rate" name="vat_rate">
-      {% for rate in [0, 5, 8, 23] %}
-        <option value="{{ rate }}"
-          {% if form_data.get('vat_rate') | string == rate | string %}selected{% endif %}>
-          {{ rate }}%
-        </option>
-      {% endfor %}
-    </select>
-  </p>
+  <!-- Section 2 — Amount -->
+  <div class="form-section">
+    <div class="form-group">
+      <label class="form-label" for="amount">Amount</label>
+      <input type="number" id="amount" name="amount" step="0.01" min="0.01"
+             value="{{ form_data.get('amount', '') }}" required placeholder="0.00">
+      <div class="form-helper">Enter gross amount (VAT included)</div>
+    </div>
+  </div>
 
-  <div id="income-type-row" style="display:none;">
-    <p>
-      <label for="income_type">Income type</label><br>
+  <!-- Section 3 — Details -->
+  <div class="form-section">
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="category_id">Category</label>
+        <select id="category_id" name="category_id">
+          <option value="">— select —</option>
+          {% for cat in categories %}
+            {% if cat.name != 'internal_transfer' %}
+            <option value="{{ cat.category_id }}"
+              data-direction="{{ cat.direction }}"
+              {% if form_data.get('category_id') | string == cat.category_id | string %}selected{% endif %}>
+              {{ cat.label }}
+            </option>
+            {% endif %}
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="payment_method">Payment Method</label>
+        <select id="payment_method" name="payment_method">
+          <option value="">— select —</option>
+          {% for pm in ['cash', 'card', 'transfer'] %}
+            <option value="{{ pm }}"
+              {% if form_data.get('payment_method') == pm %}selected{% endif %}>
+              {{ pm | capitalize }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
+    <!-- Income type row — shown/hidden by JS -->
+    <div class="form-group" id="income-type-row" style="display:none">
+      <label class="form-label" for="income_type">Income Type</label>
       <select id="income_type" name="income_type">
         <option value="">— select —</option>
         <option value="internal" {% if form_data.get('income_type') == 'internal' %}selected{% endif %}>Internal</option>
         <option value="external" {% if form_data.get('income_type') == 'external' %}selected{% endif %}>External</option>
       </select>
-    </p>
+    </div>
+    <!-- Card reminder — shown/hidden by JS -->
+    <div id="card-reminder" class="callout callout-info mt-2" style="display:none">
+      Log gross amount. Card commission is logged separately at month end from terminal invoice.
+    </div>
   </div>
 
-  <div id="vat-deductible-row" style="display:none;">
-    <p>
-      <label for="vat_deductible_pct">VAT deductible (%)</label><br>
-      <select id="vat_deductible_pct" name="vat_deductible_pct">
-        <option value="">— select —</option>
-        {% for pct in [0, 50, 100] %}
-          <option value="{{ pct }}"
-            {% if form_data.get('vat_deductible_pct') | string == pct | string %}selected{% endif %}>
-            {{ pct }}%
-          </option>
-        {% endfor %}
-      </select>
-    </p>
+  <!-- Section 4 — VAT -->
+  <div class="form-section">
+    <div class="form-row">
+      <div class="form-group">
+        <label class="form-label" for="vat_rate">VAT Rate (%)</label>
+        <select id="vat_rate" name="vat_rate">
+          {% for rate in [0, 5, 8, 23] %}
+            <option value="{{ rate }}"
+              {% if form_data.get('vat_rate') | string == rate | string %}selected{% endif %}>
+              {{ rate }}%
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="form-group" id="vat-deductible-row" style="display:none">
+        <label class="form-label" for="vat_deductible_pct">VAT Deductible (%)</label>
+        <select id="vat_deductible_pct" name="vat_deductible_pct">
+          <option value="">— select —</option>
+          {% for pct in [0, 50, 100] %}
+            <option value="{{ pct }}"
+              {% if form_data.get('vat_deductible_pct') | string == pct | string %}selected{% endif %}>
+              {{ pct }}%
+            </option>
+          {% endfor %}
+        </select>
+      </div>
+    </div>
   </div>
 
-  <p>
-    <label for="description">
-      Description
-      <span id="desc-required" style="display:none;color:#cc0000;"> (required)</span>
-    </label><br>
-    <textarea id="description" name="description" rows="3" cols="50">{{ form_data.get('description', '') }}</textarea>
-  </p>
+  <!-- Section 5 — Optional -->
+  <div class="form-section">
+    <div class="form-group">
+      <label class="form-label" for="description">
+        Description
+        <span id="desc-required" class="text-sm" style="display:none; color: var(--color-destructive);">(required)</span>
+      </label>
+      <textarea id="description" name="description" rows="3" placeholder="Optional notes...">{{ form_data.get('description', '') }}</textarea>
+    </div>
+  </div>
 
-  <p>
-    <button type="submit">Save transaction</button>
-  </p>
+  <!-- Buttons -->
+  <div class="flex gap-3 mt-4">
+    <button type="submit" class="btn btn-primary btn-lg">Save Transaction</button>
+    <a href="/transactions/" class="btn btn-secondary btn-lg">Cancel</a>
+  </div>
 
 </form>
-
-<a href="/transactions/">← Back to transactions</a>
 
 <script src="/static/form.js"></script>
 

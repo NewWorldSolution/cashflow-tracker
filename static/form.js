@@ -56,6 +56,9 @@ document.addEventListener('DOMContentLoaded', function () {
       if (vatRateField) _unlockField(vatRateField);
       const paymentField = document.querySelector('select[name="payment_method"]');
       if (paymentField) _unlockField(paymentField);
+      // Toggle button active class
+      document.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.remove('active'));
+      this.closest('.toggle-btn').classList.add('active');
     });
   });
 
