@@ -46,11 +46,13 @@
     <select id="category_id" name="category_id">
       <option value="">— select —</option>
       {% for cat in categories %}
+        {% if cat.name != 'internal_transfer' %}
         <option value="{{ cat.category_id }}"
           data-direction="{{ cat.direction }}"
           {% if form_data.get('category_id') | string == cat.category_id | string %}selected{% endif %}>
           {{ cat.label }}
         </option>
+        {% endif %}
       {% endfor %}
     </select>
   </p>
