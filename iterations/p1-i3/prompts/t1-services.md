@@ -46,13 +46,14 @@ def validate_transaction(data: dict, db: sqlite3.Connection) -> list[str]:
 ```
 
 **Contract:**
-- `data` contains normalised values (strings stripped, empty → None, numeric types cast) — see prompt.md "Data Normalisation" section for what the route handler does before calling this
+- `data` contains stripped strings with empty optional fields normalised to `None`
+- user-entered numeric/date fields may still be strings at validation time; this function must validate conversion safely
 - `db` is the live connection from the route handler — do not open a new connection
 - Returns a list of error strings (human-readable). Empty list = transaction is valid.
-- Never raises — catch all exceptions and add to error list
+- Never raises — catch conversion/type issues and add them to the error list
 - Collect ALL errors before returning — do not stop at the first failure
 
-**22 validation rules to enforce:**
+**15 validation rules to enforce:**
 
 | # | Rule |
 |---|------|

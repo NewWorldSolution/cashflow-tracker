@@ -43,7 +43,7 @@ T5 closes the iteration — runs last.
 | I3-T3 | `iterations/p1-i3/prompts/t3-create-template.md` | `iterations/p1-i3/reviews/review-t3.md`  | Claude Code |
 | I3-T4 | `iterations/p1-i3/prompts/t4-list-and-js.md`     | `iterations/p1-i3/reviews/review-t4.md`  | Claude Code |
 | I3-T5 | `iterations/p1-i3/prompts/t5-tests.md`           | `iterations/p1-i3/reviews/review-t5.md`  | Claude Code |
-| —     | —                                                | `iterations/p1-i3/reviews/review-iteration.md` | Claude Code (QA) — created after T5 closes |
+| —     | —                                                | `iterations/p1-i3/reviews/review-iteration.md` | Claude Code (QA) |
 
 ---
 
@@ -68,7 +68,7 @@ app/services/__init__.py     ← check if exists before creating; empty package 
 # app/services/validation.py
 
 validate_transaction(data: dict, db: sqlite3.Connection) -> list[str]
-  # Enforces ALL 22 rules from prompt.md "Validation Rules" section.
+  # Enforces ALL 15 rules from prompt.md "Validation Rules" section.
   # Returns list of error strings. Empty = valid. Never raises.
   # db is the live connection passed from the route handler — do not open a new one.
   # Collect ALL errors before returning — do not stop at first error.

@@ -231,14 +231,12 @@ Before calling `validate_transaction`, the route handler must normalise raw form
 # 1. Strip whitespace from all string fields
 # 2. Convert empty strings to None for optional fields:
 #    income_type, vat_deductible_pct, description → None if empty string
-# 3. Convert numeric fields:
-#    amount: Decimal(str(raw_amount))   ← NEVER Decimal(float(...))
-#    vat_rate: float(raw_vat_rate)
-#    vat_deductible_pct: float(raw) if not None
-#    category_id: int(raw_category_id)
+# 3. Keep user-entered date/numeric fields as stripped strings:
+#    amount, vat_rate, vat_deductible_pct, category_id, date
+#    validate_transaction is responsible for conversion checks and must never raise
 # 4. logged_by = user["id"]  ← from session, never from form input
 # 5. is_active = True         ← default, not a form field
-# 6. date: accept as string (YYYY-MM-DD) — validate format in validate_transaction
+# 6. After validate_transaction returns [], the route may safely cast values for INSERT/calculations
 ```
 
 ---
@@ -251,7 +249,7 @@ Before calling `validate_transaction`, the route handler must normalise raw form
 # Never raises — catches conversion errors and adds them to the error list.
 # db is the live connection passed from the caller — do not open a new connection inside.
 
-# Rules (all must be checked; collect ALL errors before returning):
+# Rules (all 15 must be checked; collect ALL errors before returning):
 # 1.  date required; must be parseable as YYYY-MM-DD
 # 2.  direction must be 'income' or 'expense'
 # 3.  amount must be positive Decimal (> 0); reject zero, negative, non-numeric
@@ -339,7 +337,8 @@ def effective_cost(gross: Decimal, vat_rate: float, vat_deductible_pct: float) -
 ```
 → require_auth(request) — get user from request.state.user
 → read all form fields using Form(default="") or Form(default=None)
-→ normalise: strip strings, empty string → None for optional fields, cast numeric types
+→ normalise: strip strings, empty string → None for optional fields
+→ keep user-entered date/numeric fields as strings for validation
 → set data["logged_by"] = user["id"]  ← from session, NEVER from form input
 → set data["is_active"] = True
 → errors = validate_transaction(data, db)
@@ -348,9 +347,14 @@ def effective_cost(gross: Decimal, vat_rate: float, vat_deductible_pct: float) -
     re-render create.html with:
     - categories list
     - errors list (ALL errors shown at once — not one at a time)
-    - form_data = normalised submitted values (preserved so user sees what they typed)
+    - form_data = submitted values after string normalisation (preserved so user sees what they typed)
     return status_code=422
 → if valid:
+    cast values safely for INSERT:
+    - amount = Decimal(str(data["amount"]))
+    - vat_rate = float(data["vat_rate"])
+    - vat_deductible_pct = float(data["vat_deductible_pct"]) if data["vat_deductible_pct"] is not None else None
+    - category_id = int(data["category_id"])
     INSERT INTO transactions (
         date, amount, direction, category_id, payment_method,
         vat_rate, income_type, vat_deductible_pct, description, logged_by

@@ -102,10 +102,10 @@ from app.services.validation import validate_transaction
 
 def make_db():
     """In-memory db seeded with categories and one test user."""
-    from db.init_db import init_db
+    from db.init_db import initialise_db
     db = sqlite3.connect(":memory:")
     db.row_factory = sqlite3.Row
-    init_db(db)
+    initialise_db(db)
     return db
 
 def valid_income():

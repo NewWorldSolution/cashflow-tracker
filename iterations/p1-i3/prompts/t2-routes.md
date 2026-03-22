@@ -51,12 +51,10 @@ GET  /categories           → JSON list of all categories with defaults
 ```python
 # Applied to raw Form data before passing to validate_transaction:
 # 1. Strip whitespace from all string fields
-# 2. Empty string → None for: income_type, description
-# 3. Cast:
-#    category_id: int(raw) if raw else None
-#    amount:      Decimal(str(raw_amount.strip())) if raw else None
-#    vat_rate:    float(raw_vat_rate) if raw else None
-#    vat_deductible_pct: float(raw) if raw not in (None, '') else None
+# 2. Empty string → None for: income_type, vat_deductible_pct, description
+# 3. Keep user-entered date/numeric fields as stripped strings:
+#    category_id, amount, vat_rate, vat_deductible_pct, date
+#    validate_transaction is responsible for conversion checks
 # 4. Set logged_by = user["id"]   ← from session, NEVER from form input
 # 5. Set is_active = True
 ```
@@ -74,13 +72,18 @@ GET  /categories           → JSON list of all categories with defaults
 #           {"request": request, "categories": cats, "errors": errors, "form_data": data},
 #           status_code=422)
 # 6. if valid:
+#       cast values safely after validation has returned []:
+#       amount = Decimal(str(data["amount"]))
+#       vat_rate = float(data["vat_rate"])
+#       vat_deductible_pct = float(data["vat_deductible_pct"]) if data["vat_deductible_pct"] is not None else None
+#       category_id = int(data["category_id"])
 #       db.execute(
 #           "INSERT INTO transactions (date, amount, direction, category_id, payment_method, "
 #           "vat_rate, income_type, vat_deductible_pct, description, logged_by) "
 #           "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-#           (data["date"], str(data["amount"]), data["direction"], data["category_id"],
-#            data["payment_method"], data["vat_rate"], data["income_type"],
-#            data["vat_deductible_pct"], data["description"], data["logged_by"])
+#           (data["date"], str(amount), data["direction"], category_id,
+#            data["payment_method"], vat_rate, data["income_type"],
+#            vat_deductible_pct, data["description"], data["logged_by"])
 #       )
 #       db.commit()
 #       return RedirectResponse(url="/transactions/", status_code=302)
