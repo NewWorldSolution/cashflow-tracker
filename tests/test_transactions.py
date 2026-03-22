@@ -80,6 +80,56 @@ def valid_expense_form(**overrides):
     return data
 
 
+def insert_transaction(client, **overrides):
+    data = {
+        "date": "2026-01-15",
+        "amount": "500.00",
+        "direction": "expense",
+        "category_id": EXPENSE_CATEGORY_ID,
+        "payment_method": "card",
+        "vat_rate": 23,
+        "income_type": None,
+        "vat_deductible_pct": 100,
+        "description": "Original transaction",
+        "logged_by": 1,
+        "is_active": 1,
+        "void_reason": None,
+        "voided_by": None,
+        "replacement_transaction_id": None,
+        "created_at": "2026-01-15 10:00:00",
+    }
+    data.update(overrides)
+
+    conn = sqlite3.connect(client.db_path)
+    cursor = conn.execute(
+        "INSERT INTO transactions (date, amount, direction, category_id, payment_method, "
+        "vat_rate, income_type, vat_deductible_pct, description, logged_by, is_active, "
+        "void_reason, voided_by, replacement_transaction_id, created_at) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        (
+            data["date"],
+            data["amount"],
+            data["direction"],
+            data["category_id"],
+            data["payment_method"],
+            data["vat_rate"],
+            data["income_type"],
+            data["vat_deductible_pct"],
+            data["description"],
+            data["logged_by"],
+            data["is_active"],
+            data["void_reason"],
+            data["voided_by"],
+            data["replacement_transaction_id"],
+            data["created_at"],
+        ),
+    )
+    transaction_id = cursor.lastrowid
+    conn.commit()
+    conn.close()
+    return transaction_id
+
+
 def test_create_form_loads(client):
     r = client.get("/transactions/new")
 
@@ -247,3 +297,156 @@ def test_unauthenticated_create_redirects(logged_out_client):
 
     assert r.status_code == 302
     assert "/auth/login" in r.headers["location"]
+
+
+def test_detail_view_returns_200(client):
+    transaction_id = insert_transaction(client, amount="654.32")
+
+    r = client.get(f"/transactions/{transaction_id}")
+
+    assert r.status_code == 200
+    assert "654.32" in r.text
+    assert f"Transaction #{transaction_id}" in r.text
+
+
+def test_detail_view_404_for_missing(client):
+    r = client.get("/transactions/99999")
+
+    assert r.status_code == 404
+
+
+def test_void_form_loads(client):
+    transaction_id = insert_transaction(client)
+
+    r = client.get(f"/transactions/{transaction_id}/void")
+
+    assert r.status_code == 200
+    assert 'name="void_reason"' in r.text
+
+
+def test_void_requires_void_reason(client):
+    transaction_id = insert_transaction(client)
+
+    r = client.post(f"/transactions/{transaction_id}/void", data={"void_reason": "   "})
+
+    assert r.status_code == 422
+    assert "Void reason is required." in r.text
+
+
+def test_void_success(client):
+    transaction_id = insert_transaction(client)
+
+    r = client.post(
+        f"/transactions/{transaction_id}/void",
+        data={"void_reason": "Duplicate entry"},
+    )
+
+    assert r.status_code == 302
+    assert r.headers["location"] == "/transactions/"
+
+    conn = sqlite3.connect(client.db_path)
+    conn.row_factory = sqlite3.Row
+    row = conn.execute(
+        "SELECT is_active, void_reason, voided_by FROM transactions WHERE id = ?",
+        (transaction_id,),
+    ).fetchone()
+    conn.close()
+
+    assert row["is_active"] == 0
+    assert row["void_reason"] == "Duplicate entry"
+    assert row["voided_by"] == 1
+
+
+def test_voided_transaction_excluded_from_list(client):
+    transaction_id = insert_transaction(client, amount="777.77")
+
+    void_response = client.post(
+        f"/transactions/{transaction_id}/void",
+        data={"void_reason": "Entered twice"},
+    )
+    r = client.get("/transactions/")
+
+    assert void_response.status_code == 302
+    assert r.status_code == 200
+    assert "777.77" not in r.text
+
+
+def test_void_already_voided_rejected(client):
+    transaction_id = insert_transaction(
+        client,
+        is_active=0,
+        void_reason="Already voided",
+        voided_by=1,
+    )
+
+    r = client.post(
+        f"/transactions/{transaction_id}/void",
+        data={"void_reason": "Try again"},
+    )
+
+    assert r.status_code == 422
+    assert "Transaction is already voided." in r.text
+
+
+def test_correct_form_prefills_original(client):
+    transaction_id = insert_transaction(
+        client,
+        amount="888.88",
+        vat_rate=23.0,
+        vat_deductible_pct=100.0,
+        description="Needs correction",
+    )
+
+    r = client.get(f"/transactions/{transaction_id}/correct")
+
+    assert r.status_code == 200
+    assert 'action="/transactions/%s/correct"' % transaction_id in r.text
+    assert 'value="888.88"' in r.text
+    assert 'option value="23"' in r.text
+    assert 'option value="100"' in r.text
+    assert "Needs correction" in r.text
+
+
+def test_correct_creates_new_voids_original(client):
+    transaction_id = insert_transaction(client, amount="500.00")
+
+    r = client.post(
+        f"/transactions/{transaction_id}/correct",
+        data=valid_expense_form(amount="650.00", description="Corrected amount"),
+    )
+
+    assert r.status_code == 302
+    assert r.headers["location"] == "/transactions/"
+
+    conn = sqlite3.connect(client.db_path)
+    conn.row_factory = sqlite3.Row
+    rows = conn.execute(
+        "SELECT id, amount, is_active, void_reason, voided_by, replacement_transaction_id "
+        "FROM transactions ORDER BY id"
+    ).fetchall()
+    conn.close()
+
+    original = next(row for row in rows if row["id"] == transaction_id)
+    replacements = [row for row in rows if row["id"] != transaction_id]
+
+    assert len(replacements) == 1
+    replacement = replacements[0]
+    assert original["is_active"] == 0
+    assert original["void_reason"] == "Corrected"
+    assert original["voided_by"] == 1
+    assert original["replacement_transaction_id"] == replacement["id"]
+    assert replacement["is_active"] == 1
+    assert replacement["amount"] == 650
+
+
+def test_correct_on_voided_rejected(client):
+    transaction_id = insert_transaction(
+        client,
+        is_active=0,
+        void_reason="Already voided",
+        voided_by=1,
+    )
+
+    r = client.get(f"/transactions/{transaction_id}/correct")
+
+    assert r.status_code == 404
