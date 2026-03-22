@@ -1,0 +1,134 @@
+{% extends "base.html" %}
+
+{% block title %}New transaction — cashflow-tracker{% endblock %}
+
+{% block content %}
+
+{% if errors %}
+<ul class="errors" style="color:#cc0000;background:#fff0f0;border:1px solid #ffcccc;padding:8px 16px;border-radius:4px;margin-bottom:16px;">
+  {% for error in errors %}
+    <li>{{ error }}</li>
+  {% endfor %}
+</ul>
+{% endif %}
+
+<h2>New transaction</h2>
+
+<form method="post" action="/transactions/new">
+
+  <p>
+    <label>
+      <input type="radio" name="direction" value="income"
+        {% if form_data.get('direction') == 'income' %}checked{% endif %}>
+      Income
+    </label>
+    &nbsp;
+    <label>
+      <input type="radio" name="direction" value="expense"
+        {% if form_data.get('direction') == 'expense' %}checked{% endif %}>
+      Expense
+    </label>
+  </p>
+
+  <p>
+    <label for="date">Date</label><br>
+    <input type="date" id="date" name="date" value="{{ form_data.get('date', today) }}" required>
+  </p>
+
+  <p>
+    <label for="amount">Enter gross amount (VAT included)</label><br>
+    <input type="number" id="amount" name="amount" step="0.01" min="0.01"
+           value="{{ form_data.get('amount', '') }}" required>
+  </p>
+
+  <p>
+    <label for="category_id">Category</label><br>
+    <select id="category_id" name="category_id">
+      <option value="">— select —</option>
+      {% for cat in categories %}
+        <option value="{{ cat.category_id }}"
+          {% if form_data.get('category_id') | string == cat.category_id | string %}selected{% endif %}>
+          {{ cat.label }}
+        </option>
+      {% endfor %}
+    </select>
+  </p>
+
+  <p>
+    <label for="payment_method">Payment method</label><br>
+    <select id="payment_method" name="payment_method">
+      <option value="">— select —</option>
+      {% for pm in ['cash', 'card', 'transfer'] %}
+        <option value="{{ pm }}"
+          {% if form_data.get('payment_method') == pm %}selected{% endif %}>
+          {{ pm | capitalize }}
+        </option>
+      {% endfor %}
+    </select>
+  </p>
+
+  <div id="card-reminder" style="display:none;background:#fff8dc;border:1px solid #e0c000;padding:8px;border-radius:4px;margin-bottom:8px;">
+    Log gross amount. Card commission is logged separately at month end from terminal invoice
+  </div>
+
+  <p>
+    <label for="vat_rate">VAT rate (%)</label><br>
+    <select id="vat_rate" name="vat_rate">
+      {% for rate in [0, 5, 8, 23] %}
+        <option value="{{ rate }}"
+          {% if form_data.get('vat_rate') | string == rate | string %}selected{% endif %}>
+          {{ rate }}%
+        </option>
+      {% endfor %}
+    </select>
+  </p>
+
+  <div id="income-type-row" style="display:none;">
+    <p>
+      <label for="income_type">Income type</label><br>
+      <select id="income_type" name="income_type">
+        <option value="">— select —</option>
+        {% for it in ['internal', 'external'] %}
+          <option value="{{ it }}"
+            {% if form_data.get('income_type') == it %}selected{% endif %}>
+            {{ it | capitalize }}
+          </option>
+        {% endfor %}
+      </select>
+    </p>
+  </div>
+
+  <div id="vat-deductible-row" style="display:none;">
+    <p>
+      <label for="vat_deductible_pct">VAT deductible (%)</label><br>
+      <select id="vat_deductible_pct" name="vat_deductible_pct">
+        <option value="">— select —</option>
+        {% for pct in [0, 50, 100] %}
+          <option value="{{ pct }}"
+            {% if form_data.get('vat_deductible_pct') | string == pct | string %}selected{% endif %}>
+            {{ pct }}%
+          </option>
+        {% endfor %}
+      </select>
+    </p>
+  </div>
+
+  <p>
+    <label for="description">
+      Description
+      <span id="desc-required" style="display:none;color:#cc0000;"> (required)</span>
+    </label><br>
+    <textarea id="description" name="description" rows="3" cols="50">{{ form_data.get('description', '') }}</textarea>
+  </p>
+
+  <p>
+    <button type="submit">Save transaction</button>
+  </p>
+
+</form>
+
+<a href="/transactions/">← Back to transactions</a>
+
+<script src="/static/form.js"></script>
+
+{% endblock %}
