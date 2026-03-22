@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block content %}
+  <a href="/transactions/new">New transaction</a>
+
+  {% if transactions %}
+    <table>
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Category</th>
+          <th>Direction</th>
+          <th>Amount (gross)</th>
+          <th>VAT amount</th>
+          <th>Effective cost</th>
+          <th>Payment</th>
+          <th>Logged by</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for t in transactions %}
+          <tr>
+            <td>{{ t.date }}</td>
+            <td>{{ t.category_label }}</td>
+            <td>{{ t.direction }}</td>
+            <td>{{ t.amount }}</td>
+            <td>{{ t.va }}</td>
+            <td>{{ t.ec if t.ec else '—' }}</td>
+            <td>{{ t.payment_method }}</td>
+            <td>{{ t.logged_by_username }}</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% else %}
+    <p>No transactions yet.</p>
+  {% endif %}
+{% endblock %}
