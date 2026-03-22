@@ -39,7 +39,7 @@ def void_transaction(
 
     db.execute(
         "UPDATE transactions "
-        "SET is_active = 0, void_reason = ?, voided_by = ? "
+        "SET is_active = 0, void_reason = ?, voided_by = ?, voided_at = CURRENT_TIMESTAMP "
         "WHERE id = ?",
         (reason, voided_by, transaction_id),
     )

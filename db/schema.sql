@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS transactions (
     is_active                  BOOLEAN NOT NULL DEFAULT TRUE,
     void_reason                TEXT,
     voided_by                  INTEGER REFERENCES users(id),
+    voided_at                  TIMESTAMP,
     replacement_transaction_id INTEGER REFERENCES transactions(id),
     created_at                 TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
