@@ -41,6 +41,9 @@
     <dl class="detail-grid">
       <dt>Void reason</dt><dd>{{ t.void_reason }}</dd>
       <dt>Voided by</dt><dd>{{ t.voided_by_username }}</dd>
+      {% if t.voided_at %}
+      <dt>Voided at</dt><dd>{{ t.voided_at }}</dd>
+      {% endif %}
       {% if t.replacement_transaction_id %}
       <dt>Replaced by</dt>
       <dd><a href="/transactions/{{ t.replacement_transaction_id }}">#{{ t.replacement_transaction_id }}</a></dd>

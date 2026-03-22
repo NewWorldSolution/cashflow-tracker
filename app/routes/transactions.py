@@ -371,7 +371,7 @@ async def post_correct_transaction(
     new_id = db.execute("SELECT last_insert_rowid()").fetchone()[0]
     db.execute(
         "UPDATE transactions "
-        "SET is_active = 0, void_reason = 'Corrected', voided_by = ?, replacement_transaction_id = ? "
+        "SET is_active = 0, void_reason = 'Corrected', voided_by = ?, voided_at = CURRENT_TIMESTAMP, replacement_transaction_id = ? "
         "WHERE id = ?",
         (user["id"], new_id, transaction_id),
     )

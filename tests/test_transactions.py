@@ -593,3 +593,58 @@ def test_internal_income_non_cash_rejected(client):
 
     assert r.status_code == 422
     assert "Internal income must use cash as payment method." in r.text
+
+
+def test_voided_at_set_on_void(client):
+    """Voiding a transaction sets voided_at timestamp."""
+    transaction_id = insert_transaction(client)
+
+    client.post(
+        f"/transactions/{transaction_id}/void",
+        data={"void_reason": "Duplicate entry"},
+    )
+
+    conn = sqlite3.connect(client.db_path)
+    conn.row_factory = sqlite3.Row
+    row = conn.execute(
+        "SELECT voided_at FROM transactions WHERE id = ?",
+        (transaction_id,),
+    ).fetchone()
+    conn.close()
+
+    assert row["voided_at"] is not None
+
+
+def test_voided_at_set_on_correct(client):
+    """Correcting a transaction sets voided_at on the original."""
+    transaction_id = insert_transaction(client)
+
+    client.post(
+        f"/transactions/{transaction_id}/correct",
+        data=valid_expense_form(amount="650.00", description="Corrected amount"),
+    )
+
+    conn = sqlite3.connect(client.db_path)
+    conn.row_factory = sqlite3.Row
+    row = conn.execute(
+        "SELECT voided_at FROM transactions WHERE id = ?",
+        (transaction_id,),
+    ).fetchone()
+    conn.close()
+
+    assert row["voided_at"] is not None
+
+
+def test_voided_at_null_on_active(client):
+    """Active transactions have voided_at = NULL."""
+    transaction_id = insert_transaction(client)
+
+    conn = sqlite3.connect(client.db_path)
+    conn.row_factory = sqlite3.Row
+    row = conn.execute(
+        "SELECT voided_at FROM transactions WHERE id = ?",
+        (transaction_id,),
+    ).fetchone()
+    conn.close()
+
+    assert row["voided_at"] is None
