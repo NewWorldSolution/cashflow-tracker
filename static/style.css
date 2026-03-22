@@ -612,3 +612,49 @@ dl {
     max-width: 672px;
   }
 }
+
+/* ---------------------------------------------------------------
+   T4 page-specific classes
+   --------------------------------------------------------------- */
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: 140px 1fr;
+  gap: var(--space-2) var(--space-4);
+}
+
+.detail-grid dt {
+  font-weight: 500;
+  color: var(--color-muted-fg);
+}
+
+.detail-grid dd {
+  margin: 0;
+}
+
+.audit-card {
+  border-color: #fecaca;
+}
+
+.transaction-summary-card {
+  background: var(--color-hover);
+}
+
+.history-toolbar {
+  gap: var(--space-3);
+  flex-wrap: wrap;
+}
+
+.action-row {
+  flex-wrap: wrap;
+}
+
+@media (max-width: 767px) {
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-grid dt {
+    margin-top: var(--space-2);
+  }
+}

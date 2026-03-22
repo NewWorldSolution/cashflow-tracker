@@ -3,49 +3,57 @@
 {% block title %}Transaction #{{ t.id }} — cashflow-tracker{% endblock %}
 
 {% block content %}
+<div class="container-narrow">
+  <a href="/transactions/" class="text-sm text-muted">← Back to list</a>
+  <h1 class="mt-2">Transaction #{{ t.id }}</h1>
 
-<p><a href="/transactions/">← Back to transactions</a></p>
+  {% if t.is_active %}
+  <span class="badge badge-active">Active</span>
+  {% else %}
+  <span class="badge badge-voided">Voided</span>
+  {% endif %}
 
-<h2>Transaction #{{ t.id }}</h2>
+  <div class="card mt-4">
+    <dl class="detail-grid">
+      <dt>Date</dt><dd>{{ t.date }}</dd>
+      <dt>Direction</dt><dd>{{ t.direction }}</dd>
+      <dt>Category</dt><dd>{{ t.category_label }}</dd>
+      <dt>Amount (gross)</dt><dd>{{ "{:,.2f}".format(t.amount) }}</dd>
+      <dt>VAT rate</dt><dd>{{ t.vat_rate | int }}%</dd>
+      {% if t.direction == 'income' %}
+      <dt>Income type</dt><dd>{{ t.income_type if t.income_type else '—' }}</dd>
+      {% endif %}
+      {% if t.direction == 'expense' %}
+      <dt>VAT deductible</dt><dd>{{ t.vat_deductible_pct | int if t.vat_deductible_pct is not none else '—' }}%</dd>
+      {% endif %}
+      <dt>Payment</dt><dd>{{ t.payment_method }}</dd>
+      {% if t.description %}
+      <dt>Description</dt><dd>{{ t.description }}</dd>
+      {% endif %}
+      <dt>Logged by</dt><dd>{{ t.logged_by_username }}</dd>
+      <dt>Created at</dt><dd>{{ t.created_at }}</dd>
+    </dl>
+  </div>
 
-{% if not t.is_active %}
-<div style="background:#fff0f0;border:1px solid #ffcccc;padding:8px 16px;border-radius:4px;margin-bottom:16px;">
-  <strong>Voided</strong> — {{ t.void_reason }}
-  {% if t.voided_by_username %} by {{ t.voided_by_username }}{% endif %}
-  {% if t.replacement_transaction_id %}
-    — <a href="/transactions/{{ t.replacement_transaction_id }}">View replacement #{{ t.replacement_transaction_id }}</a>
+  {% if not t.is_active %}
+  <div class="card mt-4 audit-card">
+    <h3>Void Details</h3>
+    <dl class="detail-grid">
+      <dt>Void reason</dt><dd>{{ t.void_reason }}</dd>
+      <dt>Voided by</dt><dd>{{ t.voided_by_username }}</dd>
+      {% if t.replacement_transaction_id %}
+      <dt>Replaced by</dt>
+      <dd><a href="/transactions/{{ t.replacement_transaction_id }}">#{{ t.replacement_transaction_id }}</a></dd>
+      {% endif %}
+    </dl>
+  </div>
+  {% endif %}
+
+  {% if t.is_active %}
+  <div class="flex gap-3 mt-4 action-row">
+    <a href="/transactions/{{ t.id }}/correct" class="btn btn-secondary">Correct</a>
+    <a href="/transactions/{{ t.id }}/void" class="btn btn-destructive">Void</a>
+  </div>
   {% endif %}
 </div>
-{% endif %}
-
-<table>
-  <tr><th>Date</th><td>{{ t.date }}</td></tr>
-  <tr><th>Direction</th><td>{{ t.direction | capitalize }}</td></tr>
-  <tr><th>Category</th><td>{{ t.category_label }}</td></tr>
-  <tr><th>Gross amount</th><td>{{ t.amount }}</td></tr>
-  <tr><th>VAT rate</th><td>{{ t.vat_rate | int }}%</td></tr>
-  <tr><th>Payment method</th><td>{{ t.payment_method | capitalize }}</td></tr>
-
-  {% if t.direction == 'income' %}
-  <tr><th>Income type</th><td>{{ t.income_type | capitalize if t.income_type else '—' }}</td></tr>
-  {% endif %}
-
-  {% if t.direction == 'expense' %}
-  <tr><th>VAT deductible</th><td>{{ t.vat_deductible_pct | int if t.vat_deductible_pct is not none else '—' }}%</td></tr>
-  {% endif %}
-
-  <tr><th>Description</th><td>{{ t.description if t.description else '—' }}</td></tr>
-  <tr><th>Logged by</th><td>{{ t.logged_by_username }}</td></tr>
-  <tr><th>Created at</th><td>{{ t.created_at }}</td></tr>
-  <tr><th>Status</th><td>{{ 'Active' if t.is_active else 'Voided' }}</td></tr>
-</table>
-
-{% if t.is_active %}
-<p>
-  <a href="/transactions/{{ t.id }}/void">Void this transaction</a>
-  &nbsp;|&nbsp;
-  <a href="/transactions/{{ t.id }}/correct">Correct this transaction</a>
-</p>
-{% endif %}
-
 {% endblock %}
