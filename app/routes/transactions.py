@@ -24,6 +24,12 @@ def _get_db() -> Generator[sqlite3.Connection, None, None]:
     yield from get_db()
 
 
+def _normalize_for_accountant_flag(data: dict) -> str:
+    if data["direction"] == "income" and data["income_type"] == "internal":
+        return ""
+    return data["for_accountant"]
+
+
 @router.get("/transactions/new", response_class=HTMLResponse)
 async def get_create_transaction(
     request: Request,
@@ -91,6 +97,7 @@ async def post_create_transaction(
         "logged_by": user["id"],
         "is_active": True,
     }
+    data["for_accountant"] = _normalize_for_accountant_flag(data)
 
     errors = validate_transaction(data, db)
 
@@ -378,6 +385,7 @@ async def post_correct_transaction(
         "is_active": True,
         "correction_reason": _s(correction_reason),
     }
+    data["for_accountant"] = _normalize_for_accountant_flag(data)
 
     errors = validate_transaction(data, db)
 

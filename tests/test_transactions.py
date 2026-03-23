@@ -604,6 +604,30 @@ def test_internal_income_cash_saves(client):
     assert row["vat_rate"] == 0.0
 
 
+def test_internal_income_never_saved_for_accountant(client):
+    r = client.post(
+        "/transactions/new",
+        data=valid_income_form(
+            income_type="internal",
+            vat_rate="0",
+            payment_method="cash",
+            for_accountant="1",
+        ),
+    )
+
+    assert r.status_code == 302
+
+    conn = sqlite3.connect(client.db_path)
+    conn.row_factory = sqlite3.Row
+    row = conn.execute(
+        "SELECT income_type, for_accountant FROM transactions ORDER BY id DESC LIMIT 1"
+    ).fetchone()
+    conn.close()
+
+    assert row["income_type"] == "internal"
+    assert row["for_accountant"] == 0
+
+
 def test_internal_income_non_cash_rejected(client):
     r = client.post(
         "/transactions/new",
@@ -654,6 +678,44 @@ def test_voided_at_set_on_correct(client):
     conn.close()
 
     assert row["voided_at"] is not None
+
+
+def test_correct_internal_income_never_saved_for_accountant(client):
+    transaction_id = insert_transaction(
+        client,
+        direction="income",
+        category_id=INCOME_CATEGORY_ID,
+        company_id=1,
+        payment_method="transfer",
+        vat_rate=23.0,
+        income_type="external",
+        vat_deductible_pct=None,
+        description="Will become internal",
+    )
+
+    r = client.post(
+        f"/transactions/{transaction_id}/correct",
+        data=valid_income_form(
+            income_type="internal",
+            vat_rate="0",
+            payment_method="cash",
+            for_accountant="1",
+            description="Internal correction",
+            correction_reason="Should not go to accountant",
+        ),
+    )
+
+    assert r.status_code == 302
+
+    conn = sqlite3.connect(client.db_path)
+    conn.row_factory = sqlite3.Row
+    row = conn.execute(
+        "SELECT income_type, for_accountant FROM transactions ORDER BY id DESC LIMIT 1"
+    ).fetchone()
+    conn.close()
+
+    assert row["income_type"] == "internal"
+    assert row["for_accountant"] == 0
 
 
 def test_voided_at_null_on_active(client):
