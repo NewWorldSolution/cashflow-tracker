@@ -1,7 +1,8 @@
-from app.i18n import en
+from app.i18n import en, pl
 
 _LOCALE_MAP = {
     "en": en,
+    "pl": pl,
 }
 
 DEFAULT_LOCALE = "pl"

@@ -167,7 +167,7 @@ def test_flash_after_create(client):
 
     list_r = client.get("/transactions/")
 
-    assert "Transaction saved successfully." in list_r.text
+    assert "Transakcja zapisana pomyślnie." in list_r.text
 
 
 def test_logged_by_set_from_session_not_form(client):
@@ -194,8 +194,8 @@ def test_create_transaction_shows_all_errors(client):
     )
 
     assert r.status_code == 422
-    assert "Category must be a valid category id." in r.text
-    assert "Payment method must be cash, card, or transfer." in r.text
+    assert "Kategoria musi być prawidłowym identyfikatorem." in r.text
+    assert "Metoda płatności musi być gotówka, karta lub przelew." in r.text
 
 
 def test_form_input_preserved_on_error(client):
@@ -215,7 +215,7 @@ def test_internal_income_vat_rate_enforced(client):
     )
 
     assert r.status_code == 422
-    assert "Internal income must use a VAT rate of 0." in r.text
+    assert "Przychód wewnętrzny musi mieć stawkę VAT 0." in r.text
 
 
 def test_other_expense_description_required(client):
@@ -225,7 +225,7 @@ def test_other_expense_description_required(client):
     )
 
     assert r.status_code == 422
-    assert "Description is required for other_expense and other_income." in r.text
+    assert "Opis jest wymagany dla kategorii inne wydatki i inne przychody." in r.text
 
 
 def test_transaction_list_loads(client):
@@ -317,7 +317,7 @@ def test_detail_view_returns_200(client):
 
     assert r.status_code == 200
     assert "654.32" in r.text
-    assert f"Transaction #{transaction_id}" in r.text
+    assert f"Transakcja #{transaction_id}" in r.text
 
 
 def test_detail_view_404_for_missing(client):
@@ -341,7 +341,7 @@ def test_void_requires_void_reason(client):
     r = client.post(f"/transactions/{transaction_id}/void", data={"void_reason": "   "})
 
     assert r.status_code == 422
-    assert "Void reason is required." in r.text
+    assert "Powód anulowania jest wymagany." in r.text
 
 
 def test_void_success(client):
@@ -380,7 +380,7 @@ def test_flash_after_void(client):
 
     list_r = client.get("/transactions/")
 
-    assert "Transaction voided." in list_r.text
+    assert "Transakcja anulowana." in list_r.text
 
 
 def test_voided_transaction_excluded_from_list(client):
@@ -411,7 +411,7 @@ def test_void_already_voided_rejected(client):
     )
 
     assert r.status_code == 422
-    assert "Transaction is already voided." in r.text
+    assert "Transakcja jest już anulowana." in r.text
 
 
 def test_correct_form_prefills_original(client):
@@ -477,7 +477,7 @@ def test_flash_after_correct(client):
 
     list_r = client.get("/transactions/")
 
-    assert "Transaction corrected." in list_r.text
+    assert "Transakcja skorygowana." in list_r.text
 
 
 def test_correct_on_voided_rejected(client):
@@ -514,10 +514,10 @@ def test_flash_clears_after_display(client):
     client.post("/transactions/new", data=valid_income_form())
 
     first_load = client.get("/transactions/")
-    assert "Transaction saved successfully." in first_load.text
+    assert "Transakcja zapisana pomyślnie." in first_load.text
 
     second_load = client.get("/transactions/")
-    assert "Transaction saved successfully." not in second_load.text
+    assert "Transakcja zapisana pomyślnie." not in second_load.text
 
 
 def test_void_form_404_on_already_voided(client):
@@ -562,7 +562,7 @@ def test_correct_validation_failure_rerenders_422(client):
     )
 
     assert r.status_code == 422
-    assert "Amount must be a positive number." in r.text
+    assert "Kwota musi być liczbą dodatnią." in r.text
 
 
 def test_internal_income_cash_saves(client):
@@ -592,7 +592,7 @@ def test_internal_income_non_cash_rejected(client):
     )
 
     assert r.status_code == 422
-    assert "Internal income must use cash as payment method." in r.text
+    assert "Przychód wewnętrzny musi używać gotówki jako metody płatności." in r.text
 
 
 def test_voided_at_set_on_void(client):

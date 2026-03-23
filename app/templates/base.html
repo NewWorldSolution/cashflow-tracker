@@ -18,6 +18,13 @@
             <a href="/transactions/new">{{ t('nav_new') }}</a>
         </div>
         <div class="nav-right">
+            <div class="lang-switch">
+                {% if request.state.locale == 'pl' %}
+                <strong>PL</strong> | <a href="/lang/en">EN</a>
+                {% else %}
+                <a href="/lang/pl">PL</a> | <strong>EN</strong>
+                {% endif %}
+            </div>
             <span>{{ request.state.user["username"] }}</span>
             <form method="post" action="/auth/logout" style="margin:0">
                 <button type="submit">{{ t('nav_sign_out') }}</button>
@@ -27,7 +34,7 @@
     {% endif %}
     <main class="container" style="padding-top: 24px; padding-bottom: 24px;">
         {% if request.state.flash is defined and request.state.flash %}
-        <div class="flash flash-{{ request.state.flash.type }}">{{ request.state.flash.message }}</div>
+        <div class="flash flash-{{ request.state.flash.type }}">{{ t(request.state.flash.message) }}</div>
         {% endif %}
         {% block content %}{% endblock %}
     </main>
