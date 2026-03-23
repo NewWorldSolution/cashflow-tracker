@@ -30,17 +30,25 @@ def format_date(value, locale: str) -> str:
     """Format a date value for display.
 
     Polish: DD.MM.YYYY  (e.g. 23.03.2026)
-    English: pass-through (YYYY-MM-DD from DB or strftime result)
+    English: YYYY-MM-DD (ISO date portion only)
+
+    Handles date objects, date strings ("YYYY-MM-DD"), and datetime strings
+    ("YYYY-MM-DD HH:MM:SS" or "YYYY-MM-DDTHH:MM:SS") by extracting the date
+    portion before reformatting.
     """
     if not value:
         return "—"
-    if locale == "pl":
-        if hasattr(value, "strftime"):
+    if hasattr(value, "strftime"):
+        if locale == "pl":
             return value.strftime("%d.%m.%Y")
-        parts = str(value).split("-")
+        return value.strftime("%Y-%m-%d")
+    # Extract date portion from datetime strings (e.g. "2026-01-15 10:00:00")
+    date_str = str(value).replace("T", " ").split(" ")[0]
+    if locale == "pl":
+        parts = date_str.split("-")
         if len(parts) == 3:
             return f"{parts[2]}.{parts[1]}.{parts[0]}"
-    return str(value)
+    return date_str
 
 
 def format_amount(value, locale: str) -> str:
