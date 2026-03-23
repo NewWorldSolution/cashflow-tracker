@@ -6,12 +6,26 @@
     <a href="/transactions/new" class="btn btn-primary">{{ t('list_new') }}</a>
   </div>
 
-  <div class="mb-4 flex gap-3">
+  <div class="mb-4 toolbar-filters">
     {% if show_all %}
-    <a href="/transactions/" class="btn btn-sm btn-secondary">{{ t('list_show_active_only') }}</a>
+    <a href="/transactions/{% if selected_company_id %}?company_id={{ selected_company_id }}{% endif %}" class="btn btn-sm btn-secondary">{{ t('list_show_active_only') }}</a>
     {% else %}
-    <a href="/transactions/?show_all=true" class="btn btn-sm btn-secondary">{{ t('list_show_all') }}</a>
+    <a href="/transactions/?show_all=true{% if selected_company_id %}&company_id={{ selected_company_id }}{% endif %}" class="btn btn-sm btn-secondary">{{ t('list_show_all') }}</a>
     {% endif %}
+    <form method="get" action="/transactions/" class="filter-form">
+      {% if show_all %}
+      <input type="hidden" name="show_all" value="true">
+      {% endif %}
+      <label for="company_id" class="text-sm">{{ t('filter_company') }}</label>
+      <select id="company_id" name="company_id" onchange="this.form.submit()">
+        <option value="">{{ t('filter_all_companies') }}</option>
+        {% for company in companies %}
+        <option value="{{ company.id }}" {% if selected_company_id == company.id %}selected{% endif %}>
+          {{ t('company_' ~ company.name) }}
+        </option>
+        {% endfor %}
+      </select>
+    </form>
     <button id="split-view-toggle" class="btn btn-sm btn-secondary" style="display:none;">{{ t('list_split_view') }}</button>
   </div>
 
@@ -23,11 +37,11 @@
           <th>{{ t('list_col_id') }}</th>
           <th>{{ t('list_col_date') }}</th>
           <th>{{ t('list_col_category') }}</th>
+          <th>{{ t('list_col_company') }}</th>
           <th>{{ t('list_col_direction') }}</th>
           <th class="text-right">{{ t('list_col_amount') }}</th>
           <th>{{ t('list_col_payment') }}</th>
           <th>{{ t('list_col_for_accountant') }}</th>
-          <th>{{ t('list_col_logged_by') }}</th>
           {% if show_all %}<th>{{ t('list_col_status') }}</th>{% endif %}
         </tr>
       </thead>
@@ -37,11 +51,11 @@
           <td><a href="/transactions/{{ txn.id }}">#{{ txn.id }}</a></td>
           <td><a href="/transactions/{{ txn.id }}">{{ format_date(txn.date) }}</a></td>
           <td>{{ t('category_' ~ txn.category_name) }}</td>
+          <td>{{ t('company_' ~ txn.company_name) if txn.company_name else '—' }}</td>
           <td data-direction="{{ txn.direction }}">{{ t('direction_' ~ txn.direction) }}</td>
           <td class="text-right amount" data-amount="{{ txn.amount }}">{{ format_amount(txn.amount) }}</td>
           <td>{{ t('payment_' ~ txn.payment_method) }}</td>
           <td>{{ t('for_accountant_yes') if txn.for_accountant else t('for_accountant_no') }}</td>
-          <td>{{ txn.logged_by_username }}</td>
           {% if show_all %}
           <td>
             {% if txn.is_active %}

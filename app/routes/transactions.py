@@ -160,21 +160,36 @@ async def post_create_transaction(
 async def get_transaction_list(
     request: Request,
     show_all: bool = False,
+    company_id: str | None = None,
     db: sqlite3.Connection = Depends(_get_db),
 ) -> HTMLResponse:
     user = require_auth(request)  # noqa: F841
-    where = "" if show_all else "WHERE t.is_active = TRUE "
+    companies = db.execute(
+        "SELECT id, name, slug FROM companies WHERE is_active = TRUE ORDER BY id"
+    ).fetchall()
+    selected_company_id = int(company_id) if company_id and company_id.isdigit() else None
+    conditions = []
+    params: list[int] = []
+    if not show_all:
+        conditions.append("t.is_active = TRUE")
+    if selected_company_id is not None:
+        conditions.append("t.company_id = ?")
+        params.append(selected_company_id)
+    where = f"WHERE {' AND '.join(conditions)} " if conditions else ""
     rows = db.execute(
         "SELECT t.*, c.label AS category_label, c.name AS category_name, "
+        "co.name AS company_name, "
         "u.username AS logged_by_username, "
         "vb.username AS voided_by_username "
         "FROM transactions t "
         "JOIN categories c ON t.category_id = c.category_id "
+        "LEFT JOIN companies co ON t.company_id = co.id "
         "JOIN users u ON t.logged_by = u.id "
         "LEFT JOIN users vb ON t.voided_by = vb.id "
         f"{where}"
         "ORDER BY t.created_at DESC "
-        "LIMIT 100"
+        "LIMIT 100",
+        params,
     ).fetchall()
 
     transactions = []
@@ -194,7 +209,12 @@ async def get_transaction_list(
     return templates.TemplateResponse(
         request,
         "transactions/list.html",
-        {"transactions": transactions, "show_all": show_all},
+        {
+            "transactions": transactions,
+            "show_all": show_all,
+            "companies": companies,
+            "selected_company_id": selected_company_id,
+        },
     )
 
 

@@ -20,6 +20,8 @@ MESSAGES = {
     "dashboard_view_all": "Wszystkie transakcje",
     "dashboard_recent": "Ostatnie transakcje",
     "dashboard_no_transactions": "Brak transakcji.",
+    "filter_company": "Firma",
+    "filter_all_companies": "Wszystkie firmy",
 
     # Transaction form
     "form_title": "Nowa transakcja",
@@ -55,9 +57,13 @@ MESSAGES = {
     # Company selector
     "form_company": "Firma",
     "company_sp": "JDG",
+    "company_sp_full": "Jednoosobowa działalność gospodarcza (JDG)",
     "company_ltd": "Sp. z o.o.",
-    "company_ff": "Fundacja",
-    "company_private": "Prywatne",
+    "company_ltd_full": "Spółka z ograniczoną odpowiedzialnością (Sp. z o.o.)",
+    "company_ff": "FR",
+    "company_ff_full": "Fundacja rodzinna (FR)",
+    "company_private": "P",
+    "company_private_full": "Prywatny (P)",
 
     # Accountant flag
     "form_for_accountant": "Dla księgowej",
@@ -72,6 +78,7 @@ MESSAGES = {
     "list_col_id": "#",
     "list_col_date": "Data",
     "list_col_category": "Kategoria",
+    "list_col_company": "Firma",
     "list_col_direction": "Typ",
     "list_col_amount": "Kwota",
     "list_col_payment": "Płatność",
@@ -96,6 +103,7 @@ MESSAGES = {
     "detail_date": "Data",
     "detail_direction": "Typ transakcji",
     "detail_category": "Kategoria",
+    "detail_company": "Firma",
     "detail_amount_gross": "Kwota (brutto)",
     "detail_vat_rate": "Stawka VAT",
     "detail_income_type": "Typ przychodu",
