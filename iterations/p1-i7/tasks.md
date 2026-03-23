@@ -1,7 +1,7 @@
 # P1-I7 — Multi-Company Support + Accountant Flag
 ## Task Board
 
-**Status:** NOT STARTED
+**Status:** IN PROGRESS
 **Last updated:** 2026-03-23
 **Iteration branch:** `feature/phase-1/iteration-7` ← all task PRs target this branch
 **Final PR:** `feature/phase-1/iteration-7` → `main` ← QA agent approves before merge
@@ -68,7 +68,7 @@ Notes:
 | ID    | Title                               | Owner | Status     | Depends on | Branch |
 |-------|-------------------------------------|-------|------------|------------|--------|
 | I7-T1 | Companies schema + seed + migration | —     | ⏳ WAITING | —          | `feature/p1-i7/t1-companies-schema` |
-| I7-T2 | Create/correct with company         | —     | ⏳ WAITING | I7-T1      | `feature/p1-i7/t2-company-create` |
+| I7-T2 | Create/correct with company         | —     | 🔄 IN PROGRESS | I7-T1      | `feature/p1-i7/t2-company-create` |
 | I7-T3 | List/detail/dashboard + filtering   | —     | ⏳ WAITING | I7-T2      | `feature/p1-i7/t3-company-views` |
 | I7-T4 | `for_accountant` display + behavior | —     | ⏳ WAITING | I7-T1      | `feature/p1-i7/t4-accountant-flag` |
 | I7-T5 | Tests                               | —     | ⏳ WAITING | I7-T1, I7-T2, I7-T3, I7-T4 | `feature/p1-i7/t5-tests` |

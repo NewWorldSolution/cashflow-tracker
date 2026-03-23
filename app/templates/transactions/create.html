@@ -40,6 +40,18 @@
         </label>
       </div>
     </div>
+    <div class="form-group">
+      <label class="form-label" for="company_id">{{ t('form_company') }}</label>
+      <select id="company_id" name="company_id" required>
+        <option value="">{{ t('form_category_placeholder') }}</option>
+        {% for company in companies %}
+          <option value="{{ company.id }}"
+            {% if form_data.get('company_id') | string == company.id | string %}selected{% endif %}>
+            {{ t('company_' ~ company.slug) }}
+          </option>
+        {% endfor %}
+      </select>
+    </div>
   </div>
 
   <!-- Section 2 — Amount -->
@@ -135,6 +147,17 @@
         <span id="desc-required" class="text-sm" style="display:none; color: var(--color-destructive);">{{ t('form_description_required') }}</span>
       </label>
       <textarea id="description" name="description" rows="3" placeholder="{{ t('form_description_placeholder') }}">{{ form_data.get('description', '') }}</textarea>
+    </div>
+  </div>
+
+  <!-- Section 6 — Accountant flag -->
+  <div class="form-section">
+    <div class="form-group">
+      <label class="form-label form-label-checkbox">
+        <input type="checkbox" name="for_accountant" value="true"
+          {% if form_data.get('for_accountant') %}checked{% endif %}>
+        {{ t('form_for_accountant') }}
+      </label>
     </div>
   </div>
 

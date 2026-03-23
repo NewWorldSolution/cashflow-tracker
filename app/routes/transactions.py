@@ -34,11 +34,15 @@ async def get_create_transaction(
         "SELECT category_id, name, label, direction, default_vat_rate, default_vat_deductible_pct "
         "FROM categories ORDER BY direction, label"
     ).fetchall()
+    companies = db.execute(
+        "SELECT id, name, slug FROM companies WHERE is_active = TRUE ORDER BY id"
+    ).fetchall()
     return templates.TemplateResponse(
         request,
         "transactions/create.html",
         {
             "categories": cats,
+            "companies": companies,
             "errors": [],
             "form_data": {},
             "today": str(date.today()),
@@ -53,11 +57,13 @@ async def post_create_transaction(
     direction: str = Form(default=""),
     amount: str = Form(default=""),
     category_id: str = Form(default=""),
+    company_id: str = Form(default=""),
     payment_method: str = Form(default=""),
     vat_rate: str = Form(default=""),
     income_type: str = Form(default=""),
     vat_deductible_pct: str = Form(default=""),
     description: str = Form(default=""),
+    for_accountant: str = Form(default=""),
     db: sqlite3.Connection = Depends(_get_db),
 ):
     user = require_auth(request)
@@ -75,11 +81,13 @@ async def post_create_transaction(
         "direction": _s(direction),
         "amount": _s(amount),
         "category_id": _s(category_id),
+        "company_id": _s(company_id),
         "payment_method": _s(payment_method),
         "vat_rate": _s(vat_rate),
         "income_type": _opt(income_type),
         "vat_deductible_pct": _opt(vat_deductible_pct),
         "description": _opt(description),
+        "for_accountant": for_accountant.strip() == "true",
         "logged_by": user["id"],
         "is_active": True,
     }
@@ -93,11 +101,15 @@ async def post_create_transaction(
             "SELECT category_id, name, label, direction, default_vat_rate, default_vat_deductible_pct "
             "FROM categories ORDER BY direction, label"
         ).fetchall()
+        companies = db.execute(
+            "SELECT id, name, slug FROM companies WHERE is_active = TRUE ORDER BY id"
+        ).fetchall()
         return templates.TemplateResponse(
             request,
             "transactions/create.html",
             {
                 "categories": cats,
+                "companies": companies,
                 "errors": errors,
                 "form_data": data,
                 "today": str(date.today()),
@@ -114,22 +126,25 @@ async def post_create_transaction(
         else None
     )
     cat_id = int(data["category_id"])
+    comp_id = int(data["company_id"])
 
     db.execute(
         "INSERT INTO transactions "
-        "(date, amount, direction, category_id, payment_method, "
-        "vat_rate, income_type, vat_deductible_pct, description, logged_by) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "(date, amount, direction, category_id, company_id, payment_method, "
+        "vat_rate, income_type, vat_deductible_pct, description, for_accountant, logged_by) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (
             data["date"],
             str(gross),
             data["direction"],
             cat_id,
+            comp_id,
             data["payment_method"],
             vat_rate_val,
             data["income_type"],
             vat_deductible_val,
             data["description"],
+            data["for_accountant"],
             data["logged_by"],
         ),
     )
@@ -265,16 +280,21 @@ async def get_correct_transaction(
         "SELECT category_id, name, label, direction, default_vat_rate, default_vat_deductible_pct "
         "FROM categories ORDER BY direction, label"
     ).fetchall()
+    companies = db.execute(
+        "SELECT id, name, slug FROM companies WHERE is_active = TRUE ORDER BY id"
+    ).fetchall()
     form_data = {
         "date": txn["date"],
         "direction": txn["direction"],
         "amount": txn["amount"],
         "category_id": str(txn["category_id"]),
+        "company_id": str(txn["company_id"]),
         "payment_method": txn["payment_method"],
         "vat_rate": str(int(txn["vat_rate"])),
         "income_type": txn["income_type"] or "",
         "vat_deductible_pct": str(int(txn["vat_deductible_pct"])) if txn["vat_deductible_pct"] is not None else "",
         "description": txn["description"] or "",
+        "for_accountant": bool(txn["for_accountant"]),
         "correction_reason": "",
     }
     return templates.TemplateResponse(
@@ -282,6 +302,7 @@ async def get_correct_transaction(
         "transactions/create.html",
         {
             "categories": cats,
+            "companies": companies,
             "errors": [],
             "form_data": form_data,
             "today": str(date.today()),
@@ -299,11 +320,13 @@ async def post_correct_transaction(
     direction: str = Form(default=""),
     amount: str = Form(default=""),
     category_id: str = Form(default=""),
+    company_id: str = Form(default=""),
     payment_method: str = Form(default=""),
     vat_rate: str = Form(default=""),
     income_type: str = Form(default=""),
     vat_deductible_pct: str = Form(default=""),
     description: str = Form(default=""),
+    for_accountant: str = Form(default=""),
     correction_reason: str = Form(default=""),
     db: sqlite3.Connection = Depends(_get_db),
 ):
@@ -324,11 +347,13 @@ async def post_correct_transaction(
         "direction": _s(direction),
         "amount": _s(amount),
         "category_id": _s(category_id),
+        "company_id": _s(company_id),
         "payment_method": _s(payment_method),
         "vat_rate": _s(vat_rate),
         "income_type": _opt(income_type),
         "vat_deductible_pct": _opt(vat_deductible_pct),
         "description": _opt(description),
+        "for_accountant": for_accountant.strip() == "true",
         "logged_by": user["id"],
         "is_active": True,
         "correction_reason": _s(correction_reason),
@@ -347,11 +372,15 @@ async def post_correct_transaction(
             "SELECT category_id, name, label, direction, default_vat_rate, default_vat_deductible_pct "
             "FROM categories ORDER BY direction, label"
         ).fetchall()
+        companies = db.execute(
+            "SELECT id, name, slug FROM companies WHERE is_active = TRUE ORDER BY id"
+        ).fetchall()
         return templates.TemplateResponse(
             request,
             "transactions/create.html",
             {
                 "categories": cats,
+                "companies": companies,
                 "errors": errors,
                 "form_data": data,
                 "today": str(date.today()),
@@ -369,22 +398,25 @@ async def post_correct_transaction(
         else None
     )
     cat_id = int(data["category_id"])
+    comp_id = int(data["company_id"])
 
     db.execute(
         "INSERT INTO transactions "
-        "(date, amount, direction, category_id, payment_method, "
-        "vat_rate, income_type, vat_deductible_pct, description, logged_by) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "(date, amount, direction, category_id, company_id, payment_method, "
+        "vat_rate, income_type, vat_deductible_pct, description, for_accountant, logged_by) "
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (
             data["date"],
             str(gross),
             data["direction"],
             cat_id,
+            comp_id,
             data["payment_method"],
             vat_rate_val,
             data["income_type"],
             vat_deductible_val,
             data["description"],
+            data["for_accountant"],
             data["logged_by"],
         ),
     )

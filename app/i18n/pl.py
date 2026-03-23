@@ -52,6 +52,16 @@ MESSAGES = {
     "correction_reason_label": "Powód korekty (wymagane)",
     "correction_reason_placeholder": "Co jest korygowane i dlaczego?",
 
+    # Company selector
+    "form_company": "Firma",
+    "company_sp": "JDG",
+    "company_ltd": "Sp. z o.o.",
+    "company_ff": "Fundacja",
+    "company_private": "Prywatne",
+
+    # Accountant flag
+    "form_for_accountant": "Dla księgowej",
+
     # Transaction list
     "list_title": "Transakcje",
     "list_new": "+ Nowa transakcja",
@@ -241,4 +251,6 @@ VALIDATION_ERRORS = {
     "Transaction is already voided.": "Transakcja jest już anulowana.",
     "Void reason is required.": "Powód anulowania jest wymagany.",
     "Correction reason is required.": "Powód korekty jest wymagany.",
+    "Company is required.": "Firma jest wymagana.",
+    "Company must be a valid active company.": "Firma musi być prawidłową aktywną firmą.",
 }
