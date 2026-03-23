@@ -1,18 +1,18 @@
 {% extends "base.html" %}
 
-{% block title %}Void transaction #{{ t.id }} — cashflow-tracker{% endblock %}
+{% block title %}{{ t('void_title') }} #{{ txn.id }} — {{ t('nav_brand') }}{% endblock %}
 
 {% block content %}
 <div class="container-narrow">
-  <a href="/transactions/{{ t.id }}" class="text-sm text-muted">← Cancel</a>
-  <h1 class="mt-2">Void Transaction</h1>
+  <a href="/transactions/{{ txn.id }}" class="text-sm text-muted">← {{ t('void_cancel') }}</a>
+  <h1 class="mt-2">{{ t('void_title') }}</h1>
 
   <div class="callout callout-warning mb-4">
-    This action cannot be undone. The transaction will be marked as voided.
+    {{ t('void_warning') }}
   </div>
 
   <div class="card mb-4 transaction-summary-card">
-    <p><strong>{{ t.date }}</strong> - {{ t.category_label }} - {{ "{:,.2f}".format(t.amount) }}</p>
+    <p><strong>{{ txn.date }}</strong> - {{ txn.category_label }} - {{ "{:,.2f}".format(txn.amount) }}</p>
   </div>
 
   {% if errors %}
@@ -25,14 +25,14 @@
   </div>
   {% endif %}
 
-  <form method="post" action="/transactions/{{ t.id }}/void">
+  <form method="post" action="/transactions/{{ txn.id }}/void">
     <div class="form-group">
-      <label for="void_reason" class="form-label">Reason for voiding (required)</label>
-      <textarea id="void_reason" name="void_reason" rows="2" placeholder="Why is this transaction being voided?">{{ form_data.get('void_reason', '') }}</textarea>
+      <label for="void_reason" class="form-label">{{ t('void_reason_label') }}</label>
+      <textarea id="void_reason" name="void_reason" rows="2" placeholder="{{ t('void_reason_placeholder') }}">{{ form_data.get('void_reason', '') }}</textarea>
     </div>
     <div class="flex gap-3 mt-4 action-row">
-      <button type="submit" class="btn btn-destructive btn-lg">Void Transaction</button>
-      <a href="/transactions/{{ t.id }}" class="btn btn-secondary btn-lg">Cancel</a>
+      <button type="submit" class="btn btn-destructive btn-lg">{{ t('void_submit') }}</button>
+      <a href="/transactions/{{ txn.id }}" class="btn btn-secondary btn-lg">{{ t('void_cancel') }}</a>
     </div>
   </form>
 </div>

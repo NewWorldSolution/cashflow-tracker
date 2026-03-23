@@ -1,52 +1,52 @@
 {% extends "base.html" %}
 
-{% block title %}Transaction #{{ t.id }} — cashflow-tracker{% endblock %}
+{% block title %}{{ t('detail_title') }} #{{ txn.id }} — {{ t('nav_brand') }}{% endblock %}
 
 {% block content %}
 <div class="container-narrow">
-  <a href="/transactions/" class="text-sm text-muted">← Back to list</a>
-  <h1 class="mt-2">Transaction #{{ t.id }}</h1>
+  <a href="/transactions/" class="text-sm text-muted">{{ t('detail_back') }}</a>
+  <h1 class="mt-2">{{ t('detail_title') }} #{{ txn.id }}</h1>
 
-  {% if t.is_active %}
-  <span class="badge badge-active">Active</span>
+  {% if txn.is_active %}
+  <span class="badge badge-active">{{ t('badge_active') }}</span>
   {% else %}
-  <span class="badge badge-voided">Voided</span>
+  <span class="badge badge-voided">{{ t('badge_voided') }}</span>
   {% endif %}
 
   <div class="card mt-4">
     <dl class="detail-grid">
-      <dt>Date</dt><dd>{{ t.date }}</dd>
-      <dt>Direction</dt><dd>{{ t.direction }}</dd>
-      <dt>Category</dt><dd>{{ t.category_label }}</dd>
-      <dt>Amount (gross)</dt><dd>{{ "{:,.2f}".format(t.amount) }}</dd>
-      <dt>VAT rate</dt><dd>{{ t.vat_rate | int }}%</dd>
-      {% if t.direction == 'income' %}
-      <dt>Income type</dt><dd>{{ t.income_type if t.income_type else '—' }}</dd>
+      <dt>{{ t('detail_date') }}</dt><dd>{{ txn.date }}</dd>
+      <dt>{{ t('detail_direction') }}</dt><dd>{{ txn.direction }}</dd>
+      <dt>{{ t('detail_category') }}</dt><dd>{{ txn.category_label }}</dd>
+      <dt>{{ t('detail_amount_gross') }}</dt><dd>{{ "{:,.2f}".format(txn.amount) }}</dd>
+      <dt>{{ t('detail_vat_rate') }}</dt><dd>{{ txn.vat_rate | int }}%</dd>
+      {% if txn.direction == 'income' %}
+      <dt>{{ t('detail_income_type') }}</dt><dd>{{ txn.income_type if txn.income_type else '—' }}</dd>
       {% endif %}
-      {% if t.direction == 'expense' %}
-      <dt>VAT deductible</dt><dd>{{ t.vat_deductible_pct | int if t.vat_deductible_pct is not none else '—' }}%</dd>
+      {% if txn.direction == 'expense' %}
+      <dt>{{ t('detail_vat_deductible') }}</dt><dd>{{ txn.vat_deductible_pct | int if txn.vat_deductible_pct is not none else '—' }}%</dd>
       {% endif %}
-      <dt>Payment</dt><dd>{{ t.payment_method }}</dd>
-      {% if t.description %}
-      <dt>Description</dt><dd>{{ t.description }}</dd>
+      <dt>{{ t('detail_payment') }}</dt><dd>{{ txn.payment_method }}</dd>
+      {% if txn.description %}
+      <dt>{{ t('detail_description') }}</dt><dd>{{ txn.description }}</dd>
       {% endif %}
-      <dt>Logged by</dt><dd>{{ t.logged_by_username }}</dd>
-      <dt>Created at</dt><dd>{{ t.created_at }}</dd>
+      <dt>{{ t('detail_logged_by') }}</dt><dd>{{ txn.logged_by_username }}</dd>
+      <dt>{{ t('detail_created_at') }}</dt><dd>{{ txn.created_at }}</dd>
     </dl>
   </div>
 
-  {% if not t.is_active %}
+  {% if not txn.is_active %}
   <div class="card mt-4 audit-card">
-    <h3>Void Details</h3>
+    <h3>{{ t('void_details_title') }}</h3>
     <dl class="detail-grid">
-      <dt>Void reason</dt><dd>{{ t.void_reason }}</dd>
-      <dt>Voided by</dt><dd>{{ t.voided_by_username }}</dd>
-      {% if t.voided_at %}
-      <dt>Voided at</dt><dd>{{ t.voided_at }}</dd>
+      <dt>{{ t('void_reason') }}</dt><dd>{{ txn.void_reason }}</dd>
+      <dt>{{ t('voided_by') }}</dt><dd>{{ txn.voided_by_username }}</dd>
+      {% if txn.voided_at %}
+      <dt>{{ t('voided_at') }}</dt><dd>{{ txn.voided_at }}</dd>
       {% endif %}
-      {% if t.replacement_transaction_id %}
-      <dt>Replaced by</dt>
-      <dd><a href="/transactions/{{ t.replacement_transaction_id }}">#{{ t.replacement_transaction_id }}</a></dd>
+      {% if txn.replacement_transaction_id %}
+      <dt>{{ t('replaced_by') }}</dt>
+      <dd><a href="/transactions/{{ txn.replacement_transaction_id }}">#{{ txn.replacement_transaction_id }}</a></dd>
       {% endif %}
     </dl>
   </div>
@@ -54,14 +54,14 @@
 
   {% if original_id %}
   <div class="callout callout-info mt-4">
-    This transaction is a correction of <a href="/transactions/{{ original_id }}">#{{ original_id }}</a>.
+    {{ t('detail_correction_of') }} <a href="/transactions/{{ original_id }}">#{{ original_id }}</a>.
   </div>
   {% endif %}
 
-  {% if t.is_active %}
+  {% if txn.is_active %}
   <div class="flex gap-3 mt-4 action-row">
-    <a href="/transactions/{{ t.id }}/correct" class="btn btn-secondary">Correct</a>
-    <a href="/transactions/{{ t.id }}/void" class="btn btn-destructive">Void</a>
+    <a href="/transactions/{{ txn.id }}/correct" class="btn btn-secondary">{{ t('detail_correct') }}</a>
+    <a href="/transactions/{{ txn.id }}/void" class="btn btn-destructive">{{ t('detail_void') }}</a>
   </div>
   {% endif %}
 </div>

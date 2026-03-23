@@ -2,17 +2,17 @@
 {% block content %}
 <div class="container">
   <div class="flex justify-between items-center mb-4 history-toolbar">
-    <h1>Transactions</h1>
-    <a href="/transactions/new" class="btn btn-primary">+ New Transaction</a>
+    <h1>{{ t('list_title') }}</h1>
+    <a href="/transactions/new" class="btn btn-primary">{{ t('list_new') }}</a>
   </div>
 
   <div class="mb-4 flex gap-3">
     {% if show_all %}
-    <a href="/transactions/" class="btn btn-sm btn-secondary">Show Active Only</a>
+    <a href="/transactions/" class="btn btn-sm btn-secondary">{{ t('list_show_active_only') }}</a>
     {% else %}
-    <a href="/transactions/?show_all=true" class="btn btn-sm btn-secondary">Show All (incl. voided)</a>
+    <a href="/transactions/?show_all=true" class="btn btn-sm btn-secondary">{{ t('list_show_all') }}</a>
     {% endif %}
-    <button id="split-view-toggle" class="btn btn-sm btn-secondary" style="display:none;">Split View</button>
+    <button id="split-view-toggle" class="btn btn-sm btn-secondary" style="display:none;">{{ t('list_split_view') }}</button>
   </div>
 
   {% if transactions %}
@@ -20,34 +20,34 @@
     <table>
       <thead>
         <tr>
-          <th>#</th>
-          <th>Date</th>
-          <th>Category</th>
-          <th>Direction</th>
-          <th class="text-right">Amount</th>
-          <th>Payment</th>
-          <th>Logged by</th>
-          {% if show_all %}<th>Status</th>{% endif %}
+          <th>{{ t('list_col_id') }}</th>
+          <th>{{ t('list_col_date') }}</th>
+          <th>{{ t('list_col_category') }}</th>
+          <th>{{ t('list_col_direction') }}</th>
+          <th class="text-right">{{ t('list_col_amount') }}</th>
+          <th>{{ t('list_col_payment') }}</th>
+          <th>{{ t('list_col_logged_by') }}</th>
+          {% if show_all %}<th>{{ t('list_col_status') }}</th>{% endif %}
         </tr>
       </thead>
       <tbody>
-        {% for t in transactions %}
-        <tr class="{{ 'row-voided' if not t.is_active else '' }}">
-          <td><a href="/transactions/{{ t.id }}">#{{ t.id }}</a></td>
-          <td><a href="/transactions/{{ t.id }}">{{ t.date }}</a></td>
-          <td>{{ t.category_label }}</td>
-          <td>{{ t.direction }}</td>
-          <td class="text-right amount" data-amount="{{ t.amount }}">{{ "{:,.2f}".format(t.amount) }}</td>
-          <td>{{ t.payment_method }}</td>
-          <td>{{ t.logged_by_username }}</td>
+        {% for txn in transactions %}
+        <tr class="{{ 'row-voided' if not txn.is_active else '' }}">
+          <td><a href="/transactions/{{ txn.id }}">#{{ txn.id }}</a></td>
+          <td><a href="/transactions/{{ txn.id }}">{{ txn.date }}</a></td>
+          <td>{{ txn.category_label }}</td>
+          <td>{{ txn.direction }}</td>
+          <td class="text-right amount" data-amount="{{ txn.amount }}">{{ "{:,.2f}".format(txn.amount) }}</td>
+          <td>{{ txn.payment_method }}</td>
+          <td>{{ txn.logged_by_username }}</td>
           {% if show_all %}
           <td>
-            {% if t.is_active %}
-            <span class="badge badge-active">Active</span>
-            {% elif t.replacement_transaction_id %}
-            <span class="badge badge-corrected">Corrected</span>
+            {% if txn.is_active %}
+            <span class="badge badge-active">{{ t('badge_active') }}</span>
+            {% elif txn.replacement_transaction_id %}
+            <span class="badge badge-corrected">{{ t('badge_corrected') }}</span>
             {% else %}
-            <span class="badge badge-voided">Voided</span>
+            <span class="badge badge-voided">{{ t('badge_voided') }}</span>
             {% endif %}
           </td>
           {% endif %}
@@ -58,13 +58,21 @@
   </div>
   {% else %}
   <div class="empty-state">
-    <p>No transactions yet.</p>
-    <a href="/transactions/new" class="btn btn-primary mt-4">Create your first transaction</a>
+    <p>{{ t('list_no_transactions') }}</p>
+    <a href="/transactions/new" class="btn btn-primary mt-4">{{ t('list_create_first') }}</a>
   </div>
   {% endif %}
 </div>
 
 <script>
+var STRINGS = {
+  splitView: '{{ t("list_split_view") }}',
+  combinedView: '{{ t("list_combined_view") }}',
+  noIncome: '{{ t("list_no_income") }}',
+  noExpenses: '{{ t("list_no_expenses") }}',
+  income: '{{ t("list_income") }}',
+  expenses: '{{ t("list_expenses") }}'
+};
 document.addEventListener('DOMContentLoaded', function() {
   var toggle = document.getElementById('split-view-toggle');
   if (!toggle) return;
@@ -81,11 +89,11 @@ document.addEventListener('DOMContentLoaded', function() {
     if (!tableWrap) return;
 
     if (splitActive) {
-      toggle.textContent = 'Combined View';
+      toggle.textContent = STRINGS.combinedView;
       tableWrap.style.display = 'none';
       buildSplitView();
     } else {
-      toggle.textContent = 'Split View';
+      toggle.textContent = STRINGS.splitView;
       tableWrap.style.display = '';
       var existing = document.getElementById('split-view-container');
       if (existing) existing.remove();
@@ -115,9 +123,9 @@ document.addEventListener('DOMContentLoaded', function() {
     container.id = 'split-view-container';
     container.className = 'split-view';
 
-    container.innerHTML = '<div class="split-view-col"><h3>Income</h3><div class="table-wrap">' +
+    container.innerHTML = '<div class="split-view-col"><h3>' + STRINGS.income + '</h3><div class="table-wrap">' +
       '<table><thead>' + document.querySelector('.table-wrap thead').innerHTML + '</thead><tbody></tbody></table></div></div>' +
-      '<div class="split-view-col"><h3>Expenses</h3><div class="table-wrap">' +
+      '<div class="split-view-col"><h3>' + STRINGS.expenses + '</h3><div class="table-wrap">' +
       '<table><thead>' + document.querySelector('.table-wrap thead').innerHTML + '</thead><tbody></tbody></table></div></div>';
 
     var bodies = container.querySelectorAll('tbody');
@@ -125,10 +133,10 @@ document.addEventListener('DOMContentLoaded', function() {
     expenseRows.forEach(function(r) { bodies[1].appendChild(r); });
 
     if (incomeRows.length === 0) {
-      bodies[0].innerHTML = '<tr><td colspan="99" class="text-center text-muted" style="padding:24px;">No income transactions</td></tr>';
+      bodies[0].innerHTML = '<tr><td colspan="99" class="text-center text-muted" style="padding:24px;">' + STRINGS.noIncome + '</td></tr>';
     }
     if (expenseRows.length === 0) {
-      bodies[1].innerHTML = '<tr><td colspan="99" class="text-center text-muted" style="padding:24px;">No expense transactions</td></tr>';
+      bodies[1].innerHTML = '<tr><td colspan="99" class="text-center text-muted" style="padding:24px;">' + STRINGS.noExpenses + '</td></tr>';
     }
 
     document.querySelector('.table-wrap').insertAdjacentElement('afterend', container);
