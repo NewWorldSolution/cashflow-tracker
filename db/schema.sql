@@ -15,18 +15,27 @@ CREATE TABLE IF NOT EXISTS categories (
     default_vat_deductible_pct REAL
 );
 
+CREATE TABLE IF NOT EXISTS companies (
+    id        INTEGER PRIMARY KEY AUTOINCREMENT,
+    name      TEXT NOT NULL UNIQUE,
+    slug      TEXT NOT NULL UNIQUE,
+    is_active BOOLEAN NOT NULL DEFAULT TRUE
+);
+
 CREATE TABLE IF NOT EXISTS transactions (
     id                         INTEGER PRIMARY KEY AUTOINCREMENT,
     date                       DATE NOT NULL,
     amount                     DECIMAL(10,2) NOT NULL,
     direction                  TEXT NOT NULL CHECK(direction IN ('income','expense')),
     category_id                INTEGER NOT NULL REFERENCES categories(category_id),
+    company_id                 INTEGER NOT NULL DEFAULT 1 REFERENCES companies(id),
     payment_method             TEXT NOT NULL CHECK(payment_method IN ('cash','card','transfer')),
     vat_rate                   REAL NOT NULL,
     income_type                TEXT CHECK(income_type IN ('internal','external')),
     vat_deductible_pct         REAL,
     manual_vat_amount          DECIMAL(10,2),
     description                TEXT,
+    for_accountant             BOOLEAN NOT NULL DEFAULT FALSE,
     logged_by                  INTEGER NOT NULL REFERENCES users(id),
     is_active                  BOOLEAN NOT NULL DEFAULT TRUE,
     void_reason                TEXT,

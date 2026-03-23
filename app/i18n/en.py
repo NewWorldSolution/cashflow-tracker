@@ -20,6 +20,8 @@ MESSAGES = {
     "dashboard_view_all": "View All Transactions",
     "dashboard_recent": "Recent Transactions",
     "dashboard_no_transactions": "No transactions yet.",
+    "filter_company": "Company",
+    "filter_all_companies": "All companies",
 
     # Transaction form
     "form_title": "New transaction",
@@ -52,6 +54,20 @@ MESSAGES = {
     "correction_reason_label": "Reason for correction (required)",
     "correction_reason_placeholder": "What is being corrected and why?",
 
+    # Company selector
+    "form_company": "Company",
+    "company_sp": "SP",
+    "company_sp_full": "Sole Proprietorship (SP)",
+    "company_ltd": "LTD",
+    "company_ltd_full": "Limited Company (LTD)",
+    "company_ff": "FF",
+    "company_ff_full": "Family Foundation (FF)",
+    "company_private": "P",
+    "company_private_full": "Private (P)",
+
+    # Accountant flag
+    "form_for_accountant": "Mark for accountant",
+
     # Transaction list
     "list_title": "Transactions",
     "list_new": "+ New Transaction",
@@ -62,9 +78,11 @@ MESSAGES = {
     "list_col_id": "#",
     "list_col_date": "Date",
     "list_col_category": "Category",
+    "list_col_company": "Company",
     "list_col_direction": "Type",
     "list_col_amount": "Amount",
     "list_col_payment": "Payment",
+    "list_col_for_accountant": "For accountant",
     "list_col_logged_by": "Logged by",
     "list_col_status": "Status",
     "list_no_transactions": "No transactions yet.",
@@ -85,6 +103,7 @@ MESSAGES = {
     "detail_date": "Date",
     "detail_direction": "Transaction type",
     "detail_category": "Category",
+    "detail_company": "Company",
     "detail_amount_gross": "Amount (gross)",
     "detail_vat_rate": "VAT rate",
     "detail_income_type": "Income type",
@@ -96,6 +115,11 @@ MESSAGES = {
     "detail_correct": "Correct",
     "detail_void": "Cancel",
     "detail_correction_of": "This transaction is a correction of",
+
+    # Accountant
+    "for_accountant_label": "For accountant",
+    "for_accountant_yes": "Yes",
+    "for_accountant_no": "No",
 
     # Cancellation details (shown when transaction is canceled without correction)
     "void_details_title": "Cancellation Details",
@@ -227,6 +251,8 @@ VALIDATION_ERRORS = {
     ),
     "logged_by must be a valid user id.": "logged_by must be a valid user id.",
     "Correction reason is required.": "Correction reason is required.",
+    "Company is required.": "Company is required.",
+    "Company must be a valid active company.": "Company must be a valid active company.",
     # Auth errors
     "Username and password are required": "Username and password are required",
     "Invalid credentials": "Invalid credentials",

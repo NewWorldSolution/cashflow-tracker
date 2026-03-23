@@ -9,7 +9,7 @@
 **Stack:** Python · FastAPI · SQLite (sandbox) → PostgreSQL (production) · Jinja2 (server-side only) · Vanilla JS (form behaviour only) · bcrypt · pytest · ruff
 
 **Core data flow:**
-```
+```text
 User (web form) → FastAPI route → services/ → SQLite → Jinja2 template
 ```
 
@@ -59,7 +59,13 @@ User (web form) → FastAPI route → services/ → SQLite → Jinja2 template
 
 Support multiple legal/business entities inside one app so transactions, views, and summaries can be separated by company. Also add the `for_accountant` flag to mark transactions that need accountant attention.
 
-After I7, every transaction is associated with a company, users can filter by company, and the accountant flag is available for marking.
+After I7:
+
+- every transaction is associated with a company
+- users can filter list/dashboard views by company
+- company display uses i18n-backed short/full labels
+- `for_accountant` is available on create/correct flows
+- `for_accountant` is visible as a normal field in list/detail views
 
 **Execution model:** 5 task branches, each with its own prompt file in `iterations/p1-i7/prompts/`. This file is the full reference; task prompt files are the execution guides.
 
@@ -69,7 +75,7 @@ After I7, every transaction is associated with a company, users can filter by co
 
 ### Mandatory — all tasks, in this order
 
-```
+```text
 CLAUDE.md
 project.md
 docs/concept.md
@@ -84,8 +90,8 @@ iterations/phase-1-plan.md          (I7 section)
 | I7-T1 | `db/schema.sql`, `db/init_db.py`, `seed/categories.sql`, `seed/users.sql` |
 | I7-T2 | `app/routes/transactions.py`, `app/templates/transactions/create.html`, `app/services/validation.py` |
 | I7-T3 | `app/templates/transactions/list.html`, `app/templates/transactions/detail.html`, `app/templates/dashboard.html`, `app/routes/dashboard.py` |
-| I7-T4 | `db/schema.sql`, `app/routes/transactions.py`, `app/templates/transactions/create.html`, `app/templates/transactions/detail.html` |
-| I7-T5 | `tests/test_transactions.py` |
+| I7-T4 | `db/schema.sql`, `app/routes/transactions.py`, `app/templates/transactions/create.html`, `app/templates/transactions/list.html`, `app/templates/transactions/detail.html` |
+| I7-T5 | `tests/test_transactions.py`, `tests/test_init_db.py` |
 
 ---
 
@@ -93,12 +99,12 @@ iterations/phase-1-plan.md          (I7 section)
 
 ### Initial seed data
 
-| ID | Name | Slug | Description |
-|----|------|------|-------------|
-| 1 | JDG | jdg | Sole proprietorship |
-| 2 | LTD | ltd | Limited company |
-| 3 | Foundation | foundation | Foundation entity |
-| 4 | Private | private | Personal / non-business |
+| ID | Name | Slug | EN short | EN full | PL short | PL full |
+|----|------|------|----------|---------|----------|---------|
+| 1 | `sp` | `sp` | SP | Sole Proprietorship (SP) | JDG | Jednoosobowa działalność gospodarcza (JDG) |
+| 2 | `ltd` | `ltd` | LTD | Limited Company (LTD) | Sp. z o.o. | Spółka z ograniczoną odpowiedzialnością (Sp. z o.o.) |
+| 3 | `ff` | `ff` | FF | Family Foundation (FF) | FR | Fundacja rodzinna (FR) |
+| 4 | `private` | `private` | P | Private (P) | P | Prywatny (P) |
 
 ### Schema
 
@@ -111,6 +117,15 @@ CREATE TABLE IF NOT EXISTS companies (
 );
 ```
 
+### Display Rules
+
+- Database stores language-neutral keys only: `sp`, `ltd`, `ff`, `private`
+- Short labels are used in list view, filters, and form selectors:
+  - `t('company_' + company.name)`
+- Full labels are used in transaction detail:
+  - `t('company_' + company.name + '_full')`
+- Do not hardcode user-facing company names in templates or seed descriptions
+
 ### Transaction FK
 
 Add to `transactions` table:
@@ -119,7 +134,7 @@ Add to `transactions` table:
 company_id INTEGER NOT NULL REFERENCES companies(id)
 ```
 
-**Migration:** Existing transactions must be backfilled to a default company (JDG, id=1). The migration must be idempotent.
+**Migration:** Existing transactions must be backfilled to default company `id = 1` (`sp`). The migration must be idempotent.
 
 ---
 
@@ -135,17 +150,30 @@ for_accountant BOOLEAN NOT NULL DEFAULT FALSE
 
 ### Behavior
 
-- Simple boolean — no complex workflow
+- Simple boolean in the schema
 - Available on create and correct forms as a checkbox
-- Displayed in detail view and optionally in list view
-- Exact reporting/filtering behavior to be defined during task breakdown
-- Default is `FALSE` — user explicitly marks when needed
+- Always shown in detail view as a Yes/No field
+- Shown in list view as an always-visible Yes/No column
+- There is **no standalone toggle/edit flow**
+- Changing the flag after creation happens through the existing correction flow
+- Default is `FALSE`
+
+---
+
+## List / Detail UX Changes
+
+- Transaction list adds **Company** and **For accountant** columns
+- Transaction list removes **Logged by**
+- Transaction detail keeps **Logged by**
+- Company in list/filter/form uses short translated labels
+- Company in detail uses full translated labels
+- `for_accountant` in list/detail uses translated Yes/No values
 
 ---
 
 ## Allowed Files
 
-```
+```text
 db/schema.sql                                  ← modify (companies table, transactions.company_id, for_accountant)
 db/init_db.py                                  ← modify (migration + backfill)
 seed/companies.sql                             ← create new (4 companies)
@@ -154,7 +182,7 @@ app/services/transaction_service.py            ← modify (company-aware queries
 app/routes/transactions.py                     ← modify (company selector, filtering, for_accountant)
 app/routes/dashboard.py                        ← modify (company-specific summaries)
 app/templates/transactions/create.html         ← modify (company selector, for_accountant checkbox)
-app/templates/transactions/list.html           ← modify (company display, filtering)
+app/templates/transactions/list.html           ← modify (company display, for_accountant, remove logged_by)
 app/templates/transactions/detail.html         ← modify (company display, for_accountant)
 app/templates/transactions/void.html           ← modify (company in summary if needed)
 app/templates/dashboard.html                   ← modify (company filter, summaries)
@@ -164,6 +192,7 @@ app/i18n/pl.py                                 ← extend (company + accountant 
 app/main.py                                    ← modify (if company middleware needed)
 static/form.js                                 ← modify (if company selection affects form behavior)
 tests/test_transactions.py                     ← extend (company + accountant tests)
+tests/test_init_db.py                          ← extend (migration/backfill tests)
 iterations/p1-i7/tasks.md                      ← status updates only
 ```
 
@@ -173,52 +202,58 @@ iterations/p1-i7/tasks.md                      ← status updates only
 
 ### T1 — Companies Schema + Seed + Migration
 
-**Goal:** `companies` table exists, 4 companies seeded, transactions have `company_id` FK and `for_accountant` boolean, existing data backfilled.
+**Goal:** `companies` table exists, 4 companies seeded with neutral keys, transactions have `company_id` FK and `for_accountant` boolean, existing data backfilled.
 
 - `companies` table in `db/schema.sql`
-- `seed/companies.sql` with 4 companies
-- `company_id` FK on transactions (NOT NULL after migration)
+- `seed/companies.sql` with `sp`, `ltd`, `ff`, `private`
+- `company_id` FK on transactions
 - `for_accountant BOOLEAN NOT NULL DEFAULT FALSE` on transactions
-- Migration in `db/init_db.py` — idempotent: add columns, seed companies, backfill existing transactions to default company (JDG)
+- migration in `db/init_db.py` is idempotent
+- existing transactions backfilled to company `id = 1` (`sp`)
 
 ### T2 — Create/Correct with Company
 
-**Goal:** Transaction create and correct flows include company selection and for_accountant checkbox.
+**Goal:** Transaction create and correct flows include company selection and `for_accountant` input.
 
-- Company selector dropdown in create form (mandatory)
-- Company carried through correction flow (editable)
+- company selector dropdown in create/correct form
+- selector uses short translated labels
 - `for_accountant` checkbox in create/correct forms
-- Company and for_accountant passed to validation and persisted
-- `validation.py` updated to validate `company_id` as valid FK
+- company and `for_accountant` passed to validation and persisted
+- `validation.py` updated to validate `company_id`
+- no standalone edit action for `for_accountant`
 
 ### T3 — List/Detail/Dashboard + Company Display & Filtering
 
 **Goal:** Company visible in all transaction views, filterable in list and dashboard.
 
-- Company displayed in transaction list, detail, and dashboard recent transactions
-- Company filter (dropdown or toggle) in list and dashboard views
-- Dashboard summaries support company-specific filtering
-- i18n labels for company names, column headers, filter labels in EN + PL
+- company displayed in transaction list using short label
+- company displayed in transaction detail using full label
+- company displayed in dashboard/filter UI using short label
+- company filter in list and dashboard views
+- dashboard summaries support company filtering
+- transaction list removes `Logged by`
 
-### T4 — for_accountant Display & Filtering
+### T4 — for_accountant Display & Behavior
 
-**Goal:** for_accountant flag visible in views with optional filtering.
+**Goal:** `for_accountant` visible as a normal transaction field, without adding a separate edit workflow.
 
-- for_accountant displayed in detail view
-- Optional column/indicator in list view
-- Optional filter in list view
-- i18n labels in EN + PL
+- list view shows always-visible Yes/No column
+- detail view always shows Yes/No row
+- translations exist for label + Yes/No values
+- no standalone toggle/edit action exists
+- changing the flag is done via correction flow
 
 ### T5 — Tests
 
-**Goal:** Full test coverage for company and for_accountant features.
+**Goal:** Full test coverage for company and `for_accountant` features.
 
-- Transaction create with company_id — valid and invalid
-- Transaction create with for_accountant flag
-- Company filter in list view
-- Correction preserves/updates company
-- Backfill migration correctness
-- for_accountant display in detail
+- transaction create with `company_id` — valid and invalid
+- transaction create with `for_accountant`
+- company filter in list/dashboard
+- correction preserves or updates company
+- correction can change `for_accountant`
+- migration/backfill correctness
+- detail/list rendering expectations for company and `for_accountant`
 
 ---
 
@@ -237,19 +272,22 @@ iterations/p1-i7/tasks.md                      ← status updates only
 
 ```bash
 pytest -v
-# Expected: all existing + new tests pass
 ruff check .
-# Expected: clean
 ```
 
-- [ ] `companies` table exists with 4 seeded companies
-- [ ] `company_id` FK on all transactions — mandatory, backfilled for existing
+- [ ] `companies` table exists with 4 seeded companies using keys `sp`, `ltd`, `ff`, `private`
+- [ ] `company_id` FK on all transactions — mandatory, backfilled for existing rows
+- [ ] Existing transactions backfilled to company `id = 1` (`sp`)
 - [ ] Company selector in create/correct forms
-- [ ] Company displayed in list, detail, dashboard
+- [ ] Short company labels used in list/filter/form UI
+- [ ] Full company labels used in detail UI
 - [ ] Company filter works in list and dashboard
 - [ ] `for_accountant` boolean on transactions — default FALSE
 - [ ] `for_accountant` checkbox in create/correct forms
-- [ ] `for_accountant` displayed in detail view
+- [ ] `for_accountant` displayed as Yes/No in list
+- [ ] `for_accountant` displayed as Yes/No in detail
+- [ ] No standalone toggle/edit action for `for_accountant`
+- [ ] `Logged by` removed from transaction list and retained in detail
 - [ ] EN + PL translations for all new labels
 - [ ] All existing tests pass
 - [ ] New tests cover company + accountant flows
@@ -257,16 +295,3 @@ ruff check .
 - [ ] No multi-currency work (explicitly deferred)
 
 ---
-
-## Agent Rules
-
-1. Read this file first.
-2. Read your task prompt file: `iterations/p1-i7/prompts/t[N]-[name].md`
-3. Update status to IN PROGRESS before writing any code.
-4. Check dependencies — never start if dep is not DONE.
-5. Verify acceptance checklist before requesting review.
-6. After PR is merged: update `tasks.md` status → DONE with one-line note.
-7. No LLM calls in any logic layer.
-8. Default locale is `pl` (Polish) — English is the fallback, not the default.
-9. All new UI labels must have both EN and PL translations.
-10. Test with both locales before marking done.

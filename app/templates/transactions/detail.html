@@ -20,6 +20,7 @@
       <dt>{{ t('detail_date') }}</dt><dd>{{ format_date(txn.date) }}</dd>
       <dt>{{ t('detail_direction') }}</dt><dd>{{ t('direction_' ~ txn.direction) }}</dd>
       <dt>{{ t('detail_category') }}</dt><dd>{{ t('category_' ~ txn.category_name) }}</dd>
+      <dt>{{ t('detail_company') }}</dt><dd>{{ t('company_' ~ txn.company_name ~ '_full') if txn.company_name else '—' }}</dd>
       <dt>{{ t('detail_amount_gross') }}</dt><dd>{{ format_amount(txn.amount) }}</dd>
       <dt>{{ t('detail_vat_rate') }}</dt><dd>{{ txn.vat_rate | int }}%</dd>
       {% if txn.direction == 'income' %}
@@ -29,9 +30,11 @@
       <dt>{{ t('detail_vat_deductible') }}</dt><dd>{{ txn.vat_deductible_pct | int if txn.vat_deductible_pct is not none else '—' }}%</dd>
       {% endif %}
       <dt>{{ t('detail_payment') }}</dt><dd>{{ t('payment_' ~ txn.payment_method) }}</dd>
+      <dt>{{ t('for_accountant_label') }}</dt><dd>{{ t('for_accountant_yes') if txn.for_accountant else t('for_accountant_no') }}</dd>
       {% if txn.description %}
       <dt>{{ t('detail_description') }}</dt><dd>{{ txn.description }}</dd>
       {% endif %}
+      <dt>{{ t('detail_logged_by') }}</dt><dd>{{ txn.logged_by_username }}</dd>
       <dt>{{ t('detail_created_at') }}</dt><dd>{{ format_datetime(txn.created_at) }}</dd>
     </dl>
   </div>

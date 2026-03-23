@@ -54,6 +54,7 @@ def valid_income_form(**overrides):
         "direction": "income",
         "amount": "1000.00",
         "category_id": str(INCOME_CATEGORY_ID),
+        "company_id": "1",
         "payment_method": "transfer",
         "vat_rate": "23",
         "income_type": "external",
@@ -70,6 +71,7 @@ def valid_expense_form(**overrides):
         "direction": "expense",
         "amount": "500.00",
         "category_id": str(EXPENSE_CATEGORY_ID),
+        "company_id": "1",
         "payment_method": "card",
         "vat_rate": "23",
         "income_type": "",
@@ -86,6 +88,7 @@ def insert_transaction(client, **overrides):
         "amount": "500.00",
         "direction": "expense",
         "category_id": EXPENSE_CATEGORY_ID,
+        "company_id": 1,
         "payment_method": "card",
         "vat_rate": 23,
         "income_type": None,
@@ -102,15 +105,16 @@ def insert_transaction(client, **overrides):
 
     conn = sqlite3.connect(client.db_path)
     cursor = conn.execute(
-        "INSERT INTO transactions (date, amount, direction, category_id, payment_method, "
+        "INSERT INTO transactions (date, amount, direction, category_id, company_id, payment_method, "
         "vat_rate, income_type, vat_deductible_pct, description, logged_by, is_active, "
         "void_reason, voided_by, replacement_transaction_id, created_at) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (
             data["date"],
             data["amount"],
             data["direction"],
             data["category_id"],
+            data["company_id"],
             data["payment_method"],
             data["vat_rate"],
             data["income_type"],
@@ -600,6 +604,30 @@ def test_internal_income_cash_saves(client):
     assert row["vat_rate"] == 0.0
 
 
+def test_internal_income_never_saved_for_accountant(client):
+    r = client.post(
+        "/transactions/new",
+        data=valid_income_form(
+            income_type="internal",
+            vat_rate="0",
+            payment_method="cash",
+            for_accountant="1",
+        ),
+    )
+
+    assert r.status_code == 302
+
+    conn = sqlite3.connect(client.db_path)
+    conn.row_factory = sqlite3.Row
+    row = conn.execute(
+        "SELECT income_type, for_accountant FROM transactions ORDER BY id DESC LIMIT 1"
+    ).fetchone()
+    conn.close()
+
+    assert row["income_type"] == "internal"
+    assert row["for_accountant"] == 0
+
+
 def test_internal_income_non_cash_rejected(client):
     r = client.post(
         "/transactions/new",
@@ -650,6 +678,44 @@ def test_voided_at_set_on_correct(client):
     conn.close()
 
     assert row["voided_at"] is not None
+
+
+def test_correct_internal_income_never_saved_for_accountant(client):
+    transaction_id = insert_transaction(
+        client,
+        direction="income",
+        category_id=INCOME_CATEGORY_ID,
+        company_id=1,
+        payment_method="transfer",
+        vat_rate=23.0,
+        income_type="external",
+        vat_deductible_pct=None,
+        description="Will become internal",
+    )
+
+    r = client.post(
+        f"/transactions/{transaction_id}/correct",
+        data=valid_income_form(
+            income_type="internal",
+            vat_rate="0",
+            payment_method="cash",
+            for_accountant="1",
+            description="Internal correction",
+            correction_reason="Should not go to accountant",
+        ),
+    )
+
+    assert r.status_code == 302
+
+    conn = sqlite3.connect(client.db_path)
+    conn.row_factory = sqlite3.Row
+    row = conn.execute(
+        "SELECT income_type, for_accountant FROM transactions ORDER BY id DESC LIMIT 1"
+    ).fetchone()
+    conn.close()
+
+    assert row["income_type"] == "internal"
+    assert row["for_accountant"] == 0
 
 
 def test_voided_at_null_on_active(client):

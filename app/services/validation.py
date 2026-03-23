@@ -45,6 +45,7 @@ def validate_transaction(data: dict, db: sqlite3.Connection) -> list[str]:
     raw_direction = data.get("direction")
     raw_amount = data.get("amount")
     raw_category_id = data.get("category_id")
+    raw_company_id = data.get("company_id")
     raw_payment_method = data.get("payment_method")
     raw_vat_rate = data.get("vat_rate")
     income_type = data.get("income_type")
@@ -81,6 +82,17 @@ def validate_transaction(data: dict, db: sqlite3.Connection) -> list[str]:
         ).fetchone()
         if category_row is None:
             errors.append("Category must be a valid category id.")
+
+    company_id = _parse_int(raw_company_id)
+    if company_id is None:
+        errors.append("Company is required.")
+    else:
+        company_row = db.execute(
+            "SELECT id FROM companies WHERE id = ? AND is_active = TRUE",
+            (company_id,),
+        ).fetchone()
+        if company_row is None:
+            errors.append("Company must be a valid active company.")
 
     payment_method = str(raw_payment_method) if raw_payment_method is not None else None
     if payment_method not in ALLOWED_PAYMENT_METHODS:

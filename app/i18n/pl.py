@@ -20,6 +20,8 @@ MESSAGES = {
     "dashboard_view_all": "Wszystkie transakcje",
     "dashboard_recent": "Ostatnie transakcje",
     "dashboard_no_transactions": "Brak transakcji.",
+    "filter_company": "Firma",
+    "filter_all_companies": "Wszystkie firmy",
 
     # Transaction form
     "form_title": "Nowa transakcja",
@@ -52,6 +54,20 @@ MESSAGES = {
     "correction_reason_label": "Powód korekty (wymagane)",
     "correction_reason_placeholder": "Co jest korygowane i dlaczego?",
 
+    # Company selector
+    "form_company": "Firma",
+    "company_sp": "JDG",
+    "company_sp_full": "Jednoosobowa działalność gospodarcza (JDG)",
+    "company_ltd": "Sp. z o.o.",
+    "company_ltd_full": "Spółka z ograniczoną odpowiedzialnością (Sp. z o.o.)",
+    "company_ff": "FR",
+    "company_ff_full": "Fundacja rodzinna (FR)",
+    "company_private": "P",
+    "company_private_full": "Prywatny (P)",
+
+    # Accountant flag
+    "form_for_accountant": "Dla księgowej",
+
     # Transaction list
     "list_title": "Transakcje",
     "list_new": "+ Nowa transakcja",
@@ -62,9 +78,11 @@ MESSAGES = {
     "list_col_id": "#",
     "list_col_date": "Data",
     "list_col_category": "Kategoria",
+    "list_col_company": "Firma",
     "list_col_direction": "Typ",
     "list_col_amount": "Kwota",
     "list_col_payment": "Płatność",
+    "list_col_for_accountant": "Dla księgowej",
     "list_col_logged_by": "Dodał",
     "list_col_status": "Status",
     "list_no_transactions": "Brak transakcji.",
@@ -85,6 +103,7 @@ MESSAGES = {
     "detail_date": "Data",
     "detail_direction": "Typ transakcji",
     "detail_category": "Kategoria",
+    "detail_company": "Firma",
     "detail_amount_gross": "Kwota (brutto)",
     "detail_vat_rate": "Stawka VAT",
     "detail_income_type": "Typ przychodu",
@@ -96,6 +115,11 @@ MESSAGES = {
     "detail_correct": "Skoryguj",
     "detail_void": "Anuluj",
     "detail_correction_of": "Ta transakcja jest korektą transakcji",
+
+    # Accountant
+    "for_accountant_label": "Dla księgowej",
+    "for_accountant_yes": "Tak",
+    "for_accountant_no": "Nie",
 
     # Cancellation details
     "void_details_title": "Szczegóły anulowania",
@@ -241,4 +265,6 @@ VALIDATION_ERRORS = {
     "Transaction is already voided.": "Transakcja jest już anulowana.",
     "Void reason is required.": "Powód anulowania jest wymagany.",
     "Correction reason is required.": "Powód korekty jest wymagany.",
+    "Company is required.": "Firma jest wymagana.",
+    "Company must be a valid active company.": "Firma musi być prawidłową aktywną firmą.",
 }
