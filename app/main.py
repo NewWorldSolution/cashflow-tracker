@@ -11,7 +11,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from jinja2 import pass_context
 
-from app.i18n import DEFAULT_LOCALE, translate
+from app.i18n import DEFAULT_LOCALE, format_amount, format_date, translate
 from db.init_db import initialise_db
 
 load_dotenv()
@@ -174,8 +174,22 @@ def create_app(database_url: str | None = None) -> FastAPI:
     from app.routes.dashboard import templates as dashboard_tpl
     from app.routes.transactions import templates as transactions_tpl
 
+    @pass_context
+    def _format_date(context, value) -> str:
+        request = context.get("request")
+        locale = getattr(getattr(request, "state", None), "locale", DEFAULT_LOCALE)
+        return format_date(value, locale)
+
+    @pass_context
+    def _format_amount(context, value) -> str:
+        request = context.get("request")
+        locale = getattr(getattr(request, "state", None), "locale", DEFAULT_LOCALE)
+        return format_amount(value, locale)
+
     for tpl in (settings_tpl, auth_tpl, dashboard_tpl, transactions_tpl):
         tpl.env.globals["t"] = _t
+        tpl.env.globals["format_date"] = _format_date
+        tpl.env.globals["format_amount"] = _format_amount
 
     @app.get("/lang/{locale}")
     async def switch_language(locale: str, request: Request):

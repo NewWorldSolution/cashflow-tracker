@@ -8,16 +8,16 @@
 <div class="dashboard-grid">
     <div class="card">
         <div class="text-sm text-muted">{{ t('dashboard_opening_balance') }}</div>
-        <div class="card-value">{{ opening_balance | default(t('dashboard_not_set'), true) }}</div>
-        <div class="text-sm text-muted">{{ t('dashboard_as_of') }} {{ as_of_date | default('—', true) }}</div>
+        <div class="card-value">{{ format_amount(opening_balance) if opening_balance is not none else t('dashboard_not_set') }}</div>
+        <div class="text-sm text-muted">{{ t('dashboard_as_of') }} {{ format_date(as_of_date) if as_of_date else '—' }}</div>
     </div>
     <div class="card">
         <div class="text-sm text-muted">{{ t('dashboard_total_income') }}</div>
-        <div class="card-value">{{ "%.2f"|format(total_income) }}</div>
+        <div class="card-value">{{ format_amount(total_income) }}</div>
     </div>
     <div class="card">
         <div class="text-sm text-muted">{{ t('dashboard_total_expenses') }}</div>
-        <div class="card-value">{{ "%.2f"|format(total_expense) }}</div>
+        <div class="card-value">{{ format_amount(total_expense) }}</div>
     </div>
     <div class="card">
         <div class="text-sm text-muted">{{ t('dashboard_transactions') }}</div>
@@ -47,11 +47,11 @@
         <tbody>
             {% for txn in recent %}
             <tr>
-                <td><a href="/transactions/{{ txn.id }}">{{ txn.date }}</a></td>
+                <td><a href="/transactions/{{ txn.id }}">{{ format_date(txn.date) }}</a></td>
                 <td>{{ txn.category_label }}</td>
                 <td>{{ txn.direction }}</td>
                 <td>{{ txn.payment_method }}</td>
-                <td class="text-right">{{ "%.2f"|format(txn.amount) }}</td>
+                <td class="text-right">{{ format_amount(txn.amount) }}</td>
             </tr>
             {% endfor %}
         </tbody>

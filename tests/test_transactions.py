@@ -316,7 +316,7 @@ def test_detail_view_returns_200(client):
     r = client.get(f"/transactions/{transaction_id}")
 
     assert r.status_code == 200
-    assert "654.32" in r.text
+    assert "654,32" in r.text
     assert f"Transakcja #{transaction_id}" in r.text
 
 

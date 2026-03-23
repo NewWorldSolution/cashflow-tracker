@@ -34,10 +34,10 @@
         {% for txn in transactions %}
         <tr class="{{ 'row-voided' if not txn.is_active else '' }}">
           <td><a href="/transactions/{{ txn.id }}">#{{ txn.id }}</a></td>
-          <td><a href="/transactions/{{ txn.id }}">{{ txn.date }}</a></td>
+          <td><a href="/transactions/{{ txn.id }}">{{ format_date(txn.date) }}</a></td>
           <td>{{ txn.category_label }}</td>
           <td>{{ txn.direction }}</td>
-          <td class="text-right amount" data-amount="{{ txn.amount }}">{{ "{:,.2f}".format(txn.amount) }}</td>
+          <td class="text-right amount" data-amount="{{ txn.amount }}">{{ format_amount(txn.amount) }}</td>
           <td>{{ txn.payment_method }}</td>
           <td>{{ txn.logged_by_username }}</td>
           {% if show_all %}
