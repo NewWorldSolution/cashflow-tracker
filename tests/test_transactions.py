@@ -1,4 +1,5 @@
 import os
+import re
 import sqlite3
 
 import pytest
@@ -94,6 +95,7 @@ def insert_transaction(client, **overrides):
         "income_type": None,
         "vat_deductible_pct": 100,
         "description": "Original transaction",
+        "for_accountant": 0,
         "logged_by": 1,
         "is_active": 1,
         "void_reason": None,
@@ -106,9 +108,9 @@ def insert_transaction(client, **overrides):
     conn = sqlite3.connect(client.db_path)
     cursor = conn.execute(
         "INSERT INTO transactions (date, amount, direction, category_id, company_id, payment_method, "
-        "vat_rate, income_type, vat_deductible_pct, description, logged_by, is_active, "
+        "vat_rate, income_type, vat_deductible_pct, description, for_accountant, logged_by, is_active, "
         "void_reason, voided_by, replacement_transaction_id, created_at) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (
             data["date"],
             data["amount"],
@@ -120,6 +122,7 @@ def insert_transaction(client, **overrides):
             data["income_type"],
             data["vat_deductible_pct"],
             data["description"],
+            data["for_accountant"],
             data["logged_by"],
             data["is_active"],
             data["void_reason"],
@@ -160,6 +163,7 @@ def test_create_transaction_saves_to_db(client):
     assert row is not None
     assert row["direction"] == "expense"
     assert row["category_id"] == EXPENSE_CATEGORY_ID
+    assert row["company_id"] == 1
     assert row["vat_deductible_pct"] == 100.0
 
 
@@ -212,6 +216,44 @@ def test_form_input_preserved_on_error(client):
     assert "test note" in r.text
 
 
+def test_create_without_company_fails(client):
+    r = client.post("/transactions/new", data=valid_income_form(company_id=""))
+
+    assert r.status_code == 422
+    assert "Firma jest wymagana." in r.text
+
+
+def test_create_invalid_company_fails(client):
+    r = client.post("/transactions/new", data=valid_income_form(company_id="999"))
+
+    assert r.status_code == 422
+    assert "Firma musi być prawidłową aktywną firmą." in r.text
+
+
+def test_create_form_uses_short_company_labels(client):
+    r = client.get("/transactions/new")
+
+    assert r.status_code == 200
+    assert "JDG" in r.text
+    assert "Sp. z o.o." in r.text
+    assert "FR" in r.text
+
+
+def test_create_transaction_with_for_accountant_true(client):
+    response = client.post("/transactions/new", data=valid_expense_form(for_accountant="1"))
+
+    assert response.status_code == 302
+
+    conn = sqlite3.connect(client.db_path)
+    conn.row_factory = sqlite3.Row
+    row = conn.execute(
+        "SELECT for_accountant FROM transactions ORDER BY id DESC LIMIT 1"
+    ).fetchone()
+    conn.close()
+
+    assert row["for_accountant"] == 1
+
+
 def test_internal_income_vat_rate_enforced(client):
     r = client.post(
         "/transactions/new",
@@ -248,6 +290,55 @@ def test_transaction_list_shows_recent(client):
     assert create.status_code == 302
     assert r.status_code == 200
     assert "1234.56" in r.text
+
+
+def test_transaction_list_uses_short_company_labels(client):
+    client.post("/transactions/new", data=valid_income_form(company_id="1"))
+    r = client.get("/transactions/")
+
+    assert r.status_code == 200
+    assert ">JDG<" in r.text
+
+
+def test_transaction_list_removes_logged_by_column(client):
+    r = client.get("/transactions/")
+
+    assert r.status_code == 200
+    assert "Dodał" not in r.text
+
+
+def test_list_filter_by_company(client):
+    insert_transaction(client, amount="101.00", company_id=1, description="SP txn")
+    insert_transaction(client, amount="202.00", company_id=2, description="LTD txn")
+
+    r = client.get("/transactions/?company_id=1")
+
+    assert r.status_code == 200
+    assert "101,00" in r.text
+    assert "202,00" not in r.text
+    assert re.search(r'option value="1"\s+selected', r.text)
+
+
+def test_list_filter_preserves_show_all(client):
+    transaction_id = insert_transaction(client, amount="303.00", company_id=1)
+    client.post(f"/transactions/{transaction_id}/void", data={"void_reason": "voided"})
+
+    r = client.get("/transactions/?show_all=true&company_id=1")
+
+    assert r.status_code == 200
+    assert "303,00" in r.text
+    assert 'name="show_all" value="true"' in r.text
+
+
+def test_list_shows_accountant_yes_no(client):
+    insert_transaction(client, amount="404.00", company_id=1, for_accountant=1)
+    insert_transaction(client, amount="405.00", company_id=1, for_accountant=0)
+
+    r = client.get("/transactions/")
+
+    assert r.status_code == 200
+    assert ">Tak<" in r.text
+    assert ">Nie<" in r.text
 
 
 def test_transaction_list_excludes_inactive(client):
@@ -322,6 +413,35 @@ def test_detail_view_returns_200(client):
     assert r.status_code == 200
     assert "654,32" in r.text
     assert f"Transakcja #{transaction_id}" in r.text
+
+
+def test_detail_shows_full_company_label(client):
+    transaction_id = insert_transaction(client, company_id=2)
+
+    r = client.get(f"/transactions/{transaction_id}")
+
+    assert r.status_code == 200
+    assert "Spółka z ograniczoną odpowiedzialnością (Sp. z o.o.)" in r.text
+
+
+def test_detail_keeps_logged_by_visible(client):
+    transaction_id = insert_transaction(client)
+
+    r = client.get(f"/transactions/{transaction_id}")
+
+    assert r.status_code == 200
+    assert "Dodał" in r.text
+
+
+def test_detail_shows_for_accountant_yes_no(client):
+    yes_id = insert_transaction(client, company_id=1, for_accountant=1)
+    no_id = insert_transaction(client, company_id=1, for_accountant=0)
+
+    yes_r = client.get(f"/transactions/{yes_id}")
+    no_r = client.get(f"/transactions/{no_id}")
+
+    assert "Tak" in yes_r.text
+    assert "Nie" in no_r.text
 
 
 def test_detail_view_404_for_missing(client):
@@ -422,6 +542,8 @@ def test_correct_form_prefills_original(client):
     transaction_id = insert_transaction(
         client,
         amount="888.88",
+        company_id=2,
+        for_accountant=1,
         vat_rate=23.0,
         vat_deductible_pct=100.0,
         description="Needs correction",
@@ -434,7 +556,19 @@ def test_correct_form_prefills_original(client):
     assert 'value="888.88"' in r.text
     assert 'option value="23"' in r.text
     assert 'option value="100"' in r.text
+    assert re.search(r'option value="2"\s+selected', r.text)
+    assert 'name="for_accountant" value="1"' in r.text
     assert "Needs correction" in r.text
+
+
+def test_correct_form_prefills_for_accountant_checkbox(client):
+    transaction_id = insert_transaction(client, company_id=1, for_accountant=1)
+
+    r = client.get(f"/transactions/{transaction_id}/correct")
+
+    assert r.status_code == 200
+    assert 'name="for_accountant" value="1"' in r.text
+    assert "checked" in r.text
 
 
 def test_correct_creates_new_voids_original(client):
@@ -469,6 +603,27 @@ def test_correct_creates_new_voids_original(client):
     assert original["replacement_transaction_id"] == replacement["id"]
     assert replacement["is_active"] == 1
     assert replacement["amount"] == 650
+
+
+def test_correct_can_change_company_and_for_accountant(client):
+    transaction_id = insert_transaction(client, company_id=1, for_accountant=0)
+
+    form_data = valid_expense_form(company_id="2", for_accountant="1")
+    form_data["correction_reason"] = "Switch company and accountant flag"
+    r = client.post(f"/transactions/{transaction_id}/correct", data=form_data)
+
+    assert r.status_code == 302
+
+    conn = sqlite3.connect(client.db_path)
+    conn.row_factory = sqlite3.Row
+    replacement = conn.execute(
+        "SELECT company_id, for_accountant FROM transactions WHERE id != ? ORDER BY id DESC LIMIT 1",
+        (transaction_id,),
+    ).fetchone()
+    conn.close()
+
+    assert replacement["company_id"] == 2
+    assert replacement["for_accountant"] == 1
 
 
 def test_flash_after_correct(client):
@@ -526,6 +681,39 @@ def test_show_all_includes_voided(client):
     assert "999.99" not in r_active.text
     assert r_all.status_code == 200
     assert "999.99" in r_all.text
+
+
+def test_dashboard_filter_by_company(client):
+    insert_transaction(
+        client,
+        amount="700.00",
+        direction="income",
+        category_id=1,
+        company_id=1,
+        payment_method="transfer",
+        vat_rate=23,
+        income_type="external",
+        vat_deductible_pct=None,
+    )
+    insert_transaction(
+        client,
+        amount="300.00",
+        direction="expense",
+        category_id=5,
+        company_id=2,
+        payment_method="card",
+        vat_rate=23,
+        income_type=None,
+        vat_deductible_pct=100,
+    )
+
+    r = client.get("/?company_id=1")
+
+    assert r.status_code == 200
+    assert ">JDG<" in r.text
+    assert "700,00" in r.text
+    assert "300,00" not in r.text
+    assert 'option value="1" selected' in r.text
 
 
 def test_flash_clears_after_display(client):
