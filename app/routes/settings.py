@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
+from app.i18n import translate_error
 from app.main import get_db
 
 router = APIRouter()
@@ -70,6 +71,8 @@ async def post_opening_balance(
         errors.append("Date must be in YYYY-MM-DD format (e.g. 2026-01-01).")
 
     if errors:
+        locale = request.state.locale
+        errors = [translate_error(e, locale) for e in errors]
         return templates.TemplateResponse(
             request,
             "settings/opening_balance.html",

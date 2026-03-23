@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
+from app.i18n import translate_error
 from app.services.auth_service import require_auth
 from app.services.calculations import effective_cost, vat_amount
 from app.services.transaction_service import get_transaction, void_transaction
@@ -86,6 +87,8 @@ async def post_create_transaction(
     errors = validate_transaction(data, db)
 
     if errors:
+        locale = request.state.locale
+        errors = [translate_error(e, locale) for e in errors]
         cats = db.execute(
             "SELECT category_id, name, label, direction, default_vat_rate, default_vat_deductible_pct "
             "FROM categories ORDER BY direction, label"
@@ -133,7 +136,7 @@ async def post_create_transaction(
     db.commit()
     request.session["flash"] = {
         "type": "success",
-        "message": "Transaction saved successfully.",
+        "message": "flash_transaction_saved",
     }
     return RedirectResponse(url="/transactions/", status_code=302)
 
@@ -231,14 +234,19 @@ async def post_void_transaction(
     try:
         void_transaction(transaction_id, void_reason, user["id"], db)
     except ValueError as e:
+        locale = request.state.locale
         return templates.TemplateResponse(
             request,
             "transactions/void.html",
-            {"txn": txn, "errors": [str(e)], "form_data": {"void_reason": void_reason}},
+            {
+                "txn": txn,
+                "errors": [translate_error(str(e), locale)],
+                "form_data": {"void_reason": void_reason},
+            },
             status_code=422,
         )
     db.commit()
-    request.session["flash"] = {"type": "success", "message": "Transaction voided."}
+    request.session["flash"] = {"type": "success", "message": "flash_transaction_voided"}
     return RedirectResponse(url="/transactions/", status_code=302)
 
 
@@ -324,6 +332,8 @@ async def post_correct_transaction(
     errors = validate_transaction(data, db)
 
     if errors:
+        locale = request.state.locale
+        errors = [translate_error(e, locale) for e in errors]
         cats = db.execute(
             "SELECT category_id, name, label, direction, default_vat_rate, default_vat_deductible_pct "
             "FROM categories ORDER BY direction, label"
@@ -378,7 +388,7 @@ async def post_correct_transaction(
     db.commit()
     request.session["flash"] = {
         "type": "success",
-        "message": "Transaction corrected. Original has been voided.",
+        "message": "flash_transaction_corrected",
     }
     return RedirectResponse(url="/transactions/", status_code=302)
 

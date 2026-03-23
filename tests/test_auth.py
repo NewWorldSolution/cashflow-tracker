@@ -54,7 +54,7 @@ def test_login_page_loads(client):
     """GET /auth/login returns 200 when opening balance is set and no session."""
     r = client.get("/auth/login")
     assert r.status_code == 200
-    assert "Sign in" in r.text
+    assert "Logowanie" in r.text
 
 
 def test_login_success_redirects(client):
@@ -75,32 +75,32 @@ def test_login_sets_session_user_id(client):
 
 
 def test_login_wrong_password(client):
-    """Correct username, wrong password → 401, 'Invalid credentials'."""
+    """Correct username, wrong password → 401, translated error."""
     r = client.post("/auth/login", data={"username": "owner", "password": "wrongpass"})
     assert r.status_code == 401
-    assert "Invalid credentials" in r.text
+    assert "Nieprawidłowe dane logowania" in r.text
 
 
 def test_login_wrong_username(client):
-    """Unknown username → 401, 'Invalid credentials'."""
+    """Unknown username → 401, translated error."""
     r = client.post("/auth/login", data={"username": "nobody", "password": "owner123"})
     assert r.status_code == 401
-    assert "Invalid credentials" in r.text
+    assert "Nieprawidłowe dane logowania" in r.text
 
 
 def test_login_empty_fields(client):
-    """Empty username and password → 401, 'Username and password are required'."""
+    """Empty username and password → 401, translated error."""
     r = client.post("/auth/login", data={"username": "", "password": ""})
     assert r.status_code == 401
-    assert "Username and password are required" in r.text
+    assert "Nazwa użytkownika i hasło są wymagane" in r.text
 
 
 def test_login_does_not_reveal_field(client):
     """Error message is identical for wrong username and wrong password."""
     r_user = client.post("/auth/login", data={"username": "nobody", "password": "x"})
     r_pass = client.post("/auth/login", data={"username": "owner", "password": "wrong"})
-    assert "Invalid credentials" in r_user.text
-    assert "Invalid credentials" in r_pass.text
+    assert "Nieprawidłowe dane logowania" in r_user.text
+    assert "Nieprawidłowe dane logowania" in r_pass.text
     # Same generic message for both — neither reveals which field failed
     assert r_user.status_code == r_pass.status_code == 401
 

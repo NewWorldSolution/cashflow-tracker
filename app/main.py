@@ -28,7 +28,10 @@ if not SECRET_KEY:
 
 _memory_keeper: sqlite3.Connection | None = None
 
-EXEMPT_PATHS = {"/settings/opening-balance", "/auth/login", "/auth/logout", "/favicon.ico"}
+EXEMPT_PATHS = {
+    "/settings/opening-balance", "/auth/login", "/auth/logout", "/favicon.ico",
+    "/lang/en", "/lang/pl",
+}
 EXEMPT_PREFIXES = ("/static", "/docs", "/openapi.json")
 
 
@@ -173,6 +176,13 @@ def create_app(database_url: str | None = None) -> FastAPI:
 
     for tpl in (settings_tpl, auth_tpl, dashboard_tpl, transactions_tpl):
         tpl.env.globals["t"] = _t
+
+    @app.get("/lang/{locale}")
+    async def switch_language(locale: str, request: Request):
+        if locale in ("en", "pl"):
+            request.session["locale"] = locale
+        referer = request.headers.get("referer", "/")
+        return RedirectResponse(url=referer, status_code=302)
 
     app.mount("/static", StaticFiles(directory="static"), name="static")
 
