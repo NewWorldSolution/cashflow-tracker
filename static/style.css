@@ -236,6 +236,24 @@ dl {
   background: var(--color-hover);
 }
 
+.lang-switch {
+  font-size: var(--font-size-sm);
+  color: var(--color-muted-fg);
+}
+
+.lang-switch a {
+  color: var(--color-muted-fg);
+  text-decoration: none;
+}
+
+.lang-switch a:hover {
+  text-decoration: underline;
+}
+
+.lang-switch strong {
+  color: var(--color-primary);
+}
+
 /* ---------------------------------------------------------------
    Cards
    --------------------------------------------------------------- */

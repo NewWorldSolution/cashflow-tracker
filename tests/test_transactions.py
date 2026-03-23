@@ -167,7 +167,7 @@ def test_flash_after_create(client):
 
     list_r = client.get("/transactions/")
 
-    assert "Transaction saved successfully." in list_r.text
+    assert "Transakcja zapisana pomyślnie." in list_r.text
 
 
 def test_logged_by_set_from_session_not_form(client):
@@ -194,8 +194,8 @@ def test_create_transaction_shows_all_errors(client):
     )
 
     assert r.status_code == 422
-    assert "Category must be a valid category id." in r.text
-    assert "Payment method must be cash, card, or transfer." in r.text
+    assert "Kategoria musi być prawidłowym identyfikatorem." in r.text
+    assert "Metoda płatności musi być gotówka, karta lub przelew." in r.text
 
 
 def test_form_input_preserved_on_error(client):
@@ -215,7 +215,7 @@ def test_internal_income_vat_rate_enforced(client):
     )
 
     assert r.status_code == 422
-    assert "Internal income must use a VAT rate of 0." in r.text
+    assert "Przychód wewnętrzny musi mieć stawkę VAT 0." in r.text
 
 
 def test_other_expense_description_required(client):
@@ -225,7 +225,7 @@ def test_other_expense_description_required(client):
     )
 
     assert r.status_code == 422
-    assert "Description is required for other_expense and other_income." in r.text
+    assert "Opis jest wymagany dla kategorii inne wydatki i inne przychody." in r.text
 
 
 def test_transaction_list_loads(client):
@@ -316,8 +316,8 @@ def test_detail_view_returns_200(client):
     r = client.get(f"/transactions/{transaction_id}")
 
     assert r.status_code == 200
-    assert "654.32" in r.text
-    assert f"Transaction #{transaction_id}" in r.text
+    assert "654,32" in r.text
+    assert f"Transakcja #{transaction_id}" in r.text
 
 
 def test_detail_view_404_for_missing(client):
@@ -341,7 +341,7 @@ def test_void_requires_void_reason(client):
     r = client.post(f"/transactions/{transaction_id}/void", data={"void_reason": "   "})
 
     assert r.status_code == 422
-    assert "Void reason is required." in r.text
+    assert "Powód anulowania jest wymagany." in r.text
 
 
 def test_void_success(client):
@@ -380,7 +380,7 @@ def test_flash_after_void(client):
 
     list_r = client.get("/transactions/")
 
-    assert "Transaction voided." in list_r.text
+    assert "Transakcja anulowana." in list_r.text
 
 
 def test_voided_transaction_excluded_from_list(client):
@@ -411,7 +411,7 @@ def test_void_already_voided_rejected(client):
     )
 
     assert r.status_code == 422
-    assert "Transaction is already voided." in r.text
+    assert "Transakcja jest już anulowana." in r.text
 
 
 def test_correct_form_prefills_original(client):
@@ -436,9 +436,11 @@ def test_correct_form_prefills_original(client):
 def test_correct_creates_new_voids_original(client):
     transaction_id = insert_transaction(client, amount="500.00")
 
+    form_data = valid_expense_form(amount="650.00", description="Corrected amount")
+    form_data["correction_reason"] = "Wrong amount entered"
     r = client.post(
         f"/transactions/{transaction_id}/correct",
-        data=valid_expense_form(amount="650.00", description="Corrected amount"),
+        data=form_data,
     )
 
     assert r.status_code == 302
@@ -458,7 +460,7 @@ def test_correct_creates_new_voids_original(client):
     assert len(replacements) == 1
     replacement = replacements[0]
     assert original["is_active"] == 0
-    assert original["void_reason"] == "Corrected"
+    assert original["void_reason"] == "Wrong amount entered"
     assert original["voided_by"] == 1
     assert original["replacement_transaction_id"] == replacement["id"]
     assert replacement["is_active"] == 1
@@ -468,16 +470,29 @@ def test_correct_creates_new_voids_original(client):
 def test_flash_after_correct(client):
     """POST correct -> redirect -> GET list -> flash message in response."""
     transaction_id = insert_transaction(client)
+    form_data = valid_expense_form(description="Corrected")
+    form_data["correction_reason"] = "Fix typo"
     r = client.post(
         f"/transactions/{transaction_id}/correct",
-        data=valid_expense_form(description="Corrected"),
+        data=form_data,
     )
 
     assert r.status_code == 302
 
     list_r = client.get("/transactions/")
 
-    assert "Transaction corrected." in list_r.text
+    assert "Transakcja skorygowana." in list_r.text
+
+
+def test_correct_requires_correction_reason(client):
+    """Correction without a reason returns 422."""
+    transaction_id = insert_transaction(client)
+    r = client.post(
+        f"/transactions/{transaction_id}/correct",
+        data=valid_expense_form(description="Updated"),
+    )
+    assert r.status_code == 422
+    assert "korekty" in r.text.lower()
 
 
 def test_correct_on_voided_rejected(client):
@@ -514,10 +529,10 @@ def test_flash_clears_after_display(client):
     client.post("/transactions/new", data=valid_income_form())
 
     first_load = client.get("/transactions/")
-    assert "Transaction saved successfully." in first_load.text
+    assert "Transakcja zapisana pomyślnie." in first_load.text
 
     second_load = client.get("/transactions/")
-    assert "Transaction saved successfully." not in second_load.text
+    assert "Transakcja zapisana pomyślnie." not in second_load.text
 
 
 def test_void_form_404_on_already_voided(client):
@@ -562,7 +577,7 @@ def test_correct_validation_failure_rerenders_422(client):
     )
 
     assert r.status_code == 422
-    assert "Amount must be a positive number." in r.text
+    assert "Kwota musi być liczbą dodatnią." in r.text
 
 
 def test_internal_income_cash_saves(client):
@@ -592,4 +607,61 @@ def test_internal_income_non_cash_rejected(client):
     )
 
     assert r.status_code == 422
-    assert "Internal income must use cash as payment method." in r.text
+    assert "Przychód wewnętrzny musi używać gotówki jako metody płatności." in r.text
+
+
+def test_voided_at_set_on_void(client):
+    """Voiding a transaction sets voided_at timestamp."""
+    transaction_id = insert_transaction(client)
+
+    client.post(
+        f"/transactions/{transaction_id}/void",
+        data={"void_reason": "Duplicate entry"},
+    )
+
+    conn = sqlite3.connect(client.db_path)
+    conn.row_factory = sqlite3.Row
+    row = conn.execute(
+        "SELECT voided_at FROM transactions WHERE id = ?",
+        (transaction_id,),
+    ).fetchone()
+    conn.close()
+
+    assert row["voided_at"] is not None
+
+
+def test_voided_at_set_on_correct(client):
+    """Correcting a transaction sets voided_at on the original."""
+    transaction_id = insert_transaction(client)
+
+    form_data = valid_expense_form(amount="650.00", description="Corrected amount")
+    form_data["correction_reason"] = "Wrong amount"
+    client.post(
+        f"/transactions/{transaction_id}/correct",
+        data=form_data,
+    )
+
+    conn = sqlite3.connect(client.db_path)
+    conn.row_factory = sqlite3.Row
+    row = conn.execute(
+        "SELECT voided_at FROM transactions WHERE id = ?",
+        (transaction_id,),
+    ).fetchone()
+    conn.close()
+
+    assert row["voided_at"] is not None
+
+
+def test_voided_at_null_on_active(client):
+    """Active transactions have voided_at = NULL."""
+    transaction_id = insert_transaction(client)
+
+    conn = sqlite3.connect(client.db_path)
+    conn.row_factory = sqlite3.Row
+    row = conn.execute(
+        "SELECT voided_at FROM transactions WHERE id = ?",
+        (transaction_id,),
+    ).fetchone()
+    conn.close()
+
+    assert row["voided_at"] is None

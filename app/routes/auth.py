@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
+from app.i18n import translate_error
 from app.main import get_db
 from app.services.auth_service import get_current_user, get_user_by_username, verify_password
 
@@ -33,10 +34,11 @@ async def post_login(
     """Validate credentials, create session, redirect to /."""
 
     def render_error(msg: str) -> HTMLResponse:
+        locale = request.state.locale
         return templates.TemplateResponse(
             request,
             "auth/login.html",
-            {"error": msg, "username": username},
+            {"error": translate_error(msg, locale), "username": username},
             status_code=401,
         )
 

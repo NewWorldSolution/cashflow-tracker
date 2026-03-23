@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
+from app.i18n import translate_error
 from app.services.auth_service import require_auth
 from app.services.calculations import effective_cost, vat_amount
 from app.services.transaction_service import get_transaction, void_transaction
@@ -86,6 +87,8 @@ async def post_create_transaction(
     errors = validate_transaction(data, db)
 
     if errors:
+        locale = request.state.locale
+        errors = [translate_error(e, locale) for e in errors]
         cats = db.execute(
             "SELECT category_id, name, label, direction, default_vat_rate, default_vat_deductible_pct "
             "FROM categories ORDER BY direction, label"
@@ -133,7 +136,7 @@ async def post_create_transaction(
     db.commit()
     request.session["flash"] = {
         "type": "success",
-        "message": "Transaction saved successfully.",
+        "message": "flash_transaction_saved",
     }
     return RedirectResponse(url="/transactions/", status_code=302)
 
@@ -147,7 +150,8 @@ async def get_transaction_list(
     user = require_auth(request)  # noqa: F841
     where = "" if show_all else "WHERE t.is_active = TRUE "
     rows = db.execute(
-        "SELECT t.*, c.label AS category_label, u.username AS logged_by_username, "
+        "SELECT t.*, c.label AS category_label, c.name AS category_name, "
+        "u.username AS logged_by_username, "
         "vb.username AS voided_by_username "
         "FROM transactions t "
         "JOIN categories c ON t.category_id = c.category_id "
@@ -186,8 +190,8 @@ async def get_transaction_detail(
     db: sqlite3.Connection = Depends(_get_db),
 ) -> HTMLResponse:
     require_auth(request)
-    t = get_transaction(transaction_id, db)
-    if t is None:
+    txn = get_transaction(transaction_id, db)
+    if txn is None:
         raise HTTPException(status_code=404)
     # Check if this transaction is a correction of another
     original = db.execute(
@@ -196,7 +200,7 @@ async def get_transaction_detail(
     ).fetchone()
     original_id = original["id"] if original else None
     return templates.TemplateResponse(
-        request, "transactions/detail.html", {"t": t, "original_id": original_id}
+        request, "transactions/detail.html", {"txn": txn, "original_id": original_id}
     )
 
 
@@ -207,13 +211,13 @@ async def get_void_transaction(
     db: sqlite3.Connection = Depends(_get_db),
 ) -> HTMLResponse:
     require_auth(request)
-    t = get_transaction(transaction_id, db)
-    if t is None or not t["is_active"]:
+    txn = get_transaction(transaction_id, db)
+    if txn is None or not txn["is_active"]:
         raise HTTPException(status_code=404)
     return templates.TemplateResponse(
         request,
         "transactions/void.html",
-        {"t": t, "errors": [], "form_data": {}},
+        {"txn": txn, "errors": [], "form_data": {}},
     )
 
 
@@ -225,20 +229,25 @@ async def post_void_transaction(
     db: sqlite3.Connection = Depends(_get_db),
 ):
     user = require_auth(request)
-    t = get_transaction(transaction_id, db)
-    if t is None:
+    txn = get_transaction(transaction_id, db)
+    if txn is None:
         raise HTTPException(status_code=404)
     try:
         void_transaction(transaction_id, void_reason, user["id"], db)
     except ValueError as e:
+        locale = request.state.locale
         return templates.TemplateResponse(
             request,
             "transactions/void.html",
-            {"t": t, "errors": [str(e)], "form_data": {"void_reason": void_reason}},
+            {
+                "txn": txn,
+                "errors": [translate_error(str(e), locale)],
+                "form_data": {"void_reason": void_reason},
+            },
             status_code=422,
         )
     db.commit()
-    request.session["flash"] = {"type": "success", "message": "Transaction voided."}
+    request.session["flash"] = {"type": "success", "message": "flash_transaction_voided"}
     return RedirectResponse(url="/transactions/", status_code=302)
 
 
@@ -249,23 +258,24 @@ async def get_correct_transaction(
     db: sqlite3.Connection = Depends(_get_db),
 ) -> HTMLResponse:
     require_auth(request)
-    t = get_transaction(transaction_id, db)
-    if t is None or not t["is_active"]:
+    txn = get_transaction(transaction_id, db)
+    if txn is None or not txn["is_active"]:
         raise HTTPException(status_code=404)
     cats = db.execute(
         "SELECT category_id, name, label, direction, default_vat_rate, default_vat_deductible_pct "
         "FROM categories ORDER BY direction, label"
     ).fetchall()
     form_data = {
-        "date": t["date"],
-        "direction": t["direction"],
-        "amount": t["amount"],
-        "category_id": str(t["category_id"]),
-        "payment_method": t["payment_method"],
-        "vat_rate": str(int(t["vat_rate"])),
-        "income_type": t["income_type"] or "",
-        "vat_deductible_pct": str(int(t["vat_deductible_pct"])) if t["vat_deductible_pct"] is not None else "",
-        "description": t["description"] or "",
+        "date": txn["date"],
+        "direction": txn["direction"],
+        "amount": txn["amount"],
+        "category_id": str(txn["category_id"]),
+        "payment_method": txn["payment_method"],
+        "vat_rate": str(int(txn["vat_rate"])),
+        "income_type": txn["income_type"] or "",
+        "vat_deductible_pct": str(int(txn["vat_deductible_pct"])) if txn["vat_deductible_pct"] is not None else "",
+        "description": txn["description"] or "",
+        "correction_reason": "",
     }
     return templates.TemplateResponse(
         request,
@@ -276,6 +286,7 @@ async def get_correct_transaction(
             "form_data": form_data,
             "today": str(date.today()),
             "form_action": f"/transactions/{transaction_id}/correct",
+            "is_correction": True,
         },
     )
 
@@ -293,11 +304,12 @@ async def post_correct_transaction(
     income_type: str = Form(default=""),
     vat_deductible_pct: str = Form(default=""),
     description: str = Form(default=""),
+    correction_reason: str = Form(default=""),
     db: sqlite3.Connection = Depends(_get_db),
 ):
     user = require_auth(request)
-    t = get_transaction(transaction_id, db)
-    if t is None or not t["is_active"]:
+    txn = get_transaction(transaction_id, db)
+    if txn is None or not txn["is_active"]:
         raise HTTPException(status_code=404)
 
     def _s(v: str) -> str:
@@ -319,11 +331,18 @@ async def post_correct_transaction(
         "description": _opt(description),
         "logged_by": user["id"],
         "is_active": True,
+        "correction_reason": _s(correction_reason),
     }
 
     errors = validate_transaction(data, db)
 
+    # Validate correction reason (route-level, not in validation.py)
+    if not data["correction_reason"]:
+        errors.append("Correction reason is required.")
+
     if errors:
+        locale = request.state.locale
+        errors = [translate_error(e, locale) for e in errors]
         cats = db.execute(
             "SELECT category_id, name, label, direction, default_vat_rate, default_vat_deductible_pct "
             "FROM categories ORDER BY direction, label"
@@ -337,6 +356,7 @@ async def post_correct_transaction(
                 "form_data": data,
                 "today": str(date.today()),
                 "form_action": f"/transactions/{transaction_id}/correct",
+                "is_correction": True,
             },
             status_code=422,
         )
@@ -371,14 +391,15 @@ async def post_correct_transaction(
     new_id = db.execute("SELECT last_insert_rowid()").fetchone()[0]
     db.execute(
         "UPDATE transactions "
-        "SET is_active = 0, void_reason = 'Corrected', voided_by = ?, replacement_transaction_id = ? "
+        "SET is_active = 0, void_reason = ?, voided_by = ?, "
+        "voided_at = CURRENT_TIMESTAMP, replacement_transaction_id = ? "
         "WHERE id = ?",
-        (user["id"], new_id, transaction_id),
+        (data["correction_reason"], user["id"], new_id, transaction_id),
     )
     db.commit()
     request.session["flash"] = {
         "type": "success",
-        "message": "Transaction corrected. Original has been voided.",
+        "message": "flash_transaction_corrected",
     }
     return RedirectResponse(url="/transactions/", status_code=302)
 

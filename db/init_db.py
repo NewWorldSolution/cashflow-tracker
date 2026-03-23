@@ -28,6 +28,12 @@ def initialise_db(conn: sqlite3.Connection | None = None) -> None:
     schema = SCHEMA_PATH.read_text()
     conn.executescript(schema)
 
+    # Migration: add voided_at column for existing databases
+    try:
+        conn.execute("ALTER TABLE transactions ADD COLUMN voided_at TIMESTAMP")
+    except Exception:
+        pass  # Column already exists
+
     # Seed categories
     categories_sql = CATEGORIES_SQL.read_text()
     conn.executescript(categories_sql)

@@ -5,7 +5,7 @@ import sqlite3
 
 def get_transaction(transaction_id: int, db: sqlite3.Connection) -> dict | None:
     row = db.execute(
-        "SELECT t.*, c.label AS category_label, "
+        "SELECT t.*, c.label AS category_label, c.name AS category_name, "
         "u.username AS logged_by_username, "
         "vb.username AS voided_by_username "
         "FROM transactions t "
@@ -39,7 +39,7 @@ def void_transaction(
 
     db.execute(
         "UPDATE transactions "
-        "SET is_active = 0, void_reason = ?, voided_by = ? "
+        "SET is_active = 0, void_reason = ?, voided_by = ?, voided_at = CURRENT_TIMESTAMP "
         "WHERE id = ?",
         (reason, voided_by, transaction_id),
     )

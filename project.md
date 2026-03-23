@@ -39,10 +39,31 @@ Internal use only. No public access. All 3 users interact via web form (Phases 1
 - Templates: `detail.html` (read-only view, active/voided states), `void.html` (reason form); `create.html` and `list.html` minimal updates
 - 81 passing tests (61 P1-I1/I2/I3 + 20 new), ruff clean
 
+### P1-I5 — UI/UX Polish (merged to main 2026-03-22)
+- Pico CSS classless framework, responsive layout, flash messages (session-based)
+- Real dashboard: opening balance, totals, recent transactions, active/voided counts
+- Transaction form UX: grouped sections, inline errors, clear labels
+- Detail/void view improvements: active/voided visual distinction, audit trail
+- 98 passing tests, ruff clean
+
+### P1-I6 — Multi-Language Foundation + Polish UI (merged to main 2026-03-23)
+- i18n system: `app/i18n/` with `translate()`, `translate_error()`, `format_date()`, `format_amount()`, `format_datetime()`
+- English + Polish dictionaries: all UI labels, validation errors, category labels (22 keys)
+- Template extraction: all hardcoded strings → `{{ t('key') }}`; locale-aware formatting throughout
+- Language switcher (PL | EN) in nav, session-persistent, default locale `pl`
+- `voided_at TIMESTAMP` column with idempotent migration
+- UX polish: "Direction" → "Transaction Type", "Void" → "Cancel" in UI, distinct correction vs cancellation details, correction reason required, `format_datetime()` for audit timestamps, "Logged by" removed from detail
+- 102 passing tests, ruff clean
+
 ## What comes next
 **Phase 1 — Web form (in progress)**
-- P1-I5: UI polish (CSS, layout, usability improvements)
-- P1-I6: Polish language UI for assistant and wife users
+- P1-I6: Multi-language foundation + Polish UI (merged to main)
+- P1-I7: Multi-company support (JDG, LTD, Foundation, Private) + `for_accountant` flag
+- P1-I8: Sub-categories (hierarchical category system — structure first, real taxonomy from user testing)
+- P1-I9: Azure / server / deployment (SQLite → PostgreSQL, go-live)
+
+**Intentionally deferred beyond Phase 1:**
+- Multi-currency / exchange rates — too large, deeply affects calculations, validation, reporting, and transaction semantics. Will be its own future major iteration.
 
 ## Stack (locked)
 Python · FastAPI · SQLite sandbox → Azure PostgreSQL production · Jinja2 templates · python-telegram-bot (Phase 5) · Claude Haiku/Sonnet (Phase 6 only)

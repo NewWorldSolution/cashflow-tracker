@@ -1,9 +1,9 @@
 {% extends "base.html" %}
 
-{% block title %}Sign in — cashflow-tracker{% endblock %}
+{% block title %}{{ t('login_title') }} — {{ t('nav_brand') }}{% endblock %}
 
 {% block content %}
-<h1>Sign in</h1>
+<h1>{{ t('login_title') }}</h1>
 
 {% if error %}
 <div class="error">{{ error }}</div>
@@ -11,7 +11,7 @@
 
 <form method="post" action="/auth/login">
     <div>
-        <label for="username">Username</label><br>
+        <label for="username">{{ t('login_username') }}</label><br>
         <input
             type="text"
             id="username"
@@ -22,7 +22,7 @@
         >
     </div>
     <div>
-        <label for="password">Password</label><br>
+        <label for="password">{{ t('login_password') }}</label><br>
         <input
             type="password"
             id="password"
@@ -32,7 +32,7 @@
         >
     </div>
     <div>
-        <button type="submit">Sign in</button>
+        <button type="submit">{{ t('login_submit') }}</button>
     </div>
 </form>
 {% endblock %}

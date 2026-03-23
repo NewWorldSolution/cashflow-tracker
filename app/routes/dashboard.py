@@ -47,7 +47,7 @@ async def get_dashboard(
     # Recent 5 active transactions with category label
     recent = db.execute(
         "SELECT t.id, t.date, t.amount, t.direction, c.label AS category_label, "
-        "t.payment_method "
+        "c.name AS category_name, t.payment_method "
         "FROM transactions t JOIN categories c ON t.category_id = c.category_id "
         "WHERE t.is_active = 1 ORDER BY t.created_at DESC LIMIT 5"
     ).fetchall()

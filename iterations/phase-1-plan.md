@@ -1,7 +1,7 @@
 # Phase 1 Plan — Web Form & Transaction Capture
 
-**Status:** I1–I4 complete, I5–I6 planned
-**Timeline:** 6 iterations
+**Status:** I1-I5 complete, I6 in progress, I7-I9 planned
+**Timeline:** 9 iterations
 **Database:** SQLite (sandbox — all data non-production)
 **Stack decision (locked):** FastAPI, not Flask. Decision closed. Rationale: Phase 5 (Telegram) and Phase 6 (LLM) bypass the HTML form and call the same validation layer. FastAPI serves Jinja2 templates now and JSON responses later without retrofitting. Pydantic validation maps directly to transaction_validator rules.
 
@@ -64,20 +64,19 @@ cashflow-tracker/
 **Days 1–4**
 
 ### Goal
-Working Flask app with database, seeded data, opening balance setup, and nothing broken.
+Working FastAPI app with database, seeded data, opening balance setup, and nothing broken.
 
 ### Scope
 ```
-app/__init__.py
-app/models/user.py
-app/models/category.py
+app/main.py
 app/routes/settings.py
 app/templates/settings/opening_balance.html
+db/schema.sql
 db/init_db.py
-seed/categories.py
-seed/users.py
-config.py
-run.py
+seed/categories.sql
+seed/users.sql
+requirements.txt
+.env.example
 ```
 
 ### Skills to inject
@@ -452,20 +451,165 @@ Cover all UI text:
 
 ---
 
+## Iteration 7 — Multi-Company Support + Accountant Flag
+**After I6**
+
+### Goal
+Support multiple legal/business entities inside one app so transactions, views, and summaries can be separated by company. Also add the `for_accountant` flag to mark transactions that need accountant attention.
+
+### Companies to seed
+- **JDG** — sole proprietorship
+- **LTD** — limited company
+- **Foundation** — foundation entity
+- **Private** — personal/non-business
+
+### Scope
+```
+db/schema.sql                        (companies table, transactions.company_id FK)
+db/init_db.py                        (migration + backfill)
+seed/companies.sql                   (4 initial companies)
+app/services/transaction_service.py  (company-aware queries)
+app/routes/transactions.py           (company selector, filtering)
+app/routes/dashboard.py              (company-specific summaries)
+app/templates/**/*.html              (company display/selector, for_accountant UI)
+app/i18n/en.py, pl.py                (company + accountant labels)
+tests/test_transactions.py           (company + accountant tests)
+```
+
+### Deliverables
+- `companies` table with `id`, `name`, `slug`, `is_active`
+- `company_id` FK on transactions — mandatory on all new transactions
+- Backfill existing transactions to a default company
+- Company selector in transaction create/correct flow
+- Company display in detail/list views
+- Company filtering in list and dashboard
+- Dashboard company-specific summaries
+- `for_accountant` boolean field on transactions
+- `for_accountant` form support and display in detail/list
+- EN + PL translations for all company/accountant labels
+- Tests for company create/list/detail/filter and for_accountant flows
+
+### Non-goals
+- No role-based permissions per company (same 3-user auth model)
+- No multi-currency (explicitly deferred — see below)
+- No accountant-facing reporting UI (just the flag)
+
+### Acceptance criteria
+- Transactions can be created and viewed per company
+- Company filter works in list and dashboard
+- for_accountant flag can be set and displayed
+- Existing transactions are backfilled to a default company
+- All tests pass, ruff clean
+
+---
+
+## Iteration 8 — Sub-Categories (Hierarchical Category System)
+**After I7**
+
+### Goal
+Introduce a two-level category system (parent + sub-category) so transactions can be classified more precisely. The initial implementation builds the structure and UI — the final real taxonomy will come from user testing feedback later.
+
+### Scope
+```
+db/schema.sql                        (categories.parent_id)
+db/init_db.py                        (migration from flat to hierarchical)
+seed/categories.sql                  (placeholder hierarchy)
+app/services/validation.py           (hierarchy-aware validation)
+app/routes/transactions.py           (two-level picker data)
+app/templates/transactions/create.html (two-level picker UI)
+app/templates/**/*.html              (category path display)
+app/i18n/en.py, pl.py                (new category labels)
+static/form.js                       (cascading picker behavior)
+tests/                               (hierarchy selection + validation)
+```
+
+### Deliverables
+- `parent_id` column on categories table for hierarchy
+- Migration path from current flat 22 categories
+- Placeholder/demo parent-child hierarchy in seed data
+- Category queries/services updated for hierarchy
+- Two-level category picker in create/correct forms
+- Leaf-only selection enforcement (design decision in task breakdown)
+- List/detail rendering with category path display
+- EN + PL translations for new category keys
+- Tests for hierarchy selection and validation
+
+### Important notes
+- **Real taxonomy deferred to user testing** — current implementation is structural, not final business data
+- **Backward compatibility** — existing transactions must remain valid after migration
+- **VAT defaults** — sub-categories inherit or override parent defaults (design decision during T1)
+
+### Acceptance criteria
+- Two-level picker works in create/correct forms
+- Only valid (leaf) categories can be selected
+- Existing transactions display correctly after migration
+- All tests pass, ruff clean
+
+---
+
+## Iteration 9 — Azure / Server / Deployment
+**After I8**
+
+### Goal
+Prepare the app for real deployment and operational use in Azure. This is the transition from SQLite sandbox to production PostgreSQL.
+
+### Scope
+```
+Azure App Service or Container Apps   (hosting decision)
+Azure PostgreSQL                      (production database)
+app/main.py                          (production config, health check)
+db/init_db.py                        (PostgreSQL compatibility)
+requirements.txt                     (psycopg2 or asyncpg)
+Dockerfile / deployment config       (if containerized)
+.env.production                      (production env vars)
+docs/deployment.md                   (runbook)
+```
+
+### Deliverables
+- Azure hosting model decided and configured
+- Production environment variable strategy (Key Vault or App Settings)
+- Azure PostgreSQL provisioned and configured
+- Schema migration: SQLite → PostgreSQL (data migration optional — sandbox data may be discarded)
+- PostgreSQL conditional CHECK for `vat_deductible_pct NOT NULL on expenses` (per CLAUDE.md)
+- Health-check endpoint
+- Static file serving setup for production
+- Logging and error-handling for deployed environment
+- Deployment documentation / runbook
+- CI/CD pipeline (optional)
+- Smoke-test checklist
+
+### Important notes
+- **This is the go-live iteration** — SANDBOX banner removed, production data starts
+- **All sandbox data may be discarded** — users have been warned since day 1
+- **Schema is identical between SQLite and PostgreSQL** (per CLAUDE.md) — only connection string changes
+- **Owner has Azure deployment experience** from WBSB project
+- **Tests must pass against PostgreSQL**
+
+### Acceptance criteria
+- App deployed and accessible in Azure
+- PostgreSQL database operational
+- All existing tests pass against PostgreSQL
+- Health check endpoint responds
+- Deployment is repeatable via docs/pipeline
+- SANDBOX banner removed
+
+---
+
 ## Deferred to later phases
 
-| Item | Phase |
-|---|---|
-| Monthly summary / reporting | Phase 2 |
-| Card reconciliation check | Phase 3 |
-| WBSB integration | Phase 4 |
-| Telegram bot | Phase 5 |
-| LLM extraction (Haiku / Sonnet) | Phase 6 |
-| PostgreSQL / Azure go-live | Between phases |
-| CSV export | Phase 2 buffer |
-| Search / filter by date or category | Phase 2 |
-| Responsive mobile styling | P1-I5 (moved from Phase 2) |
-| Role permissions beyond basic session auth | Not planned |
+| Item | Phase | Notes |
+|---|---|---|
+| Monthly summary / reporting | Phase 2 | |
+| Card reconciliation check | Phase 3 | |
+| WBSB integration | Phase 4 | |
+| Telegram bot | Phase 5 | |
+| LLM extraction (Haiku / Sonnet) | Phase 6 | |
+| PostgreSQL / Azure go-live | P1-I9 | Moved from "between phases" — now a planned iteration |
+| CSV export | Phase 2 buffer | |
+| Search / filter by date or category | Phase 2 | |
+| Responsive mobile styling | P1-I5 (done) | |
+| Role permissions beyond basic session auth | Not planned | |
+| **Multi-currency / exchange rates** | **Future phase (post-Phase 7)** | **Intentionally deferred — too large for Phase 1. Deeply affects calculations, validation, reporting, and transaction semantics. Must be its own major iteration.** |
 
 ---
 
@@ -481,6 +625,9 @@ Phase 1 is complete when:
 7. A user can review the recent ledger and trust what was entered
 8. The UI is visually clean, responsive, and gives clear feedback on every action (I5)
 9. The assistant and wife can use the app in Polish (I6)
+10. Transactions can be separated by company entity (I7)
+11. Categories support hierarchical classification (I8)
+12. App is deployed and running in Azure with PostgreSQL (I9)
 
 **The real test:** users choose this over WhatsApp, notes, or paper for daily logging. If they do not, Phase 1 is not done regardless of what the code does.
 

@@ -3,31 +3,38 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>{% block title %}cashflow-tracker{% endblock %}</title>
+    <title>{% block title %}{{ t('nav_brand') }}{% endblock %}</title>
     <link rel="stylesheet" href="/static/style.css">
 </head>
 <body>
     <div class="sandbox-banner">
-        SANDBOX — this is a test environment. Data may be discarded.
+        {{ t('sandbox_banner') }}
     </div>
     {% if request.state.user %}
     <nav class="nav">
-        <a href="/" class="nav-brand">cashflow-tracker</a>
+        <a href="/" class="nav-brand">{{ t('nav_brand') }}</a>
         <div class="nav-links">
-            <a href="/transactions/">Transactions</a>
-            <a href="/transactions/new">+ New</a>
+            <a href="/transactions/">{{ t('nav_transactions') }}</a>
+            <a href="/transactions/new">{{ t('nav_new') }}</a>
         </div>
         <div class="nav-right">
+            <div class="lang-switch">
+                {% if request.state.locale == 'pl' %}
+                <strong>PL</strong> | <a href="/lang/en">EN</a>
+                {% else %}
+                <a href="/lang/pl">PL</a> | <strong>EN</strong>
+                {% endif %}
+            </div>
             <span>{{ request.state.user["username"] }}</span>
             <form method="post" action="/auth/logout" style="margin:0">
-                <button type="submit">Sign out</button>
+                <button type="submit">{{ t('nav_sign_out') }}</button>
             </form>
         </div>
     </nav>
     {% endif %}
     <main class="container" style="padding-top: 24px; padding-bottom: 24px;">
         {% if request.state.flash is defined and request.state.flash %}
-        <div class="flash flash-{{ request.state.flash.type }}">{{ request.state.flash.message }}</div>
+        <div class="flash flash-{{ request.state.flash.type }}">{{ t(request.state.flash.message) }}</div>
         {% endif %}
         {% block content %}{% endblock %}
     </main>
