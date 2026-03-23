@@ -65,6 +65,7 @@ MESSAGES = {
     "list_col_direction": "Typ",
     "list_col_amount": "Kwota",
     "list_col_payment": "Płatność",
+    "list_col_for_accountant": "Dla księgowej",
     "list_col_logged_by": "Dodał",
     "list_col_status": "Status",
     "list_no_transactions": "Brak transakcji.",
@@ -96,6 +97,11 @@ MESSAGES = {
     "detail_correct": "Skoryguj",
     "detail_void": "Anuluj",
     "detail_correction_of": "Ta transakcja jest korektą transakcji",
+
+    # Accountant
+    "for_accountant_label": "Dla księgowej",
+    "for_accountant_yes": "Tak",
+    "for_accountant_no": "Nie",
 
     # Cancellation details
     "void_details_title": "Szczegóły anulowania",

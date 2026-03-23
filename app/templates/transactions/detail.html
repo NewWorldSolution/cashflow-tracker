@@ -29,6 +29,7 @@
       <dt>{{ t('detail_vat_deductible') }}</dt><dd>{{ txn.vat_deductible_pct | int if txn.vat_deductible_pct is not none else '—' }}%</dd>
       {% endif %}
       <dt>{{ t('detail_payment') }}</dt><dd>{{ t('payment_' ~ txn.payment_method) }}</dd>
+      <dt>{{ t('for_accountant_label') }}</dt><dd>{{ t('for_accountant_yes') if txn.for_accountant else t('for_accountant_no') }}</dd>
       {% if txn.description %}
       <dt>{{ t('detail_description') }}</dt><dd>{{ txn.description }}</dd>
       {% endif %}
