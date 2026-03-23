@@ -1,7 +1,7 @@
 # P1-I6 — Multi-Language Foundation + Polish UI
 ## Task Board
 
-**Status:** NOT STARTED
+**Status:** ✔ COMPLETE
 **Last updated:** 2026-03-23
 **Iteration branch:** `feature/phase-1/iteration-6` ← all task PRs target this branch
 **Final PR:** `feature/phase-1/iteration-6` → `main` ← QA agent approves before merge
@@ -26,11 +26,11 @@ T1 creates the infrastructure. T2 extracts all strings. T3 adds Polish and the s
 
 | ID    | Title                              | Owner | Status     | Depends on | Branch                                    |
 |-------|------------------------------------|-------|------------|------------|-------------------------------------------|
-| I6-T1 | i18n foundation + English dict     | —     | ⏳ WAITING | —          | `feature/p1-i6/t1-i18n-foundation`       |
-| I6-T2 | Template string extraction         | —     | ⏳ WAITING | I6-T1      | `feature/p1-i6/t2-template-extraction`   |
-| I6-T3 | Polish translation + switcher      | —     | ⏳ WAITING | I6-T2      | `feature/p1-i6/t3-polish-translation`    |
-| I6-T4 | Locale-aware formatting            | —     | ⏳ WAITING | I6-T3      | `feature/p1-i6/t4-locale-formatting`     |
-| I6-T5 | voided_at timestamp                | —     | ⏳ WAITING | —          | `feature/p1-i6/t5-voided-at`            |
+| I6-T1 | i18n foundation + English dict     | —     | ✅ DONE    | —          | `feature/p1-i6/t1-i18n-foundation`       |
+| I6-T2 | Template string extraction         | —     | ✅ DONE    | I6-T1      | `feature/p1-i6/t2-template-extraction`   |
+| I6-T3 | Polish translation + switcher      | —     | ✅ DONE    | I6-T2      | `feature/p1-i6/t3-polish-translation`    |
+| I6-T4 | Locale-aware formatting            | —     | ✅ DONE    | I6-T3      | `feature/p1-i6/t4-locale-formatting`     |
+| I6-T5 | voided_at timestamp                | —     | ✅ DONE    | —          | `feature/p1-i6/t5-voided-at`            |
 
 ---
 
