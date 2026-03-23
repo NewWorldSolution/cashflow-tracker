@@ -41,8 +41,13 @@ Internal use only. No public access. All 3 users interact via web form (Phases 1
 
 ## What comes next
 **Phase 1 — Web form (in progress)**
-- P1-I5: UI polish (CSS, layout, usability improvements)
-- P1-I6: Polish language UI for assistant and wife users
+- P1-I6: Multi-language foundation + Polish UI (in progress — T1–T5 done, T6 pending)
+- P1-I7: Multi-company support (JDG, LTD, Foundation, Private) + `for_accountant` flag
+- P1-I8: Sub-categories (hierarchical category system — structure first, real taxonomy from user testing)
+- P1-I9: Azure / server / deployment (SQLite → PostgreSQL, go-live)
+
+**Intentionally deferred beyond Phase 1:**
+- Multi-currency / exchange rates — too large, deeply affects calculations, validation, reporting, and transaction semantics. Will be its own future major iteration.
 
 ## Stack (locked)
 Python · FastAPI · SQLite sandbox → Azure PostgreSQL production · Jinja2 templates · python-telegram-bot (Phase 5) · Claude Haiku/Sonnet (Phase 6 only)

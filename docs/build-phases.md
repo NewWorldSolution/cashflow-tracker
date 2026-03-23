@@ -120,3 +120,17 @@ Difference             = 0 ✓  (flag if mismatch)
 - VAT summary — collected vs reclaimable, net position per period
 - No new data collection needed — just different grouping of existing data
 - **Not for submission anywhere** — internal visibility only
+
+---
+
+## Intentionally Deferred — Multi-Currency / Exchange Rates
+
+**Status:** Not scheduled. Deferred to a future phase beyond Phase 7.
+
+**Reason:** Multi-currency support is too large for any current iteration. It deeply affects:
+- **Calculations** — every VAT/net/gross formula needs a currency dimension
+- **Validation** — exchange rate source, date-of-rate rules, rounding
+- **Reporting** — aggregation across currencies, conversion basis
+- **Transaction semantics** — base currency vs transaction currency vs reporting currency
+
+This must be handled as its own major iteration with dedicated design work. It should NOT be scheduled into I7, I8, I9, or any current Phase 1 iteration.
