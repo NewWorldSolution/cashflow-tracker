@@ -65,6 +65,7 @@ MESSAGES = {
     "list_col_direction": "Type",
     "list_col_amount": "Amount",
     "list_col_payment": "Payment",
+    "list_col_for_accountant": "For accountant",
     "list_col_logged_by": "Logged by",
     "list_col_status": "Status",
     "list_no_transactions": "No transactions yet.",
@@ -96,6 +97,11 @@ MESSAGES = {
     "detail_correct": "Correct",
     "detail_void": "Cancel",
     "detail_correction_of": "This transaction is a correction of",
+
+    # Accountant
+    "for_accountant_label": "For accountant",
+    "for_accountant_yes": "Yes",
+    "for_accountant_no": "No",
 
     # Cancellation details (shown when transaction is canceled without correction)
     "void_details_title": "Cancellation Details",

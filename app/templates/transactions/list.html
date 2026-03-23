@@ -26,6 +26,7 @@
           <th>{{ t('list_col_direction') }}</th>
           <th class="text-right">{{ t('list_col_amount') }}</th>
           <th>{{ t('list_col_payment') }}</th>
+          <th>{{ t('list_col_for_accountant') }}</th>
           <th>{{ t('list_col_logged_by') }}</th>
           {% if show_all %}<th>{{ t('list_col_status') }}</th>{% endif %}
         </tr>
@@ -39,6 +40,7 @@
           <td data-direction="{{ txn.direction }}">{{ t('direction_' ~ txn.direction) }}</td>
           <td class="text-right amount" data-amount="{{ txn.amount }}">{{ format_amount(txn.amount) }}</td>
           <td>{{ t('payment_' ~ txn.payment_method) }}</td>
+          <td>{{ t('for_accountant_yes') if txn.for_accountant else t('for_accountant_no') }}</td>
           <td>{{ txn.logged_by_username }}</td>
           {% if show_all %}
           <td>
