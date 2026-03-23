@@ -36,9 +36,9 @@
           <td><a href="/transactions/{{ txn.id }}">#{{ txn.id }}</a></td>
           <td><a href="/transactions/{{ txn.id }}">{{ format_date(txn.date) }}</a></td>
           <td>{{ txn.category_label }}</td>
-          <td>{{ txn.direction }}</td>
+          <td data-direction="{{ txn.direction }}">{{ t('direction_' ~ txn.direction) }}</td>
           <td class="text-right amount" data-amount="{{ txn.amount }}">{{ format_amount(txn.amount) }}</td>
-          <td>{{ txn.payment_method }}</td>
+          <td>{{ t('payment_' ~ txn.payment_method) }}</td>
           <td>{{ txn.logged_by_username }}</td>
           {% if show_all %}
           <td>
@@ -109,12 +109,8 @@ document.addEventListener('DOMContentLoaded', function() {
     var expenseRows = [];
 
     rows.forEach(function(row) {
-      var cells = row.querySelectorAll('td');
-      var direction = '';
-      cells.forEach(function(cell) {
-        var text = cell.textContent.trim().toLowerCase();
-        if (text === 'income' || text === 'expense') direction = text;
-      });
+      var dirCell = row.querySelector('[data-direction]');
+      var direction = dirCell ? dirCell.dataset.direction : '';
       if (direction === 'income') incomeRows.push(row.cloneNode(true));
       else expenseRows.push(row.cloneNode(true));
     });

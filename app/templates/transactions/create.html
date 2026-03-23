@@ -86,7 +86,7 @@
           {% for pm in ['cash', 'card', 'transfer'] %}
             <option value="{{ pm }}"
               {% if form_data.get('payment_method') == pm %}selected{% endif %}>
-              {{ pm | capitalize }}
+              {{ t('payment_' ~ pm) }}
             </option>
           {% endfor %}
         </select>

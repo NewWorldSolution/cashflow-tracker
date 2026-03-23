@@ -61,7 +61,7 @@ Make the app speak Polish for the assistant and wife users, while keeping Englis
 
 Additionally, add the `voided_at` timestamp that was deferred from I5 (required a schema change which I5 did not allow).
 
-**Execution model:** 5 task branches, each with its own prompt file in `iterations/p1-i6/prompts/`. This file is the full reference; task prompt files are the execution guides.
+**Execution model:** 6 task branches, each with its own prompt file in `iterations/p1-i6/prompts/`. This file is the full reference; task prompt files are the execution guides.
 
 ---
 
@@ -86,6 +86,7 @@ iterations/phase-1-plan.md          (I6 section)
 | I6-T3 | `app/i18n/en.py` (created in T1), `app/routes/transactions.py` (validation error translation) |
 | I6-T4 | `app/templates/transactions/list.html`, `app/templates/transactions/detail.html`, `app/templates/dashboard.html` |
 | I6-T5 | `db/schema.sql`, `app/services/transaction_service.py`, `app/routes/transactions.py`, `app/templates/transactions/detail.html` |
+| I6-T6 | All templates, `app/i18n/en.py`, `app/i18n/pl.py`, `app/routes/transactions.py`, `seed/categories.sql` |
 
 ---
 
@@ -169,8 +170,9 @@ db/schema.sql                           ← modify: add voided_at column (T5)
 db/init_db.py                           ← modify: if migration logic needed (T5)
 app/services/transaction_service.py     ← modify: set voided_at on void/correct (T5)
 app/routes/transactions.py              ← modify: pass voided_at to template (T5)
-tests/test_transactions.py              ← extend: voided_at tests (T5)
+tests/test_transactions.py              ← extend: voided_at tests (T5), correction reason tests (T6)
 static/style.css                        ← extend: language switcher styling if needed (T3)
+app/routes/dashboard.py                 ← modify: add category_name to SELECT (T6)
 iterations/p1-i6/tasks.md               ← status updates only
 ```
 
@@ -290,6 +292,35 @@ New tests (`tests/test_transactions.py`):
 - `test_voided_at_set_on_void` — void a transaction, verify `voided_at` is not NULL
 - `test_voided_at_set_on_correct` — correct a transaction, verify original's `voided_at` is not NULL
 - `test_voided_at_null_on_active` — create a transaction, verify `voided_at` is NULL
+
+### T6 — UX Polish for Transaction States + Labels
+
+**Goal:** Clean up remaining UX issues after i18n/formatting: wording, labels, categories, correction reason.
+
+UI copy changes:
+- Rename "Direction" to "Transaction Type" in all user-facing labels
+- Replace "Void/Voided" with "Cancel/Canceled" in all user-facing text
+- Keep all backend names unchanged (`void_transaction`, `void_reason`, `voided_by`, `voided_at`)
+
+Corrected transaction presentation:
+- Corrected records display "Corrected" badge (already done), "Correction Details" section (not "Cancellation Details")
+- Show "Correction reason", "Corrected by", "Corrected at" labels
+- Correction flow requires an explicit reason (not hardcoded "Corrected")
+
+Audit timestamps:
+- `created_at` and `voided_at` show date + time via `format_datetime()`
+- Business dates (`date`, `as_of_date`) remain date-only via `format_date()`
+
+Category label localization:
+- Map `category.name` to `t('category_' + name)` in templates
+- Add category translation keys to `en.py` and `pl.py`
+- DB schema and seed data unchanged
+
+Other cleanup:
+- Remove "Logged by" from transaction detail view
+- Localize direction, payment method, income type display values
+- Fix split-view JS to use `data-direction` attribute
+- Fix `void.html` summary to use `format_date()` / `format_amount()`
 
 ---
 

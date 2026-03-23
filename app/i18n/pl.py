@@ -132,6 +132,15 @@ MESSAGES = {
     # Language
     "lang_switch_pl": "PL",
     "lang_switch_en": "EN",
+
+    # Enum display labels
+    "direction_income": "Przychód",
+    "direction_expense": "Wydatek",
+    "payment_cash": "Gotówka",
+    "payment_card": "Karta",
+    "payment_transfer": "Przelew",
+    "income_type_external": "Zewnętrzny",
+    "income_type_internal": "Wewnętrzny",
 }
 
 VALIDATION_ERRORS = {

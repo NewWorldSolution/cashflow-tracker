@@ -1,7 +1,7 @@
 # P1-I6 — Multi-Language Foundation + Polish UI
 ## Task Board
 
-**Status:** ✔ COMPLETE
+**Status:** IN PROGRESS
 **Last updated:** 2026-03-23
 **Iteration branch:** `feature/phase-1/iteration-6` ← all task PRs target this branch
 **Final PR:** `feature/phase-1/iteration-6` → `main` ← QA agent approves before merge
@@ -15,10 +15,11 @@ I6-T1 (i18n foundation + English dict)
   └── I6-T2 (template string extraction)
         └── I6-T3 (Polish translation + language switcher)
               └── I6-T4 (locale-aware formatting)
+                    └── I6-T6 (UX polish — states, labels, categories)
 I6-T5 (voided_at timestamp) — independent, can run in parallel with any task
 ```
 
-T1 creates the infrastructure. T2 extracts all strings. T3 adds Polish and the switcher. T4 adds date/number formatting. T5 is a standalone schema + service change that can run at any time.
+T1 creates the infrastructure. T2 extracts all strings. T3 adds Polish and the switcher. T4 adds date/number formatting. T5 is a standalone schema + service change that can run at any time. T6 cleans up UX wording, localises categories, and adds correction reason capture.
 
 ---
 
@@ -31,6 +32,7 @@ T1 creates the infrastructure. T2 extracts all strings. T3 adds Polish and the s
 | I6-T3 | Polish translation + switcher      | —     | ✅ DONE    | I6-T2      | `feature/p1-i6/t3-polish-translation`    |
 | I6-T4 | Locale-aware formatting            | —     | ✅ DONE    | I6-T3      | `feature/p1-i6/t4-locale-formatting`     |
 | I6-T5 | voided_at timestamp                | —     | ✅ DONE    | —          | `feature/p1-i6/t5-voided-at`            |
+| I6-T6 | UX polish — states, labels, cats   | —     | ⏳ WAITING | I6-T4      | `feature/p1-i6/t6-ux-polish`            |
 
 ---
 
@@ -43,6 +45,7 @@ T1 creates the infrastructure. T2 extracts all strings. T3 adds Polish and the s
 | I6-T3 | `iterations/p1-i6/prompts/t3-polish-translation.md` | `iterations/p1-i6/reviews/review-t3.md` | —        |
 | I6-T4 | `iterations/p1-i6/prompts/t4-locale-formatting.md` | `iterations/p1-i6/reviews/review-t4.md` | —        |
 | I6-T5 | `iterations/p1-i6/prompts/t5-voided-at.md`     | `iterations/p1-i6/reviews/review-t5.md`  | —        |
+| I6-T6 | `iterations/p1-i6/prompts/t6-ux-polish.md`     | `iterations/p1-i6/reviews/review-t6.md`  | —        |
 | —     | —                                               | `iterations/p1-i6/reviews/review-iteration.md` | — (QA) |
 
 ---
@@ -201,6 +204,53 @@ tests/test_transactions.py                     ← extend (3 new tests)
 - `voided_at` displayed in detail page
 - `voided_at` is NULL for active transactions
 - All 98 existing + 3 new tests pass
+- ruff clean
+
+---
+
+### I6-T6 — UX Polish for Transaction States + Labels
+
+**Goal:** Clean up remaining UX issues: rename Direction to Transaction Type, replace void/voided with cancel/canceled in UI, show distinct Correction Details for corrected transactions, require correction reason, show date+time for audit timestamps, remove Logged by from detail, and localize category labels.
+
+**Depends on:** I6-T4 ✅ DONE
+
+**Allowed files:**
+```
+app/i18n/en.py                                ← extend (new/renamed keys)
+app/i18n/pl.py                                ← extend (new/renamed keys)
+app/i18n/__init__.py                          ← modify (add format_datetime)
+app/main.py                                   ← modify (register format_datetime global)
+app/templates/transactions/detail.html        ← modify
+app/templates/transactions/list.html          ← modify
+app/templates/transactions/create.html        ← modify
+app/templates/transactions/void.html          ← modify
+app/templates/dashboard.html                  ← modify
+app/routes/transactions.py                    ← modify (correction reason capture)
+app/services/transaction_service.py           ← modify (add category_name to SELECT)
+app/routes/dashboard.py                       ← modify (add category_name to SELECT)
+tests/test_transactions.py                    ← extend (correction reason tests)
+```
+
+**Deliverables:**
+- "Direction" → "Transaction Type" in all UI labels
+- "Void/Voided" → "Cancel/Canceled" in user-facing text (backend names unchanged)
+- Corrected transactions show "Correction Details" (distinct from "Cancellation Details")
+- Correction flow requires explicit reason (not hardcoded "Corrected")
+- `format_datetime()` for audit timestamps (date+time), business dates stay date-only
+- "Logged by" removed from detail page
+- Category labels localized via `t('category_' + name)` pattern
+- Direction, payment method, income type display values localized
+- Split-view JS uses `data-direction` attribute
+- `void.html` summary uses `format_date()` and `format_amount()`
+
+**Acceptance check:**
+- All transaction-state wording is user-friendly in PL and EN
+- Corrected transactions ≠ canceled in detail UX
+- Correction flow requires explicit reason
+- Audit timestamps show date+time
+- Category labels display translated names
+- No DB migration required
+- All tests pass
 - ruff clean
 
 ---

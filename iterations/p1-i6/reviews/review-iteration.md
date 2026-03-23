@@ -2,7 +2,7 @@
 **Reviewer:** QA agent
 **Branch:** `feature/phase-1/iteration-6`
 **PR target:** `main`
-**Trigger:** Run only after ALL tasks (T1–T5) show ✅ DONE in `iterations/p1-i6/tasks.md`
+**Trigger:** Run only after ALL tasks (T1–T6) show ✅ DONE in `iterations/p1-i6/tasks.md`
 
 ---
 
@@ -26,6 +26,14 @@ You are the QA agent for Phase 1 Iteration 6. Individual task reviews verify eac
 8. Validation errors translated at route layer (validation.py unchanged)
 9. Flash messages translated at render time
 10. No business logic changes, no calculation changes
+11. "Direction" renamed to "Transaction Type" in all UI
+12. "Void/Voided" replaced with "Cancel/Canceled" in user-facing text (backend names unchanged)
+13. Corrected transactions show distinct "Correction Details" section
+14. Correction flow requires explicit reason
+15. Audit timestamps (`created_at`, `voided_at`) show date+time via `format_datetime()`
+16. "Logged by" removed from transaction detail page
+17. Category labels localized via `t('category_' + name)` in both locales
+18. Direction, payment method, income type display values localized
 
 ---
 
@@ -74,11 +82,15 @@ app/routes/transactions.py
 app/routes/auth.py
 app/routes/settings.py
 app/services/transaction_service.py
+app/routes/dashboard.py
 db/schema.sql
 db/init_db.py
 static/style.css
 tests/test_transactions.py
+tests/test_auth.py
 ```
+
+**Note on `tests/test_auth.py`:** This file was originally listed as frozen. It has 9 assertion-only changes (English → Polish string assertions) required because `DEFAULT_LOCALE = "pl"` means the production UI renders Polish. This is an approved scope exception — not an engineering issue but a review-prompt limitation. The test changes are correct: they verify actual production output.
 
 Iteration planning/docs files will also appear in the diff — this is expected:
 
@@ -99,7 +111,6 @@ app/services/auth_service.py
 seed/categories.sql
 seed/users.sql
 static/form.js
-tests/test_auth.py
 tests/test_init_db.py
 tests/test_validation.py
 tests/test_calculations.py
@@ -166,7 +177,27 @@ Verify by code inspection:
 - [ ] `detail.html` displays `voided_at` with `{% if t.voided_at %}` guard
 - [ ] 3 new tests: void sets timestamp, correct sets timestamp, active has NULL
 
-### Step 8 — Functional checks
+### Step 8 — T6 UX Polish checks
+
+Verify by code inspection:
+
+- [ ] "Direction" renamed to "Transaction Type" in UI labels (`form_direction`, `list_col_direction`, `detail_direction` in en.py/pl.py)
+- [ ] "Void/Voided" replaced with "Cancel/Canceled" in all user-facing text
+- [ ] Backend names unchanged: `void_transaction`, `void_reason`, `voided_by`, `voided_at` in Python code
+- [ ] Corrected transactions show "Correction Details" (detail.html checks `replacement_transaction_id`)
+- [ ] Correction flow requires explicit reason (form field + route validation)
+- [ ] `format_datetime()` exists in `app/i18n/__init__.py` (PL: `DD.MM.YYYY HH:MM`, EN: `YYYY-MM-DD HH:MM`)
+- [ ] `created_at` and `voided_at` use `format_datetime()` in detail.html
+- [ ] Business dates (`date`, `as_of_date`) still use `format_date()` (date-only)
+- [ ] "Logged by" removed from detail.html
+- [ ] 22 category translation keys in en.py and pl.py
+- [ ] Templates use `t('category_' + txn.category_name)` for category labels
+- [ ] SQL queries include `c.name AS category_name`
+- [ ] Direction, payment method, income type display values use `t()` lookup
+- [ ] Split-view JS uses `data-direction` attribute (not text content)
+- [ ] `void.html` summary uses `format_date()` and `format_amount()`
+
+### Step 9 — Functional checks
 
 - [ ] Language switcher (PL | EN) visible in nav
 - [ ] `/lang/en` and `/lang/pl` in EXEMPT_PATHS
@@ -229,6 +260,18 @@ If none: `None.`
 - [PASS|FAIL] no business logic changes
 - [PASS|FAIL] frozen files unchanged
 - [PASS|FAIL] default locale is Polish
+- [PASS|FAIL] "Direction" renamed to "Transaction Type" in UI
+- [PASS|FAIL] "Void/Voided" replaced with "Cancel/Canceled" in user-facing text
+- [PASS|FAIL] Backend names unchanged (void_transaction, void_reason, voided_by, voided_at)
+- [PASS|FAIL] Corrected transactions show "Correction Details" (distinct from cancellation)
+- [PASS|FAIL] Correction flow requires explicit reason
+- [PASS|FAIL] Audit timestamps show date+time via format_datetime
+- [PASS|FAIL] Business dates remain date-only
+- [PASS|FAIL] "Logged by" removed from detail page
+- [PASS|FAIL] Category labels localized in both locales
+- [PASS|FAIL] Direction, payment method, income type localized in display
+- [PASS|FAIL] Split-view JS uses data-direction attribute
+- [PASS|FAIL] void.html summary uses format_date/format_amount
 
 ### 6. Exact Fixes Required
 

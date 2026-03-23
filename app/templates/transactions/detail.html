@@ -16,17 +16,17 @@
   <div class="card mt-4">
     <dl class="detail-grid">
       <dt>{{ t('detail_date') }}</dt><dd>{{ format_date(txn.date) }}</dd>
-      <dt>{{ t('detail_direction') }}</dt><dd>{{ txn.direction }}</dd>
+      <dt>{{ t('detail_direction') }}</dt><dd>{{ t('direction_' ~ txn.direction) }}</dd>
       <dt>{{ t('detail_category') }}</dt><dd>{{ txn.category_label }}</dd>
       <dt>{{ t('detail_amount_gross') }}</dt><dd>{{ format_amount(txn.amount) }}</dd>
       <dt>{{ t('detail_vat_rate') }}</dt><dd>{{ txn.vat_rate | int }}%</dd>
       {% if txn.direction == 'income' %}
-      <dt>{{ t('detail_income_type') }}</dt><dd>{{ txn.income_type if txn.income_type else '—' }}</dd>
+      <dt>{{ t('detail_income_type') }}</dt><dd>{{ t('income_type_' ~ txn.income_type) if txn.income_type else '—' }}</dd>
       {% endif %}
       {% if txn.direction == 'expense' %}
       <dt>{{ t('detail_vat_deductible') }}</dt><dd>{{ txn.vat_deductible_pct | int if txn.vat_deductible_pct is not none else '—' }}%</dd>
       {% endif %}
-      <dt>{{ t('detail_payment') }}</dt><dd>{{ txn.payment_method }}</dd>
+      <dt>{{ t('detail_payment') }}</dt><dd>{{ t('payment_' ~ txn.payment_method) }}</dd>
       {% if txn.description %}
       <dt>{{ t('detail_description') }}</dt><dd>{{ txn.description }}</dd>
       {% endif %}

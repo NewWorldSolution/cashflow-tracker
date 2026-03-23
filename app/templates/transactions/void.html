@@ -12,7 +12,7 @@
   </div>
 
   <div class="card mb-4 transaction-summary-card">
-    <p><strong>{{ txn.date }}</strong> - {{ txn.category_label }} - {{ "{:,.2f}".format(txn.amount) }}</p>
+    <p><strong>{{ format_date(txn.date) }}</strong> - {{ txn.category_label }} - {{ format_amount(txn.amount) }}</p>
   </div>
 
   {% if errors %}
