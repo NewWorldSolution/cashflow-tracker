@@ -573,6 +573,20 @@ dl {
   gap: 12px;
 }
 
+.toolbar-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+}
+
+.filter-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+}
+
 /* ---------------------------------------------------------------
    Utility classes
    --------------------------------------------------------------- */

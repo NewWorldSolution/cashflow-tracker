@@ -20,6 +20,8 @@ MESSAGES = {
     "dashboard_view_all": "View All Transactions",
     "dashboard_recent": "Recent Transactions",
     "dashboard_no_transactions": "No transactions yet.",
+    "filter_company": "Company",
+    "filter_all_companies": "All companies",
 
     # Transaction form
     "form_title": "New transaction",
@@ -54,10 +56,14 @@ MESSAGES = {
 
     # Company selector
     "form_company": "Company",
-    "company_sp": "JDG",
-    "company_ltd": "Ltd",
-    "company_ff": "Foundation",
-    "company_private": "Private",
+    "company_sp": "SP",
+    "company_sp_full": "Sole Proprietorship (SP)",
+    "company_ltd": "LTD",
+    "company_ltd_full": "Limited Company (LTD)",
+    "company_ff": "FF",
+    "company_ff_full": "Family Foundation (FF)",
+    "company_private": "P",
+    "company_private_full": "Private (P)",
 
     # Accountant flag
     "form_for_accountant": "Mark for accountant",
@@ -72,6 +78,7 @@ MESSAGES = {
     "list_col_id": "#",
     "list_col_date": "Date",
     "list_col_category": "Category",
+    "list_col_company": "Company",
     "list_col_direction": "Type",
     "list_col_amount": "Amount",
     "list_col_payment": "Payment",
@@ -96,6 +103,7 @@ MESSAGES = {
     "detail_date": "Date",
     "detail_direction": "Transaction type",
     "detail_category": "Category",
+    "detail_company": "Company",
     "detail_amount_gross": "Amount (gross)",
     "detail_vat_rate": "VAT rate",
     "detail_income_type": "Income type",

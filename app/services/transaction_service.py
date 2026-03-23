@@ -7,11 +7,13 @@ def get_transaction(transaction_id: int, db: sqlite3.Connection) -> dict | None:
     row = db.execute(
         "SELECT t.*, c.label AS category_label, c.name AS category_name, "
         "u.username AS logged_by_username, "
-        "vb.username AS voided_by_username "
+        "vb.username AS voided_by_username, "
+        "co.name AS company_name "
         "FROM transactions t "
         "JOIN categories c ON t.category_id = c.category_id "
         "JOIN users u ON t.logged_by = u.id "
         "LEFT JOIN users vb ON t.voided_by = vb.id "
+        "LEFT JOIN companies co ON t.company_id = co.id "
         "WHERE t.id = ?",
         (transaction_id,),
     ).fetchone()

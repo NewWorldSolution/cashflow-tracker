@@ -13,6 +13,7 @@ templates = Jinja2Templates(directory="app/templates")
 @router.get("/", response_class=HTMLResponse)
 async def get_dashboard(
     request: Request,
+    company_id: str | None = None,
     db: sqlite3.Connection = Depends(get_db),
 ) -> HTMLResponse:
     """Dashboard with summary cards, quick actions, and recent transactions."""
@@ -25,31 +26,47 @@ async def get_dashboard(
     ).fetchone()
     opening_balance = opening_balance_row["value"] if opening_balance_row else None
     as_of_date = as_of_date_row["value"] if as_of_date_row else None
+    companies = db.execute(
+        "SELECT id, name, slug FROM companies WHERE is_active = TRUE ORDER BY id"
+    ).fetchall()
+    selected_company_id = int(company_id) if company_id and company_id.isdigit() else None
+    company_filter = ""
+    company_params: list[int] = []
+    if selected_company_id is not None:
+        company_filter = " AND company_id = ?"
+        company_params = [selected_company_id]
 
     # Transaction counts
     active_count = db.execute(
-        "SELECT COUNT(*) FROM transactions WHERE is_active = 1"
+        "SELECT COUNT(*) FROM transactions WHERE is_active = 1" + company_filter,
+        company_params,
     ).fetchone()[0]
     voided_count = db.execute(
-        "SELECT COUNT(*) FROM transactions WHERE is_active = 0"
+        "SELECT COUNT(*) FROM transactions WHERE is_active = 0" + company_filter,
+        company_params,
     ).fetchone()[0]
 
     # Totals (active only)
     total_income = db.execute(
         "SELECT COALESCE(SUM(amount), 0) FROM transactions "
-        "WHERE is_active = 1 AND direction = 'income'"
+        "WHERE is_active = 1 AND direction = 'income'" + company_filter,
+        company_params,
     ).fetchone()[0]
     total_expense = db.execute(
         "SELECT COALESCE(SUM(amount), 0) FROM transactions "
-        "WHERE is_active = 1 AND direction = 'expense'"
+        "WHERE is_active = 1 AND direction = 'expense'" + company_filter,
+        company_params,
     ).fetchone()[0]
 
     # Recent 5 active transactions with category label
     recent = db.execute(
         "SELECT t.id, t.date, t.amount, t.direction, c.label AS category_label, "
-        "c.name AS category_name, t.payment_method "
-        "FROM transactions t JOIN categories c ON t.category_id = c.category_id "
-        "WHERE t.is_active = 1 ORDER BY t.created_at DESC LIMIT 5"
+        "c.name AS category_name, co.name AS company_name, t.payment_method "
+        "FROM transactions t "
+        "JOIN categories c ON t.category_id = c.category_id "
+        "LEFT JOIN companies co ON t.company_id = co.id "
+        "WHERE t.is_active = 1" + company_filter + " ORDER BY t.created_at DESC LIMIT 5",
+        company_params,
     ).fetchall()
 
     return templates.TemplateResponse(
@@ -63,5 +80,7 @@ async def get_dashboard(
             "total_income": total_income,
             "total_expense": total_expense,
             "recent": recent,
+            "companies": companies,
+            "selected_company_id": selected_company_id,
         },
     )
