@@ -35,6 +35,67 @@ def client(tmp_path):
         yield c
 
 
+def make_legacy_db() -> sqlite3.Connection:
+    """Pre-I7 schema without company_id / for_accountant columns."""
+    conn = sqlite3.connect(":memory:")
+    conn.row_factory = sqlite3.Row
+    conn.executescript(
+        """
+        CREATE TABLE users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL UNIQUE,
+            password_hash TEXT NOT NULL,
+            telegram_user_id TEXT UNIQUE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE TABLE categories (
+            category_id INTEGER PRIMARY KEY,
+            name TEXT NOT NULL UNIQUE,
+            label TEXT NOT NULL,
+            direction TEXT NOT NULL CHECK(direction IN ('income','expense')),
+            default_vat_rate REAL NOT NULL,
+            default_vat_deductible_pct REAL
+        );
+
+        CREATE TABLE transactions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            date DATE NOT NULL,
+            amount DECIMAL(10,2) NOT NULL,
+            direction TEXT NOT NULL CHECK(direction IN ('income','expense')),
+            category_id INTEGER NOT NULL REFERENCES categories(category_id),
+            payment_method TEXT NOT NULL CHECK(payment_method IN ('cash','card','transfer')),
+            vat_rate REAL NOT NULL,
+            income_type TEXT CHECK(income_type IN ('internal','external')),
+            vat_deductible_pct REAL,
+            manual_vat_amount DECIMAL(10,2),
+            description TEXT,
+            logged_by INTEGER NOT NULL REFERENCES users(id),
+            is_active BOOLEAN NOT NULL DEFAULT TRUE,
+            void_reason TEXT,
+            voided_by INTEGER REFERENCES users(id),
+            replacement_transaction_id INTEGER REFERENCES transactions(id),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE TABLE settings (
+            key TEXT PRIMARY KEY,
+            value TEXT NOT NULL,
+            updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE TABLE settings_audit (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            key TEXT NOT NULL,
+            old_value TEXT,
+            new_value TEXT NOT NULL,
+            changed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        """
+    )
+    return conn
+
+
 # ── schema + seed tests (I1-T1) ───────────────────────────────────────────────
 
 def test_init_db_creates_all_tables(db):
@@ -90,6 +151,83 @@ def test_users_passwords_are_hashed(db):
             f"Expected bcrypt hash starting with '$2b$', got: {h!r}. "
             "Plaintext passwords must never be stored."
         )
+
+
+def test_companies_table_exists(db):
+    columns = {row["name"] for row in db.execute("PRAGMA table_info(companies)").fetchall()}
+    assert {"id", "name", "slug", "is_active"}.issubset(columns)
+
+
+def test_companies_seeded_exactly_once(db):
+    initialise_db(db)
+    rows = db.execute("SELECT name, slug FROM companies ORDER BY id").fetchall()
+    assert [(row["name"], row["slug"]) for row in rows] == [
+        ("sp", "sp"),
+        ("ltd", "ltd"),
+        ("ff", "ff"),
+        ("private", "private"),
+    ]
+
+
+def test_legacy_schema_migration_adds_company_and_for_accountant_columns():
+    conn = make_legacy_db()
+    try:
+        initialise_db(conn)
+        columns = {
+            row["name"]
+            for row in conn.execute("PRAGMA table_info(transactions)").fetchall()
+        }
+        assert "company_id" in columns
+        assert "for_accountant" in columns
+    finally:
+        conn.close()
+
+
+def test_legacy_rows_backfilled_to_default_company():
+    conn = make_legacy_db()
+    try:
+        conn.execute(
+            "INSERT INTO users (id, username, password_hash) VALUES (1, 'legacy', 'hash')"
+        )
+        conn.execute(
+            "INSERT INTO categories (category_id, name, label, direction, default_vat_rate) "
+            "VALUES (1, 'services', 'Services', 'income', 23)"
+        )
+        conn.execute(
+            "INSERT INTO transactions "
+            "(date, amount, direction, category_id, payment_method, vat_rate, income_type, logged_by, is_active) "
+            "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            ("2026-01-01", "123.45", "income", 1, "transfer", 23, "external", 1, 1),
+        )
+
+        initialise_db(conn)
+
+        row = conn.execute(
+            "SELECT company_id, for_accountant FROM transactions"
+        ).fetchone()
+        assert row["company_id"] == 1
+        assert row["for_accountant"] == 0
+    finally:
+        conn.close()
+
+
+def test_legacy_schema_migration_is_idempotent():
+    conn = make_legacy_db()
+    try:
+        initialise_db(conn)
+        initialise_db(conn)
+        company_count = conn.execute("SELECT COUNT(*) FROM companies").fetchone()[0]
+        user_count = conn.execute("SELECT COUNT(*) FROM users").fetchone()[0]
+        columns = {
+            row["name"]
+            for row in conn.execute("PRAGMA table_info(transactions)").fetchall()
+        }
+        assert company_count == 4
+        assert user_count == 3
+        assert "company_id" in columns
+        assert "for_accountant" in columns
+    finally:
+        conn.close()
 
 
 # ── opening balance route tests (I1-T3) ───────────────────────────────────────
