@@ -1,12 +1,12 @@
 {% extends "base.html" %}
 
-{% block title %}New transaction — cashflow-tracker{% endblock %}
+{% block title %}{{ t('form_title') }} — {{ t('nav_brand') }}{% endblock %}
 
 {% block content %}
 
 {% if errors %}
 <div class="error-summary">
-  <strong>Please fix the following errors:</strong>
+  <strong>{{ t('form_error_heading') }}</strong>
   <ul>
     {% for e in errors %}
     <li>{{ e }}</li>
@@ -15,28 +15,28 @@
 </div>
 {% endif %}
 
-<h2>New transaction</h2>
+<h2>{{ t('form_title') }}</h2>
 
 <form method="post" action="{{ form_action | default('/transactions/new') }}">
 
   <!-- Section 1 — Basics -->
   <div class="form-section">
     <div class="form-group">
-      <label class="form-label" for="date">Date</label>
+      <label class="form-label" for="date">{{ t('form_date') }}</label>
       <input type="date" id="date" name="date" value="{{ form_data.get('date', today) }}" required>
     </div>
     <div class="form-group">
-      <label class="form-label">Direction</label>
+      <label class="form-label">{{ t('form_direction') }}</label>
       <div class="toggle-group">
         <label class="toggle-btn {{ 'active' if form_data.get('direction') == 'income' else '' }}">
           <input type="radio" name="direction" value="income"
             {% if form_data.get('direction') == 'income' %}checked{% endif %} style="display:none">
-          Income
+          {{ t('form_income') }}
         </label>
         <label class="toggle-btn {{ 'active' if form_data.get('direction', 'expense') == 'expense' else '' }}">
           <input type="radio" name="direction" value="expense"
             {% if form_data.get('direction', 'expense') == 'expense' %}checked{% endif %} style="display:none">
-          Expense
+          {{ t('form_expense') }}
         </label>
       </div>
     </div>
@@ -45,10 +45,10 @@
   <!-- Section 2 — Amount -->
   <div class="form-section">
     <div class="form-group">
-      <label class="form-label" for="amount">Amount</label>
+      <label class="form-label" for="amount">{{ t('form_amount') }}</label>
       <input type="number" id="amount" name="amount" step="0.01" min="0.01"
              value="{{ form_data.get('amount', '') }}" required placeholder="0.00">
-      <div class="form-helper">Enter gross amount (VAT included)</div>
+      <div class="form-helper">{{ t('form_amount_helper') }}</div>
     </div>
   </div>
 
@@ -56,18 +56,18 @@
   <div class="form-section">
     <!-- Income type row — shown/hidden by JS (above category because it determines locks) -->
     <div class="form-group" id="income-type-row" style="display:none">
-      <label class="form-label" for="income_type">Income Type</label>
+      <label class="form-label" for="income_type">{{ t('form_income_type') }}</label>
       <select id="income_type" name="income_type">
-        <option value="">— select —</option>
-        <option value="internal" {% if form_data.get('income_type') == 'internal' %}selected{% endif %}>Internal</option>
-        <option value="external" {% if form_data.get('income_type') == 'external' %}selected{% endif %}>External</option>
+        <option value="">{{ t('form_category_placeholder') }}</option>
+        <option value="internal" {% if form_data.get('income_type') == 'internal' %}selected{% endif %}>{{ t('form_income_type_internal') }}</option>
+        <option value="external" {% if form_data.get('income_type') == 'external' %}selected{% endif %}>{{ t('form_income_type_external') }}</option>
       </select>
     </div>
     <div class="form-row">
       <div class="form-group">
-        <label class="form-label" for="category_id">Category</label>
+        <label class="form-label" for="category_id">{{ t('form_category') }}</label>
         <select id="category_id" name="category_id">
-          <option value="">— select —</option>
+          <option value="">{{ t('form_category_placeholder') }}</option>
           {% for cat in categories %}
             {% if cat.name != 'internal_transfer' %}
             <option value="{{ cat.category_id }}"
@@ -80,9 +80,9 @@
         </select>
       </div>
       <div class="form-group">
-        <label class="form-label" for="payment_method">Payment Method</label>
+        <label class="form-label" for="payment_method">{{ t('form_payment_method') }}</label>
         <select id="payment_method" name="payment_method">
-          <option value="">— select —</option>
+          <option value="">{{ t('form_category_placeholder') }}</option>
           {% for pm in ['cash', 'card', 'transfer'] %}
             <option value="{{ pm }}"
               {% if form_data.get('payment_method') == pm %}selected{% endif %}>
@@ -94,7 +94,7 @@
     </div>
     <!-- Card reminder — shown/hidden by JS -->
     <div id="card-reminder" class="callout callout-info mt-2" style="display:none">
-      Log gross amount. Card commission is logged separately at month end from terminal invoice.
+      {{ t('form_card_reminder') }}
     </div>
   </div>
 
@@ -102,7 +102,7 @@
   <div class="form-section">
     <div class="form-row">
       <div class="form-group">
-        <label class="form-label" for="vat_rate">VAT Rate (%)</label>
+        <label class="form-label" for="vat_rate">{{ t('form_vat_rate') }}</label>
         <select id="vat_rate" name="vat_rate">
           {% for rate in [0, 5, 8, 23] %}
             <option value="{{ rate }}"
@@ -113,9 +113,9 @@
         </select>
       </div>
       <div class="form-group" id="vat-deductible-row" style="display:none">
-        <label class="form-label" for="vat_deductible_pct">VAT Deductible (%)</label>
+        <label class="form-label" for="vat_deductible_pct">{{ t('form_vat_deductible') }}</label>
         <select id="vat_deductible_pct" name="vat_deductible_pct">
-          <option value="">— select —</option>
+          <option value="">{{ t('form_category_placeholder') }}</option>
           {% for pct in [0, 50, 100] %}
             <option value="{{ pct }}"
               {% if form_data.get('vat_deductible_pct') | string == pct | string %}selected{% endif %}>
@@ -131,17 +131,17 @@
   <div class="form-section">
     <div class="form-group">
       <label class="form-label" for="description">
-        Description
-        <span id="desc-required" class="text-sm" style="display:none; color: var(--color-destructive);">(required)</span>
+        {{ t('form_description') }}
+        <span id="desc-required" class="text-sm" style="display:none; color: var(--color-destructive);">{{ t('form_description_required') }}</span>
       </label>
-      <textarea id="description" name="description" rows="3" placeholder="Optional notes...">{{ form_data.get('description', '') }}</textarea>
+      <textarea id="description" name="description" rows="3" placeholder="{{ t('form_description_placeholder') }}">{{ form_data.get('description', '') }}</textarea>
     </div>
   </div>
 
   <!-- Buttons -->
   <div class="flex gap-3 mt-4">
-    <button type="submit" class="btn btn-primary btn-lg">Save Transaction</button>
-    <a href="/transactions/" class="btn btn-secondary btn-lg">Cancel</a>
+    <button type="submit" class="btn btn-primary btn-lg">{{ t('form_save') }}</button>
+    <a href="/transactions/" class="btn btn-secondary btn-lg">{{ t('form_cancel') }}</a>
   </div>
 
 </form>

@@ -186,8 +186,8 @@ async def get_transaction_detail(
     db: sqlite3.Connection = Depends(_get_db),
 ) -> HTMLResponse:
     require_auth(request)
-    t = get_transaction(transaction_id, db)
-    if t is None:
+    txn = get_transaction(transaction_id, db)
+    if txn is None:
         raise HTTPException(status_code=404)
     # Check if this transaction is a correction of another
     original = db.execute(
@@ -196,7 +196,7 @@ async def get_transaction_detail(
     ).fetchone()
     original_id = original["id"] if original else None
     return templates.TemplateResponse(
-        request, "transactions/detail.html", {"t": t, "original_id": original_id}
+        request, "transactions/detail.html", {"txn": txn, "original_id": original_id}
     )
 
 
@@ -207,13 +207,13 @@ async def get_void_transaction(
     db: sqlite3.Connection = Depends(_get_db),
 ) -> HTMLResponse:
     require_auth(request)
-    t = get_transaction(transaction_id, db)
-    if t is None or not t["is_active"]:
+    txn = get_transaction(transaction_id, db)
+    if txn is None or not txn["is_active"]:
         raise HTTPException(status_code=404)
     return templates.TemplateResponse(
         request,
         "transactions/void.html",
-        {"t": t, "errors": [], "form_data": {}},
+        {"txn": txn, "errors": [], "form_data": {}},
     )
 
 
@@ -225,8 +225,8 @@ async def post_void_transaction(
     db: sqlite3.Connection = Depends(_get_db),
 ):
     user = require_auth(request)
-    t = get_transaction(transaction_id, db)
-    if t is None:
+    txn = get_transaction(transaction_id, db)
+    if txn is None:
         raise HTTPException(status_code=404)
     try:
         void_transaction(transaction_id, void_reason, user["id"], db)
@@ -234,7 +234,7 @@ async def post_void_transaction(
         return templates.TemplateResponse(
             request,
             "transactions/void.html",
-            {"t": t, "errors": [str(e)], "form_data": {"void_reason": void_reason}},
+            {"txn": txn, "errors": [str(e)], "form_data": {"void_reason": void_reason}},
             status_code=422,
         )
     db.commit()
@@ -249,23 +249,23 @@ async def get_correct_transaction(
     db: sqlite3.Connection = Depends(_get_db),
 ) -> HTMLResponse:
     require_auth(request)
-    t = get_transaction(transaction_id, db)
-    if t is None or not t["is_active"]:
+    txn = get_transaction(transaction_id, db)
+    if txn is None or not txn["is_active"]:
         raise HTTPException(status_code=404)
     cats = db.execute(
         "SELECT category_id, name, label, direction, default_vat_rate, default_vat_deductible_pct "
         "FROM categories ORDER BY direction, label"
     ).fetchall()
     form_data = {
-        "date": t["date"],
-        "direction": t["direction"],
-        "amount": t["amount"],
-        "category_id": str(t["category_id"]),
-        "payment_method": t["payment_method"],
-        "vat_rate": str(int(t["vat_rate"])),
-        "income_type": t["income_type"] or "",
-        "vat_deductible_pct": str(int(t["vat_deductible_pct"])) if t["vat_deductible_pct"] is not None else "",
-        "description": t["description"] or "",
+        "date": txn["date"],
+        "direction": txn["direction"],
+        "amount": txn["amount"],
+        "category_id": str(txn["category_id"]),
+        "payment_method": txn["payment_method"],
+        "vat_rate": str(int(txn["vat_rate"])),
+        "income_type": txn["income_type"] or "",
+        "vat_deductible_pct": str(int(txn["vat_deductible_pct"])) if txn["vat_deductible_pct"] is not None else "",
+        "description": txn["description"] or "",
     }
     return templates.TemplateResponse(
         request,
@@ -296,8 +296,8 @@ async def post_correct_transaction(
     db: sqlite3.Connection = Depends(_get_db),
 ):
     user = require_auth(request)
-    t = get_transaction(transaction_id, db)
-    if t is None or not t["is_active"]:
+    txn = get_transaction(transaction_id, db)
+    if txn is None or not txn["is_active"]:
         raise HTTPException(status_code=404)
 
     def _s(v: str) -> str:

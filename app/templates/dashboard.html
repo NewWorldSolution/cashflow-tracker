@@ -1,57 +1,57 @@
 {% extends "base.html" %}
 
-{% block title %}Dashboard — cashflow-tracker{% endblock %}
+{% block title %}{{ t('dashboard_title') }} — {{ t('nav_brand') }}{% endblock %}
 
 {% block content %}
-<h1>Dashboard</h1>
+<h1>{{ t('dashboard_title') }}</h1>
 
 <div class="dashboard-grid">
     <div class="card">
-        <div class="text-sm text-muted">Opening Balance</div>
-        <div class="card-value">{{ opening_balance | default('Not set', true) }}</div>
-        <div class="text-sm text-muted">as of {{ as_of_date | default('—', true) }}</div>
+        <div class="text-sm text-muted">{{ t('dashboard_opening_balance') }}</div>
+        <div class="card-value">{{ opening_balance | default(t('dashboard_not_set'), true) }}</div>
+        <div class="text-sm text-muted">{{ t('dashboard_as_of') }} {{ as_of_date | default('—', true) }}</div>
     </div>
     <div class="card">
-        <div class="text-sm text-muted">Total Income</div>
+        <div class="text-sm text-muted">{{ t('dashboard_total_income') }}</div>
         <div class="card-value">{{ "%.2f"|format(total_income) }}</div>
     </div>
     <div class="card">
-        <div class="text-sm text-muted">Total Expenses</div>
+        <div class="text-sm text-muted">{{ t('dashboard_total_expenses') }}</div>
         <div class="card-value">{{ "%.2f"|format(total_expense) }}</div>
     </div>
     <div class="card">
-        <div class="text-sm text-muted">Transactions</div>
-        <div class="card-value">{{ active_count }} active</div>
-        <div class="text-sm text-muted">{{ voided_count }} voided</div>
+        <div class="text-sm text-muted">{{ t('dashboard_transactions') }}</div>
+        <div class="card-value">{{ active_count }} {{ t('dashboard_active') }}</div>
+        <div class="text-sm text-muted">{{ voided_count }} {{ t('dashboard_voided') }}</div>
     </div>
 </div>
 
 <div class="dashboard-actions mt-4 mb-6">
-    <a href="/transactions/new" class="btn btn-primary">+ New Transaction</a>
-    <a href="/transactions/" class="btn btn-secondary">View All Transactions</a>
+    <a href="/transactions/new" class="btn btn-primary">{{ t('dashboard_new_transaction') }}</a>
+    <a href="/transactions/" class="btn btn-secondary">{{ t('dashboard_view_all') }}</a>
 </div>
 
-<h2>Recent Transactions</h2>
+<h2>{{ t('dashboard_recent') }}</h2>
 {% if recent %}
 <div class="table-wrap">
     <table>
         <thead>
             <tr>
-                <th>Date</th>
-                <th>Category</th>
-                <th>Direction</th>
-                <th>Payment</th>
-                <th class="text-right">Amount</th>
+                <th>{{ t('list_col_date') }}</th>
+                <th>{{ t('list_col_category') }}</th>
+                <th>{{ t('list_col_direction') }}</th>
+                <th>{{ t('list_col_payment') }}</th>
+                <th class="text-right">{{ t('list_col_amount') }}</th>
             </tr>
         </thead>
         <tbody>
-            {% for t in recent %}
+            {% for txn in recent %}
             <tr>
-                <td><a href="/transactions/{{ t.id }}">{{ t.date }}</a></td>
-                <td>{{ t.category_label }}</td>
-                <td>{{ t.direction }}</td>
-                <td>{{ t.payment_method }}</td>
-                <td class="text-right">{{ "%.2f"|format(t.amount) }}</td>
+                <td><a href="/transactions/{{ txn.id }}">{{ txn.date }}</a></td>
+                <td>{{ txn.category_label }}</td>
+                <td>{{ txn.direction }}</td>
+                <td>{{ txn.payment_method }}</td>
+                <td class="text-right">{{ "%.2f"|format(txn.amount) }}</td>
             </tr>
             {% endfor %}
         </tbody>
@@ -59,8 +59,8 @@
 </div>
 {% else %}
 <div class="empty-state">
-    <p>No transactions yet.</p>
-    <a href="/transactions/new" class="btn btn-primary mt-4">+ New Transaction</a>
+    <p>{{ t('dashboard_no_transactions') }}</p>
+    <a href="/transactions/new" class="btn btn-primary mt-4">{{ t('dashboard_new_transaction') }}</a>
 </div>
 {% endif %}
 {% endblock %}
