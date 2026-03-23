@@ -128,12 +128,31 @@ document.addEventListener('DOMContentLoaded', function () {
   function applyInternalLock(isInternal) {
     const vatRateField = document.querySelector('select[name="vat_rate"]');
     const paymentField = document.querySelector('select[name="payment_method"]');
+    const accountantField = document.querySelector('input[name="for_accountant"]');
+    const accountantLabel = accountantField ? accountantField.closest('.checkbox-label') : null;
     if (isInternal) {
       if (vatRateField) { vatRateField.value = '0'; _lockField(vatRateField); }
       if (paymentField) { paymentField.value = 'cash'; _lockField(paymentField); }
+      if (accountantField) {
+        accountantField.checked = false;
+        accountantField.disabled = true;
+        accountantField.style.opacity = '0.5';
+      }
+      if (accountantLabel) {
+        accountantLabel.style.opacity = '0.5';
+        accountantLabel.style.pointerEvents = 'none';
+      }
     } else {
       if (vatRateField) _unlockField(vatRateField);
       if (paymentField) _unlockField(paymentField);
+      if (accountantField) {
+        accountantField.disabled = false;
+        accountantField.style.opacity = '';
+      }
+      if (accountantLabel) {
+        accountantLabel.style.opacity = '';
+        accountantLabel.style.pointerEvents = '';
+      }
     }
   }
 
