@@ -73,7 +73,7 @@
             <option value="{{ cat.category_id }}"
               data-direction="{{ cat.direction }}"
               {% if form_data.get('category_id') | string == cat.category_id | string %}selected{% endif %}>
-              {{ cat.label }}
+              {{ t('category_' ~ cat.name) }}
             </option>
             {% endif %}
           {% endfor %}
@@ -137,6 +137,17 @@
       <textarea id="description" name="description" rows="3" placeholder="{{ t('form_description_placeholder') }}">{{ form_data.get('description', '') }}</textarea>
     </div>
   </div>
+
+  {% if is_correction %}
+  <!-- Correction reason -->
+  <div class="form-section form-section-alt">
+    <div class="form-group">
+      <label class="form-label" for="correction_reason">{{ t('correction_reason_label') }}</label>
+      <textarea id="correction_reason" name="correction_reason" rows="2"
+        placeholder="{{ t('correction_reason_placeholder') }}">{{ form_data.get('correction_reason', '') }}</textarea>
+    </div>
+  </div>
+  {% endif %}
 
   <!-- Buttons -->
   <div class="flex gap-3 mt-4">

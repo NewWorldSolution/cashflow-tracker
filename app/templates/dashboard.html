@@ -48,7 +48,7 @@
             {% for txn in recent %}
             <tr>
                 <td><a href="/transactions/{{ txn.id }}">{{ format_date(txn.date) }}</a></td>
-                <td>{{ txn.category_label }}</td>
+                <td>{{ t('category_' ~ txn.category_name) }}</td>
                 <td>{{ t('direction_' ~ txn.direction) }}</td>
                 <td>{{ t('payment_' ~ txn.payment_method) }}</td>
                 <td class="text-right">{{ format_amount(txn.amount) }}</td>

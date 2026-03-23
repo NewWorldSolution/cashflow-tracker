@@ -1,7 +1,7 @@
 # P1-I6 — Multi-Language Foundation + Polish UI
 ## Task Board
 
-**Status:** IN PROGRESS
+**Status:** ✔ COMPLETE
 **Last updated:** 2026-03-23
 **Iteration branch:** `feature/phase-1/iteration-6` ← all task PRs target this branch
 **Final PR:** `feature/phase-1/iteration-6` → `main` ← QA agent approves before merge
@@ -32,7 +32,7 @@ T1 creates the infrastructure. T2 extracts all strings. T3 adds Polish and the s
 | I6-T3 | Polish translation + switcher      | —     | ✅ DONE    | I6-T2      | `feature/p1-i6/t3-polish-translation`    |
 | I6-T4 | Locale-aware formatting            | —     | ✅ DONE    | I6-T3      | `feature/p1-i6/t4-locale-formatting`     |
 | I6-T5 | voided_at timestamp                | —     | ✅ DONE    | —          | `feature/p1-i6/t5-voided-at`            |
-| I6-T6 | UX polish — states, labels, cats   | —     | ⏳ WAITING | I6-T4      | `feature/p1-i6/t6-ux-polish`            |
+| I6-T6 | UX polish — states, labels, cats   | —     | ✅ DONE    | I6-T4      | `feature/p1-i6/t6-ux-polish`            |
 
 ---
 

@@ -51,7 +51,7 @@ git pull origin feature/phase-1/iteration-6
 
 ```bash
 pytest -v
-# Expected: 101 passed, 0 failed (98 existing + 3 new voided_at tests)
+# Expected: 102 passed, 0 failed (98 existing + 3 voided_at + 1 correction reason)
 
 ruff check .
 # Expected: clean
@@ -152,7 +152,7 @@ Verify by code inspection:
 
 - [ ] Every hardcoded string in templates replaced with `{{ t('key') }}`
 - [ ] Free-text content (descriptions, void reasons, usernames) NOT wrapped in `t()`
-- [ ] Category labels from database NOT wrapped in `t()`
+- [ ] Category labels use `t('category_' + name)` lookup (T6 requirement)
 - [ ] Form input values NOT formatted (date picker needs ISO, amount needs decimal)
 - [ ] `data-*` attributes NOT formatted
 
@@ -240,7 +240,7 @@ If none: `None.`
 
 ### 5. Acceptance Criteria Check
 
-- [PASS|FAIL] pytest: 101 passed, 0 failed
+- [PASS|FAIL] pytest: 102 passed, 0 failed
 - [PASS|FAIL] ruff clean
 - [PASS|FAIL] i18n foundation: translate(), translate_error(), get_messages()
 - [PASS|FAIL] English dictionary complete (MESSAGES + VALIDATION_ERRORS)

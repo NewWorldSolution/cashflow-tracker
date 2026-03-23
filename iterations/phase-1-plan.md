@@ -1,6 +1,6 @@
 # Phase 1 Plan — Web Form & Transaction Capture
 
-**Status:** I1–I5 complete, I6 in progress, I7–I9 planned
+**Status:** I1-I5 complete, I6 in progress, I7-I9 planned
 **Timeline:** 9 iterations
 **Database:** SQLite (sandbox — all data non-production)
 **Stack decision (locked):** FastAPI, not Flask. Decision closed. Rationale: Phase 5 (Telegram) and Phase 6 (LLM) bypass the HTML form and call the same validation layer. FastAPI serves Jinja2 templates now and JSON responses later without retrofitting. Pydantic validation maps directly to transaction_validator rules.
@@ -64,20 +64,19 @@ cashflow-tracker/
 **Days 1–4**
 
 ### Goal
-Working Flask app with database, seeded data, opening balance setup, and nothing broken.
+Working FastAPI app with database, seeded data, opening balance setup, and nothing broken.
 
 ### Scope
 ```
-app/__init__.py
-app/models/user.py
-app/models/category.py
+app/main.py
 app/routes/settings.py
 app/templates/settings/opening_balance.html
+db/schema.sql
 db/init_db.py
-seed/categories.py
-seed/users.py
-config.py
-run.py
+seed/categories.sql
+seed/users.sql
+requirements.txt
+.env.example
 ```
 
 ### Skills to inject

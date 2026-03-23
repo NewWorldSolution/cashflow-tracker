@@ -9,6 +9,8 @@
 
   {% if txn.is_active %}
   <span class="badge badge-active">{{ t('badge_active') }}</span>
+  {% elif txn.replacement_transaction_id %}
+  <span class="badge badge-corrected">{{ t('badge_corrected') }}</span>
   {% else %}
   <span class="badge badge-voided">{{ t('badge_voided') }}</span>
   {% endif %}
@@ -17,7 +19,7 @@
     <dl class="detail-grid">
       <dt>{{ t('detail_date') }}</dt><dd>{{ format_date(txn.date) }}</dd>
       <dt>{{ t('detail_direction') }}</dt><dd>{{ t('direction_' ~ txn.direction) }}</dd>
-      <dt>{{ t('detail_category') }}</dt><dd>{{ txn.category_label }}</dd>
+      <dt>{{ t('detail_category') }}</dt><dd>{{ t('category_' ~ txn.category_name) }}</dd>
       <dt>{{ t('detail_amount_gross') }}</dt><dd>{{ format_amount(txn.amount) }}</dd>
       <dt>{{ t('detail_vat_rate') }}</dt><dd>{{ txn.vat_rate | int }}%</dd>
       {% if txn.direction == 'income' %}
@@ -30,26 +32,38 @@
       {% if txn.description %}
       <dt>{{ t('detail_description') }}</dt><dd>{{ txn.description }}</dd>
       {% endif %}
-      <dt>{{ t('detail_logged_by') }}</dt><dd>{{ txn.logged_by_username }}</dd>
-      <dt>{{ t('detail_created_at') }}</dt><dd>{{ format_date(txn.created_at) }}</dd>
+      <dt>{{ t('detail_created_at') }}</dt><dd>{{ format_datetime(txn.created_at) }}</dd>
     </dl>
   </div>
 
   {% if not txn.is_active %}
+  {% if txn.replacement_transaction_id %}
+  {# This transaction was corrected — show correction details #}
+  <div class="card mt-4 audit-card">
+    <h3>{{ t('correction_details_title') }}</h3>
+    <dl class="detail-grid">
+      <dt>{{ t('correction_reason') }}</dt><dd>{{ txn.void_reason }}</dd>
+      <dt>{{ t('corrected_by') }}</dt><dd>{{ txn.voided_by_username }}</dd>
+      {% if txn.voided_at %}
+      <dt>{{ t('corrected_at') }}</dt><dd>{{ format_datetime(txn.voided_at) }}</dd>
+      {% endif %}
+      <dt>{{ t('replaced_by') }}</dt>
+      <dd><a href="/transactions/{{ txn.replacement_transaction_id }}">#{{ txn.replacement_transaction_id }}</a></dd>
+    </dl>
+  </div>
+  {% else %}
+  {# This transaction was canceled — show cancellation details #}
   <div class="card mt-4 audit-card">
     <h3>{{ t('void_details_title') }}</h3>
     <dl class="detail-grid">
       <dt>{{ t('void_reason') }}</dt><dd>{{ txn.void_reason }}</dd>
       <dt>{{ t('voided_by') }}</dt><dd>{{ txn.voided_by_username }}</dd>
       {% if txn.voided_at %}
-      <dt>{{ t('voided_at') }}</dt><dd>{{ format_date(txn.voided_at) }}</dd>
-      {% endif %}
-      {% if txn.replacement_transaction_id %}
-      <dt>{{ t('replaced_by') }}</dt>
-      <dd><a href="/transactions/{{ txn.replacement_transaction_id }}">#{{ txn.replacement_transaction_id }}</a></dd>
+      <dt>{{ t('voided_at') }}</dt><dd>{{ format_datetime(txn.voided_at) }}</dd>
       {% endif %}
     </dl>
   </div>
+  {% endif %}
   {% endif %}
 
   {% if original_id %}

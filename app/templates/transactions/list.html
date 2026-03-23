@@ -35,7 +35,7 @@
         <tr class="{{ 'row-voided' if not txn.is_active else '' }}">
           <td><a href="/transactions/{{ txn.id }}">#{{ txn.id }}</a></td>
           <td><a href="/transactions/{{ txn.id }}">{{ format_date(txn.date) }}</a></td>
-          <td>{{ txn.category_label }}</td>
+          <td>{{ t('category_' ~ txn.category_name) }}</td>
           <td data-direction="{{ txn.direction }}">{{ t('direction_' ~ txn.direction) }}</td>
           <td class="text-right amount" data-amount="{{ txn.amount }}">{{ format_amount(txn.amount) }}</td>
           <td>{{ t('payment_' ~ txn.payment_method) }}</td>

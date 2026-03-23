@@ -436,9 +436,11 @@ def test_correct_form_prefills_original(client):
 def test_correct_creates_new_voids_original(client):
     transaction_id = insert_transaction(client, amount="500.00")
 
+    form_data = valid_expense_form(amount="650.00", description="Corrected amount")
+    form_data["correction_reason"] = "Wrong amount entered"
     r = client.post(
         f"/transactions/{transaction_id}/correct",
-        data=valid_expense_form(amount="650.00", description="Corrected amount"),
+        data=form_data,
     )
 
     assert r.status_code == 302
@@ -458,7 +460,7 @@ def test_correct_creates_new_voids_original(client):
     assert len(replacements) == 1
     replacement = replacements[0]
     assert original["is_active"] == 0
-    assert original["void_reason"] == "Corrected"
+    assert original["void_reason"] == "Wrong amount entered"
     assert original["voided_by"] == 1
     assert original["replacement_transaction_id"] == replacement["id"]
     assert replacement["is_active"] == 1
@@ -468,9 +470,11 @@ def test_correct_creates_new_voids_original(client):
 def test_flash_after_correct(client):
     """POST correct -> redirect -> GET list -> flash message in response."""
     transaction_id = insert_transaction(client)
+    form_data = valid_expense_form(description="Corrected")
+    form_data["correction_reason"] = "Fix typo"
     r = client.post(
         f"/transactions/{transaction_id}/correct",
-        data=valid_expense_form(description="Corrected"),
+        data=form_data,
     )
 
     assert r.status_code == 302
@@ -478,6 +482,17 @@ def test_flash_after_correct(client):
     list_r = client.get("/transactions/")
 
     assert "Transakcja skorygowana." in list_r.text
+
+
+def test_correct_requires_correction_reason(client):
+    """Correction without a reason returns 422."""
+    transaction_id = insert_transaction(client)
+    r = client.post(
+        f"/transactions/{transaction_id}/correct",
+        data=valid_expense_form(description="Updated"),
+    )
+    assert r.status_code == 422
+    assert "korekty" in r.text.lower()
 
 
 def test_correct_on_voided_rejected(client):
@@ -619,9 +634,11 @@ def test_voided_at_set_on_correct(client):
     """Correcting a transaction sets voided_at on the original."""
     transaction_id = insert_transaction(client)
 
+    form_data = valid_expense_form(amount="650.00", description="Corrected amount")
+    form_data["correction_reason"] = "Wrong amount"
     client.post(
         f"/transactions/{transaction_id}/correct",
-        data=valid_expense_form(amount="650.00", description="Corrected amount"),
+        data=form_data,
     )
 
     conn = sqlite3.connect(client.db_path)

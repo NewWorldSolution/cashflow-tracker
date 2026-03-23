@@ -150,7 +150,8 @@ async def get_transaction_list(
     user = require_auth(request)  # noqa: F841
     where = "" if show_all else "WHERE t.is_active = TRUE "
     rows = db.execute(
-        "SELECT t.*, c.label AS category_label, u.username AS logged_by_username, "
+        "SELECT t.*, c.label AS category_label, c.name AS category_name, "
+        "u.username AS logged_by_username, "
         "vb.username AS voided_by_username "
         "FROM transactions t "
         "JOIN categories c ON t.category_id = c.category_id "
@@ -274,6 +275,7 @@ async def get_correct_transaction(
         "income_type": txn["income_type"] or "",
         "vat_deductible_pct": str(int(txn["vat_deductible_pct"])) if txn["vat_deductible_pct"] is not None else "",
         "description": txn["description"] or "",
+        "correction_reason": "",
     }
     return templates.TemplateResponse(
         request,
@@ -284,6 +286,7 @@ async def get_correct_transaction(
             "form_data": form_data,
             "today": str(date.today()),
             "form_action": f"/transactions/{transaction_id}/correct",
+            "is_correction": True,
         },
     )
 
@@ -301,6 +304,7 @@ async def post_correct_transaction(
     income_type: str = Form(default=""),
     vat_deductible_pct: str = Form(default=""),
     description: str = Form(default=""),
+    correction_reason: str = Form(default=""),
     db: sqlite3.Connection = Depends(_get_db),
 ):
     user = require_auth(request)
@@ -327,9 +331,14 @@ async def post_correct_transaction(
         "description": _opt(description),
         "logged_by": user["id"],
         "is_active": True,
+        "correction_reason": _s(correction_reason),
     }
 
     errors = validate_transaction(data, db)
+
+    # Validate correction reason (route-level, not in validation.py)
+    if not data["correction_reason"]:
+        errors.append("Correction reason is required.")
 
     if errors:
         locale = request.state.locale
@@ -347,6 +356,7 @@ async def post_correct_transaction(
                 "form_data": data,
                 "today": str(date.today()),
                 "form_action": f"/transactions/{transaction_id}/correct",
+                "is_correction": True,
             },
             status_code=422,
         )
@@ -381,9 +391,10 @@ async def post_correct_transaction(
     new_id = db.execute("SELECT last_insert_rowid()").fetchone()[0]
     db.execute(
         "UPDATE transactions "
-        "SET is_active = 0, void_reason = 'Corrected', voided_by = ?, voided_at = CURRENT_TIMESTAMP, replacement_transaction_id = ? "
+        "SET is_active = 0, void_reason = ?, voided_by = ?, "
+        "voided_at = CURRENT_TIMESTAMP, replacement_transaction_id = ? "
         "WHERE id = ?",
-        (user["id"], new_id, transaction_id),
+        (data["correction_reason"], user["id"], new_id, transaction_id),
     )
     db.commit()
     request.session["flash"] = {

@@ -51,6 +51,32 @@ def format_date(value, locale: str) -> str:
     return date_str
 
 
+def format_datetime(value, locale: str) -> str:
+    """Format a datetime value for display, showing both date and time.
+
+    Polish: DD.MM.YYYY HH:MM
+    English: YYYY-MM-DD HH:MM
+    """
+    if not value:
+        return "—"
+    if hasattr(value, "strftime"):
+        if locale == "pl":
+            return value.strftime("%d.%m.%Y %H:%M")
+        return value.strftime("%Y-%m-%d %H:%M")
+    # String handling — "YYYY-MM-DD HH:MM:SS" or "YYYY-MM-DDTHH:MM:SS"
+    s = str(value).replace("T", " ")
+    parts = s.split(" ")
+    date_part = parts[0]
+    time_part = parts[1][:5] if len(parts) > 1 else ""
+    if locale == "pl":
+        date_parts = date_part.split("-")
+        if len(date_parts) == 3:
+            date_part = f"{date_parts[2]}.{date_parts[1]}.{date_parts[0]}"
+    if time_part:
+        return f"{date_part} {time_part}"
+    return date_part
+
+
 def format_amount(value, locale: str) -> str:
     """Format a numeric amount for display.
 

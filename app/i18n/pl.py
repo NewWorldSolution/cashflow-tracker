@@ -24,7 +24,7 @@ MESSAGES = {
     # Transaction form
     "form_title": "Nowa transakcja",
     "form_date": "Data",
-    "form_direction": "Kierunek",
+    "form_direction": "Typ transakcji",
     "form_income": "Przychód",
     "form_expense": "Wydatek",
     "form_amount": "Kwota",
@@ -48,6 +48,10 @@ MESSAGES = {
     ),
     "form_error_heading": "Proszę poprawić następujące błędy:",
 
+    # Correction form
+    "correction_reason_label": "Powód korekty (wymagane)",
+    "correction_reason_placeholder": "Co jest korygowane i dlaczego?",
+
     # Transaction list
     "list_title": "Transakcje",
     "list_new": "+ Nowa transakcja",
@@ -58,7 +62,7 @@ MESSAGES = {
     "list_col_id": "#",
     "list_col_date": "Data",
     "list_col_category": "Kategoria",
-    "list_col_direction": "Kierunek",
+    "list_col_direction": "Typ",
     "list_col_amount": "Kwota",
     "list_col_payment": "Płatność",
     "list_col_logged_by": "Dodał",
@@ -79,7 +83,7 @@ MESSAGES = {
     "detail_title": "Transakcja",
     "detail_back": "← Wróć do listy",
     "detail_date": "Data",
-    "detail_direction": "Kierunek",
+    "detail_direction": "Typ transakcji",
     "detail_category": "Kategoria",
     "detail_amount_gross": "Kwota (brutto)",
     "detail_vat_rate": "Stawka VAT",
@@ -93,14 +97,20 @@ MESSAGES = {
     "detail_void": "Anuluj",
     "detail_correction_of": "Ta transakcja jest korektą transakcji",
 
-    # Void details
+    # Cancellation details
     "void_details_title": "Szczegóły anulowania",
     "void_reason": "Powód anulowania",
     "voided_by": "Anulował",
     "voided_at": "Data anulowania",
     "replaced_by": "Zastąpiona przez",
 
-    # Void page
+    # Correction details
+    "correction_details_title": "Szczegóły korekty",
+    "correction_reason": "Powód korekty",
+    "corrected_by": "Skorygował",
+    "corrected_at": "Data korekty",
+
+    # Cancel page
     "void_title": "Anuluj transakcję",
     "void_warning": (
         "Ta operacja jest nieodwracalna."
@@ -141,6 +151,30 @@ MESSAGES = {
     "payment_transfer": "Przelew",
     "income_type_external": "Zewnętrzny",
     "income_type_internal": "Wewnętrzny",
+
+    # Category labels
+    "category_services": "Usługi",
+    "category_products": "Sprzedaż produktów",
+    "category_internal_transfer": "Przelew wewnętrzny",
+    "category_other_income": "Inne przychody",
+    "category_marketing": "Marketing i reklama",
+    "category_marketing_commission": "Prowizje sprzedażowe",
+    "category_rent": "Czynsz i lokal",
+    "category_utilities": "Media",
+    "category_renovation": "Remonty i naprawy",
+    "category_office_supplies": "Artykuły biurowe",
+    "category_cleaning": "Usługi sprzątania",
+    "category_consumables": "Materiały eksploatacyjne",
+    "category_equipment": "Sprzęt i narzędzia",
+    "category_contractor_fees": "Usługi podwykonawców i edukatorów",
+    "category_taxes": "Podatki i ZUS",
+    "category_it_software": "IT i oprogramowanie",
+    "category_salaries": "Wynagrodzenia i koszty pracownicze",
+    "category_transport_vehicle": "Pojazd i paliwo",
+    "category_transport_travel": "Podróże i transport",
+    "category_training": "Szkolenia i edukacja",
+    "category_inventory": "Zakupy magazynowe",
+    "category_other_expense": "Inne wydatki",
 }
 
 VALIDATION_ERRORS = {
@@ -206,4 +240,5 @@ VALIDATION_ERRORS = {
     "Transaction not found.": "Transakcja nie została znaleziona.",
     "Transaction is already voided.": "Transakcja jest już anulowana.",
     "Void reason is required.": "Powód anulowania jest wymagany.",
+    "Correction reason is required.": "Powód korekty jest wymagany.",
 }
