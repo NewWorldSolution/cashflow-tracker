@@ -87,7 +87,7 @@ async def post_create_transaction(
         "income_type": _opt(income_type),
         "vat_deductible_pct": _opt(vat_deductible_pct),
         "description": _opt(description),
-        "for_accountant": for_accountant.strip() == "true",
+        "for_accountant": "1" if _s(for_accountant) else "",
         "logged_by": user["id"],
         "is_active": True,
     }
@@ -144,7 +144,7 @@ async def post_create_transaction(
             data["income_type"],
             vat_deductible_val,
             data["description"],
-            data["for_accountant"],
+            1 if data["for_accountant"] else 0,
             data["logged_by"],
         ),
     )
@@ -294,7 +294,7 @@ async def get_correct_transaction(
         "income_type": txn["income_type"] or "",
         "vat_deductible_pct": str(int(txn["vat_deductible_pct"])) if txn["vat_deductible_pct"] is not None else "",
         "description": txn["description"] or "",
-        "for_accountant": bool(txn["for_accountant"]),
+        "for_accountant": "1" if txn["for_accountant"] else "",
         "correction_reason": "",
     }
     return templates.TemplateResponse(
@@ -353,7 +353,7 @@ async def post_correct_transaction(
         "income_type": _opt(income_type),
         "vat_deductible_pct": _opt(vat_deductible_pct),
         "description": _opt(description),
-        "for_accountant": for_accountant.strip() == "true",
+        "for_accountant": "1" if _s(for_accountant) else "",
         "logged_by": user["id"],
         "is_active": True,
         "correction_reason": _s(correction_reason),
@@ -416,7 +416,7 @@ async def post_correct_transaction(
             data["income_type"],
             vat_deductible_val,
             data["description"],
-            data["for_accountant"],
+            1 if data["for_accountant"] else 0,
             data["logged_by"],
         ),
     )

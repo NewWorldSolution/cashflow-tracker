@@ -148,6 +148,13 @@
       </label>
       <textarea id="description" name="description" rows="3" placeholder="{{ t('form_description_placeholder') }}">{{ form_data.get('description', '') }}</textarea>
     </div>
+    <div class="form-group">
+      <label class="checkbox-label" for="for_accountant">
+        <input type="checkbox" id="for_accountant" name="for_accountant" value="1"
+          {% if form_data.get('for_accountant') %}checked{% endif %}>
+        <span>{{ t('for_accountant_label') }}</span>
+      </label>
+    </div>
   </div>
 
   <!-- Section 6 — Accountant flag -->
