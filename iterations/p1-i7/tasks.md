@@ -68,7 +68,7 @@ Notes:
 | ID    | Title                               | Owner | Status     | Depends on | Branch |
 |-------|-------------------------------------|-------|------------|------------|--------|
 | I7-T1 | Companies schema + seed + migration | —     | ⏳ WAITING | —          | `feature/p1-i7/t1-companies-schema` |
-| I7-T2 | Create/correct with company         | —     | 🔄 IN PROGRESS | I7-T1      | `feature/p1-i7/t2-company-create` |
+| I7-T2 | Create/correct with company         | —     | ✅ DONE    | I7-T1      | `feature/p1-i7/t2-company-create` |
 | I7-T3 | List/detail/dashboard + filtering   | —     | ⏳ WAITING | I7-T2      | `feature/p1-i7/t3-company-views` |
 | I7-T4 | `for_accountant` display + behavior | —     | ⏳ WAITING | I7-T1      | `feature/p1-i7/t4-accountant-flag` |
 | I7-T5 | Tests                               | —     | ⏳ WAITING | I7-T1, I7-T2, I7-T3, I7-T4 | `feature/p1-i7/t5-tests` |
