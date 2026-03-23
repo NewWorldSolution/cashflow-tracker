@@ -157,17 +157,6 @@
     </div>
   </div>
 
-  <!-- Section 6 — Accountant flag -->
-  <div class="form-section">
-    <div class="form-group">
-      <label class="form-label form-label-checkbox">
-        <input type="checkbox" name="for_accountant" value="true"
-          {% if form_data.get('for_accountant') %}checked{% endif %}>
-        {{ t('form_for_accountant') }}
-      </label>
-    </div>
-  </div>
-
   {% if is_correction %}
   <!-- Correction reason -->
   <div class="form-section form-section-alt">
