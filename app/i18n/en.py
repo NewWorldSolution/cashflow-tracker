@@ -52,6 +52,16 @@ MESSAGES = {
     "correction_reason_label": "Reason for correction (required)",
     "correction_reason_placeholder": "What is being corrected and why?",
 
+    # Company selector
+    "form_company": "Company",
+    "company_sp": "JDG",
+    "company_ltd": "Ltd",
+    "company_ff": "Foundation",
+    "company_private": "Private",
+
+    # Accountant flag
+    "form_for_accountant": "Mark for accountant",
+
     # Transaction list
     "list_title": "Transactions",
     "list_new": "+ New Transaction",
@@ -233,6 +243,8 @@ VALIDATION_ERRORS = {
     ),
     "logged_by must be a valid user id.": "logged_by must be a valid user id.",
     "Correction reason is required.": "Correction reason is required.",
+    "Company is required.": "Company is required.",
+    "Company must be a valid active company.": "Company must be a valid active company.",
     # Auth errors
     "Username and password are required": "Username and password are required",
     "Invalid credentials": "Invalid credentials",
