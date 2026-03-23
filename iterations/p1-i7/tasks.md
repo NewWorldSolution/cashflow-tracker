@@ -1,7 +1,7 @@
 # P1-I7 — Multi-Company Support + Accountant Flag
 ## Task Board
 
-**Status:** IN PROGRESS
+**Status:** ✔ COMPLETE
 **Last updated:** 2026-03-23
 **Iteration branch:** `feature/phase-1/iteration-7` ← all task PRs target this branch
 **Final PR:** `feature/phase-1/iteration-7` → `main` ← QA agent approves before merge
