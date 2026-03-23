@@ -15,10 +15,10 @@
 
   <div class="card mt-4">
     <dl class="detail-grid">
-      <dt>{{ t('detail_date') }}</dt><dd>{{ txn.date }}</dd>
+      <dt>{{ t('detail_date') }}</dt><dd>{{ format_date(txn.date) }}</dd>
       <dt>{{ t('detail_direction') }}</dt><dd>{{ txn.direction }}</dd>
       <dt>{{ t('detail_category') }}</dt><dd>{{ txn.category_label }}</dd>
-      <dt>{{ t('detail_amount_gross') }}</dt><dd>{{ "{:,.2f}".format(txn.amount) }}</dd>
+      <dt>{{ t('detail_amount_gross') }}</dt><dd>{{ format_amount(txn.amount) }}</dd>
       <dt>{{ t('detail_vat_rate') }}</dt><dd>{{ txn.vat_rate | int }}%</dd>
       {% if txn.direction == 'income' %}
       <dt>{{ t('detail_income_type') }}</dt><dd>{{ txn.income_type if txn.income_type else '—' }}</dd>
@@ -31,7 +31,7 @@
       <dt>{{ t('detail_description') }}</dt><dd>{{ txn.description }}</dd>
       {% endif %}
       <dt>{{ t('detail_logged_by') }}</dt><dd>{{ txn.logged_by_username }}</dd>
-      <dt>{{ t('detail_created_at') }}</dt><dd>{{ txn.created_at }}</dd>
+      <dt>{{ t('detail_created_at') }}</dt><dd>{{ format_date(txn.created_at) }}</dd>
     </dl>
   </div>
 
@@ -42,7 +42,7 @@
       <dt>{{ t('void_reason') }}</dt><dd>{{ txn.void_reason }}</dd>
       <dt>{{ t('voided_by') }}</dt><dd>{{ txn.voided_by_username }}</dd>
       {% if txn.voided_at %}
-      <dt>{{ t('voided_at') }}</dt><dd>{{ txn.voided_at }}</dd>
+      <dt>{{ t('voided_at') }}</dt><dd>{{ format_date(txn.voided_at) }}</dd>
       {% endif %}
       {% if txn.replacement_transaction_id %}
       <dt>{{ t('replaced_by') }}</dt>
