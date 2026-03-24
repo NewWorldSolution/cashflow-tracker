@@ -16,6 +16,10 @@ document.addEventListener('DOMContentLoaded', function () {
   const paymentSelect = document.querySelector('select[name="payment_method"]');
   const vatRateField = document.querySelector('select[name="vat_rate"]');
   const vatDeductibleField = document.querySelector('select[name="vat_deductible_pct"]');
+  const customerTypeSection = document.getElementById('customer-type-section');
+  const customerTypeSelect = document.getElementById('customer_type');
+  const documentFlowSection = document.getElementById('document-flow-section');
+  const documentFlowSelect = document.getElementById('document_flow');
   const accountantField = document.querySelector('input[name="for_accountant"]');
   const accountantGroup = accountantField ? accountantField.closest('.form-group') : null;
   const vatModeRadios = Array.from(document.querySelectorAll('input[name="vat_mode"]'));
@@ -197,6 +201,60 @@ document.addEventListener('DOMContentLoaded', function () {
     cardReminder.style.display = paymentSelect.value === 'card' ? '' : 'none';
   }
 
+  function updateDocumentFlowOptions() {
+    if (!documentFlowSelect || !customerTypeSelect) return;
+    const invoiceAndReceiptOption = documentFlowSelect.querySelector('option[value="invoice_and_receipt"]');
+    if (!invoiceAndReceiptOption) return;
+    const isPrivate = customerTypeSelect.value === 'private';
+    invoiceAndReceiptOption.disabled = !isPrivate;
+    invoiceAndReceiptOption.hidden = !isPrivate;
+    if (!isPrivate && documentFlowSelect.value === 'invoice_and_receipt') {
+      documentFlowSelect.value = '';
+    }
+  }
+
+  function updateProcedureMetadataVisibility() {
+    const direction = currentDirection();
+    const isCashIn = direction === 'cash_in';
+    const isInternal = isCashIn && cashInTypeSelect && cashInTypeSelect.value === 'internal';
+    const isExternalCashIn = isCashIn && !isInternal && cashInTypeSelect && cashInTypeSelect.value === 'external';
+
+    if (customerTypeSection) {
+      customerTypeSection.style.display = isInternal ? 'none' : '';
+    }
+    if (customerTypeSelect) {
+      if (isInternal) {
+        customerTypeSelect.value = 'private';
+      }
+      customerTypeSelect.required = !isInternal;
+    }
+
+    if (documentFlowSection) {
+      documentFlowSection.style.display = isInternal ? 'none' : '';
+    }
+    if (documentFlowSelect) {
+      if (isInternal) {
+        documentFlowSelect.value = '';
+        documentFlowSelect.dataset.autoDefault = 'false';
+        documentFlowSelect.required = false;
+      } else if (isExternalCashIn) {
+        documentFlowSelect.required = true;
+        if (!documentFlowSelect.value) {
+          documentFlowSelect.value = 'receipt';
+          documentFlowSelect.dataset.autoDefault = 'true';
+        }
+      } else {
+        documentFlowSelect.required = false;
+        if (documentFlowSelect.dataset.autoDefault === 'true' && documentFlowSelect.value === 'receipt') {
+          documentFlowSelect.value = '';
+        }
+        documentFlowSelect.dataset.autoDefault = 'false';
+      }
+    }
+
+    updateDocumentFlowOptions();
+  }
+
   function updateVatModeVisibility() {
     const direction = currentDirection();
     const isCashIn = direction === 'cash_in';
@@ -243,6 +301,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (cashInTypeRow) cashInTypeRow.style.display = isCashIn ? '' : 'none';
     resetCategoryPicker(direction);
     updateVatModeVisibility();
+    updateProcedureMetadataVisibility();
   }
 
   function applyInternalLock(isInternal) {
@@ -274,6 +333,7 @@ document.addEventListener('DOMContentLoaded', function () {
       }
     }
     updateVatModeVisibility();
+    updateProcedureMetadataVisibility();
   }
 
   document.querySelectorAll('input[name="direction"]').forEach(radio => {
@@ -290,6 +350,7 @@ document.addEventListener('DOMContentLoaded', function () {
         r.closest('.toggle-btn').classList.toggle('active', r.checked);
       });
       updateVatModeVisibility();
+      updateProcedureMetadataVisibility();
     });
   });
 
@@ -316,6 +377,16 @@ document.addEventListener('DOMContentLoaded', function () {
   if (cashInTypeSelect) {
     cashInTypeSelect.addEventListener('change', function () {
       applyInternalLock(this.value === 'internal');
+    });
+  }
+
+  if (customerTypeSelect) {
+    customerTypeSelect.addEventListener('change', updateDocumentFlowOptions);
+  }
+
+  if (documentFlowSelect) {
+    documentFlowSelect.addEventListener('change', function () {
+      this.dataset.autoDefault = 'false';
     });
   }
 
@@ -369,5 +440,6 @@ document.addEventListener('DOMContentLoaded', function () {
     updateVatModeVisibility();
   }
 
+  updateProcedureMetadataVisibility();
   updateCardReminder();
 });

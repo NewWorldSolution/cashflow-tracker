@@ -148,6 +148,8 @@ async def post_create_transaction(
     manual_vat_deductible_amount: str = Form(default=""),
     cash_in_type: str = Form(default=""),
     vat_deductible_pct: str = Form(default=""),
+    customer_type: str = Form(default=""),
+    document_flow: str = Form(default=""),
     description: str = Form(default=""),
     for_accountant: str = Form(default=""),
     db: sqlite3.Connection = Depends(_get_db),
@@ -175,12 +177,10 @@ async def post_create_transaction(
         "manual_vat_deductible_amount": _opt(manual_vat_deductible_amount),
         "cash_in_type": _opt(cash_in_type),
         "vat_deductible_pct": _opt(vat_deductible_pct),
+        "customer_type": _opt(customer_type),
+        "document_flow": _opt(document_flow),
         "description": _opt(description),
         "for_accountant": "1" if _s(for_accountant) else "",
-        "customer_type": "private" if _s(direction) == "cash_in" else "company",
-        "document_flow": "receipt"
-        if _s(direction) == "cash_in" and _opt(cash_in_type) == "external"
-        else None,
         "logged_by": user["id"],
         "is_active": True,
     }
@@ -367,6 +367,8 @@ async def get_correct_transaction(
         "manual_vat_deductible_amount": txn["manual_vat_deductible_amount"] if txn["manual_vat_deductible_amount"] is not None else "",
         "cash_in_type": txn["cash_in_type"] or "",
         "vat_deductible_pct": str(int(txn["vat_deductible_pct"])) if txn["vat_deductible_pct"] is not None else "",
+        "customer_type": txn["customer_type"] or "",
+        "document_flow": txn["document_flow"] or "",
         "description": txn["description"] or "",
         "for_accountant": "1" if txn["for_accountant"] else "",
         "correction_reason": "",
@@ -402,6 +404,8 @@ async def post_correct_transaction(
     manual_vat_deductible_amount: str = Form(default=""),
     cash_in_type: str = Form(default=""),
     vat_deductible_pct: str = Form(default=""),
+    customer_type: str = Form(default=""),
+    document_flow: str = Form(default=""),
     description: str = Form(default=""),
     for_accountant: str = Form(default=""),
     correction_reason: str = Form(default=""),
@@ -432,18 +436,10 @@ async def post_correct_transaction(
         "manual_vat_deductible_amount": _opt(manual_vat_deductible_amount),
         "cash_in_type": _opt(cash_in_type),
         "vat_deductible_pct": _opt(vat_deductible_pct),
+        "customer_type": _opt(customer_type),
+        "document_flow": _opt(document_flow),
         "description": _opt(description),
         "for_accountant": "1" if _s(for_accountant) else "",
-        "customer_type": txn["customer_type"] if txn["customer_type"] else (
-            "private" if _s(direction) == "cash_in" else "company"
-        ),
-        "document_flow": txn["document_flow"]
-        if txn["document_flow"] is not None
-        else (
-            "receipt"
-            if _s(direction) == "cash_in" and _opt(cash_in_type) == "external"
-            else None
-        ),
         "logged_by": user["id"],
         "is_active": True,
         "correction_reason": _s(correction_reason),
