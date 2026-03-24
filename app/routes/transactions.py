@@ -10,7 +10,7 @@ from fastapi.templating import Jinja2Templates
 
 from app.i18n import translate, translate_error
 from app.services.auth_service import require_auth
-from app.services.calculations import effective_cost, vat_amount
+from app.services.calculations import effective_cost, net_amount, vat_amount, vat_reclaimable
 from app.services.transaction_service import (
     correct_transaction,
     create_transaction,
@@ -235,11 +235,13 @@ async def get_transaction_list(
     where = f"WHERE {' AND '.join(conditions)} " if conditions else ""
     rows = db.execute(
         "SELECT t.*, c.label AS category_label, c.name AS category_name, "
-        "co.name AS company_name, "
+        "p.name AS parent_category_name, p.label AS parent_category_label, "
+        "co.name AS company_name, co.slug AS company_slug, "
         "u.username AS logged_by_username, "
         "vb.username AS voided_by_username "
         "FROM transactions t "
         "JOIN categories c ON t.category_id = c.category_id "
+        "LEFT JOIN categories p ON c.parent_id = p.category_id "
         "LEFT JOIN companies co ON t.company_id = co.id "
         "JOIN users u ON t.logged_by = u.id "
         "LEFT JOIN users vb ON t.voided_by = vb.id "
@@ -252,9 +254,21 @@ async def get_transaction_list(
     transactions = []
     for row in rows:
         gross = Decimal(str(row["amount"]))
-        va = vat_amount(gross, row["vat_rate"])
+        va = vat_amount(
+            gross,
+            row["vat_rate"],
+            vat_mode=row["vat_mode"],
+            manual_vat_amount=row["manual_vat_amount"],
+        )
         ec = (
-            effective_cost(gross, row["vat_rate"], row["vat_deductible_pct"])
+            effective_cost(
+                gross,
+                row["vat_rate"],
+                row["vat_deductible_pct"],
+                vat_mode=row["vat_mode"],
+                manual_vat_amount=row["manual_vat_amount"],
+                manual_vat_deductible_amount=row["manual_vat_deductible_amount"],
+            )
             if row["direction"] == "cash_out"
             else None
         )
@@ -285,6 +299,39 @@ async def get_transaction_detail(
     txn = get_transaction(transaction_id, db)
     if txn is None:
         raise HTTPException(status_code=404)
+    gross = Decimal(str(txn["amount"]))
+    txn["vat_amount_value"] = vat_amount(
+        gross,
+        txn["vat_rate"],
+        vat_mode=txn["vat_mode"],
+        manual_vat_amount=txn["manual_vat_amount"],
+    )
+    txn["net_amount_value"] = net_amount(
+        gross,
+        txn["vat_rate"],
+        vat_mode=txn["vat_mode"],
+        manual_vat_amount=txn["manual_vat_amount"],
+    )
+    if txn["direction"] == "cash_out":
+        txn["vat_reclaimable_value"] = vat_reclaimable(
+            gross,
+            txn["vat_rate"],
+            txn["vat_deductible_pct"],
+            vat_mode=txn["vat_mode"],
+            manual_vat_amount=txn["manual_vat_amount"],
+            manual_vat_deductible_amount=txn["manual_vat_deductible_amount"],
+        )
+        txn["effective_cost_value"] = effective_cost(
+            gross,
+            txn["vat_rate"],
+            txn["vat_deductible_pct"],
+            vat_mode=txn["vat_mode"],
+            manual_vat_amount=txn["manual_vat_amount"],
+            manual_vat_deductible_amount=txn["manual_vat_deductible_amount"],
+        )
+    else:
+        txn["vat_reclaimable_value"] = None
+        txn["effective_cost_value"] = None
     # Check if this transaction is a correction of another
     original = db.execute(
         "SELECT id FROM transactions WHERE replacement_transaction_id = ? AND is_active = 0",

@@ -61,9 +61,13 @@ async def get_dashboard(
     # Recent 5 active transactions with category label
     recent = db.execute(
         "SELECT t.id, t.date, t.amount, t.direction, c.label AS category_label, "
-        "c.name AS category_name, co.name AS company_name, t.payment_method "
+        "c.name AS category_name, p.name AS parent_category_name, p.label AS parent_category_label, "
+        "co.name AS company_name, co.slug AS company_slug, t.payment_method, "
+        "t.vat_mode, t.vat_rate, t.vat_deductible_pct, t.manual_vat_amount, "
+        "t.manual_vat_deductible_amount "
         "FROM transactions t "
         "JOIN categories c ON t.category_id = c.category_id "
+        "LEFT JOIN categories p ON c.parent_id = p.category_id "
         "LEFT JOIN companies co ON t.company_id = co.id "
         "WHERE t.is_active = 1" + company_filter + " ORDER BY t.created_at DESC LIMIT 5",
         company_params,

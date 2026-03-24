@@ -158,7 +158,7 @@ def get_transaction(transaction_id: int, db: sqlite3.Connection) -> dict | None:
         "p.label AS parent_category_label, p.name AS parent_category_name, "
         "u.username AS logged_by_username, "
         "vb.username AS voided_by_username, "
-        "co.name AS company_name "
+        "co.name AS company_name, co.slug AS company_slug "
         "FROM transactions t "
         "JOIN categories c ON t.category_id = c.category_id "
         "LEFT JOIN categories p ON c.parent_id = p.category_id "

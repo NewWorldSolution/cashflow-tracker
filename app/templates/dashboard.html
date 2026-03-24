@@ -61,8 +61,14 @@
             {% for txn in recent %}
             <tr>
                 <td><a href="/transactions/{{ txn.id }}">{{ format_date(txn.date) }}</a></td>
-                <td>{{ t('category_' ~ txn.category_name) }}</td>
-                <td>{{ t('company_' ~ txn.company_name) if txn.company_name else '—' }}</td>
+                <td>
+                    {% if txn.parent_category_name %}
+                        {{ t('cat_' ~ txn.parent_category_name) }} &gt; {{ t('cat_' ~ txn.category_name) }}
+                    {% else %}
+                        {{ t('cat_' ~ txn.category_name) }}
+                    {% endif %}
+                </td>
+                <td>{{ t('company_' ~ txn.company_slug) if txn.company_slug else '—' }}</td>
                 <td>{{ t('direction_' ~ txn.direction) }}</td>
                 <td>{{ t('payment_' ~ txn.payment_method) }}</td>
                 <td class="text-right">{{ format_amount(txn.amount) }}</td>
