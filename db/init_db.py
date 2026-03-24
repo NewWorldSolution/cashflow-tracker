@@ -25,17 +25,6 @@ def initialise_db(conn: sqlite3.Connection | None = None) -> None:
     if conn is None:
         conn = sqlite3.connect(DB_PATH)
 
-    conn.executescript(
-        """
-        DROP TABLE IF EXISTS settings_audit;
-        DROP TABLE IF EXISTS settings;
-        DROP TABLE IF EXISTS transactions;
-        DROP TABLE IF EXISTS companies;
-        DROP TABLE IF EXISTS categories;
-        DROP TABLE IF EXISTS users;
-        """
-    )
-
     # Apply schema
     schema = SCHEMA_PATH.read_text()
     conn.executescript(schema)
