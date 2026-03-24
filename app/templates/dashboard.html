@@ -24,12 +24,12 @@
         <div class="text-sm text-muted">{{ t('dashboard_as_of') }} {{ format_date(as_of_date) if as_of_date else '—' }}</div>
     </div>
     <div class="card">
-        <div class="text-sm text-muted">{{ t('dashboard_total_income') }}</div>
-        <div class="card-value">{{ format_amount(total_income) }}</div>
+        <div class="text-sm text-muted">{{ t('dashboard_total_cash_in') }}</div>
+        <div class="card-value">{{ format_amount(total_cash_in) }}</div>
     </div>
     <div class="card">
-        <div class="text-sm text-muted">{{ t('dashboard_total_expenses') }}</div>
-        <div class="card-value">{{ format_amount(total_expense) }}</div>
+        <div class="text-sm text-muted">{{ t('dashboard_total_cash_out') }}</div>
+        <div class="card-value">{{ format_amount(total_cash_out) }}</div>
     </div>
     <div class="card">
         <div class="text-sm text-muted">{{ t('dashboard_transactions') }}</div>
@@ -61,8 +61,14 @@
             {% for txn in recent %}
             <tr>
                 <td><a href="/transactions/{{ txn.id }}">{{ format_date(txn.date) }}</a></td>
-                <td>{{ t('category_' ~ txn.category_name) }}</td>
-                <td>{{ t('company_' ~ txn.company_name) if txn.company_name else '—' }}</td>
+                <td>
+                    {% if txn.parent_category_name %}
+                        {{ t('cat_' ~ txn.parent_category_name) }} &gt; {{ t('cat_' ~ txn.category_name) }}
+                    {% else %}
+                        {{ t('cat_' ~ txn.category_name) }}
+                    {% endif %}
+                </td>
+                <td>{{ t('company_' ~ txn.company_slug) if txn.company_slug else '—' }}</td>
                 <td>{{ t('direction_' ~ txn.direction) }}</td>
                 <td>{{ t('payment_' ~ txn.payment_method) }}</td>
                 <td class="text-right">{{ format_amount(txn.amount) }}</td>

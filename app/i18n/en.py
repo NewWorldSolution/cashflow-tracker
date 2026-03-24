@@ -11,8 +11,8 @@ MESSAGES = {
     "dashboard_opening_balance": "Opening Balance",
     "dashboard_as_of": "as of",
     "dashboard_not_set": "Not set",
-    "dashboard_total_income": "Total Income",
-    "dashboard_total_expenses": "Total Expenses",
+    "dashboard_total_cash_in": "Total Cash In",
+    "dashboard_total_cash_out": "Total Cash Out",
     "dashboard_transactions": "Transactions",
     "dashboard_active": "active",
     "dashboard_voided": "canceled",
@@ -27,18 +27,38 @@ MESSAGES = {
     "form_title": "New transaction",
     "form_date": "Date",
     "form_direction": "Transaction Type",
-    "form_income": "Income",
-    "form_expense": "Expense",
+    "form_cash_in": "Cash In",
+    "form_cash_out": "Cash Out",
     "form_amount": "Amount",
     "form_amount_helper": "Enter gross amount (VAT included)",
     "form_category": "Category",
+    "form_category_group": "Category Group",
+    "form_subcategory": "Subcategory",
     "form_category_placeholder": "— select —",
+    "select_category_group": "Select category group",
+    "select_subcategory": "Select subcategory",
     "form_payment_method": "Payment Method",
-    "form_income_type": "Income Type",
-    "form_income_type_internal": "Internal",
-    "form_income_type_external": "External",
+    "form_cash_in_type": "Cash-In Type",
+    "form_cash_in_type_internal": "Internal",
+    "form_cash_in_type_external": "External",
+    "form_vat_mode": "VAT Mode",
+    "vat_mode_automatic": "Automatic",
+    "vat_mode_manual": "Manual",
     "form_vat_rate": "VAT Rate (%)",
     "form_vat_deductible": "VAT Deductible (%)",
+    "form_manual_vat_amount": "Manual VAT Amount",
+    "form_manual_vat_deductible_amount": "Manual VAT Deductible Amount",
+    "form_customer_type": "Customer Type",
+    "select_customer_type": "Select customer type",
+    "customer_type_private": "Private Person",
+    "customer_type_company": "Company",
+    "customer_type_other": "Other",
+    "form_document_flow": "Document Flow",
+    "select_document_flow": "Select document flow",
+    "document_flow_invoice": "Invoice",
+    "document_flow_receipt": "Receipt",
+    "document_flow_invoice_and_receipt": "Invoice and Receipt",
+    "document_flow_other_document": "Other Document",
     "form_description": "Description",
     "form_description_required": "(required)",
     "form_description_placeholder": "Optional notes...",
@@ -87,10 +107,10 @@ MESSAGES = {
     "list_col_status": "Status",
     "list_no_transactions": "No transactions yet.",
     "list_create_first": "Create your first transaction",
-    "list_income": "Income",
-    "list_expenses": "Expenses",
-    "list_no_income": "No income transactions",
-    "list_no_expenses": "No expense transactions",
+    "list_cash_in": "Cash In",
+    "list_cash_out": "Cash Out",
+    "list_no_cash_in": "No cash-in transactions",
+    "list_no_cash_out": "No cash-out transactions",
 
     # Badges
     "badge_active": "Active",
@@ -106,8 +126,18 @@ MESSAGES = {
     "detail_company": "Company",
     "detail_amount_gross": "Amount (gross)",
     "detail_vat_rate": "VAT rate",
-    "detail_income_type": "Income type",
+    "detail_vat_mode": "VAT Mode",
+    "detail_manual_vat_indicator": "Manual VAT",
+    "detail_cash_in_type": "Cash-in type",
     "detail_vat_deductible": "VAT deductible",
+    "detail_customer_type": "Customer Type",
+    "detail_document_flow": "Document Flow",
+    "detail_for_accountant": "For Accountant",
+    "detail_category_path": "Category",
+    "detail_vat_amount": "VAT",
+    "detail_net_amount": "Net",
+    "detail_vat_reclaimable": "VAT Reclaimable",
+    "detail_effective_cost": "Effective Cost",
     "detail_payment": "Payment",
     "detail_description": "Description",
     "detail_logged_by": "Logged by",
@@ -120,6 +150,8 @@ MESSAGES = {
     "for_accountant_label": "For accountant",
     "for_accountant_yes": "Yes",
     "for_accountant_no": "No",
+    "value_yes": "Yes",
+    "value_no": "No",
 
     # Cancellation details (shown when transaction is canceled without correction)
     "void_details_title": "Cancellation Details",
@@ -170,13 +202,13 @@ MESSAGES = {
     "lang_switch_en": "EN",
 
     # Enum display labels
-    "direction_income": "Income",
-    "direction_expense": "Expense",
+    "direction_cash_in": "Cash In",
+    "direction_cash_out": "Cash Out",
     "payment_cash": "Cash",
     "payment_card": "Card",
     "payment_transfer": "Transfer",
-    "income_type_external": "External",
-    "income_type_internal": "Internal",
+    "cash_in_type_external": "External",
+    "cash_in_type_internal": "Internal",
 
     # Category labels
     "category_services": "Services",
@@ -201,12 +233,93 @@ MESSAGES = {
     "category_training": "Training & education",
     "category_inventory": "Inventory purchases",
     "category_other_expense": "Other expense",
+    "cat_ci_services": "Services",
+    "cat_ci_training": "Training",
+    "cat_ci_products": "Product Sales",
+    "cat_ci_commissions": "Commissions / Affiliate",
+    "cat_ci_consulting": "Consulting",
+    "cat_ci_financial": "Financial",
+    "cat_ci_other": "Other Income",
+    "cat_co_marketing": "Marketing",
+    "cat_co_operations": "Operations",
+    "cat_co_people": "People Costs",
+    "cat_co_taxes": "Owner / Company Taxes",
+    "cat_co_services": "Services & Subscriptions",
+    "cat_co_financial": "Financial",
+    "cat_co_inventory": "Inventory",
+    "cat_co_capex": "CAPEX",
+    "cat_co_training_int": "Training - Internal",
+    "cat_co_training_del": "Training - Delivery",
+    "cat_co_private": "Owner / Private",
+    "cat_co_other": "Other Expense",
+    "cat_ci_services_test": "Test",
+    "cat_ci_services_package": "Package",
+    "cat_ci_services_bioresonance": "Bioresonance",
+    "cat_ci_services_dietetic": "Dietetic",
+    "cat_ci_services_naturopathic": "Naturopathic",
+    "cat_ci_training_income": "Training Income",
+    "cat_ci_products_accessories": "Accessories / Ampulles",
+    "cat_ci_products_zapper": "Zapper / Chipcard",
+    "cat_ci_products_supplements": "Supplements",
+    "cat_ci_products_trikombin": "Trikombin",
+    "cat_ci_commissions_affiliate": "Affiliate Income",
+    "cat_ci_commissions_partner": "Partner Commissions",
+    "cat_ci_consulting_business": "Business Consulting",
+    "cat_ci_consulting_it": "IT Consulting",
+    "cat_ci_financial_loan_repayment_received": "Loan Repayment Received",
+    "cat_ci_financial_stock_exchange": "Stock-Exchange Income",
+    "cat_ci_financial_other": "Other Financial Income",
+    "cat_ci_financial_loan_taken": "Loan Taken",
+    "cat_ci_other_rent": "Rent",
+    "cat_ci_other_income": "Other Income",
+    "cat_co_marketing_paid_ads": "Paid Ads",
+    "cat_co_marketing_seo": "SEO",
+    "cat_co_marketing_agent_fees": "Agent / Referral Fees",
+    "cat_co_operations_rent": "Rent",
+    "cat_co_operations_utilities": "Utilities",
+    "cat_co_operations_office_supplies": "Office Supplies",
+    "cat_co_operations_transport": "Transport / Petrol",
+    "cat_co_operations_small_equipment": "Small Equipment",
+    "cat_co_operations_maintenance": "Maintenance / Repairs",
+    "cat_co_people_salaries": "Salaries",
+    "cat_co_people_bonuses": "Bonuses / Additional Payments",
+    "cat_co_people_employee_zus": "Employee ZUS",
+    "cat_co_people_employee_pit": "Employee PIT",
+    "cat_co_people_contractors": "Contractors",
+    "cat_co_taxes_vat": "VAT Payments",
+    "cat_co_taxes_income_tax": "Income Tax",
+    "cat_co_taxes_owner_zus": "Owner ZUS",
+    "cat_co_services_accountant": "Accountant",
+    "cat_co_services_software": "Software / SaaS",
+    "cat_co_services_other": "Other Services",
+    "cat_co_financial_bank_fees": "Bank Fees",
+    "cat_co_financial_loan_repayment": "Loan Repayment",
+    "cat_co_financial_stock_exchange": "Stock-Exchange Cash Out",
+    "cat_co_financial_other": "Other Financial Costs",
+    "cat_co_financial_loan_given": "Loan Given",
+    "cat_co_inventory_devices": "Devices for Resale",
+    "cat_co_inventory_supplements": "Supplements",
+    "cat_co_inventory_accessories": "Accessories",
+    "cat_co_capex_machines": "Machines",
+    "cat_co_capex_equipment": "Equipment",
+    "cat_co_capex_renovation": "Renovation / Improvements",
+    "cat_co_training_int_course_fees": "Course Fees",
+    "cat_co_training_int_hotel": "Hotel",
+    "cat_co_training_int_transport": "Transport",
+    "cat_co_training_int_food": "Food / Catering",
+    "cat_co_training_int_other": "Other Training Costs",
+    "cat_co_training_del_preparation": "Preparation Costs",
+    "cat_co_training_del_travel": "Travel",
+    "cat_co_training_del_food": "Food / Catering",
+    "cat_co_training_del_commissions": "Commissions",
+    "cat_co_private_withdrawals": "Private Withdrawals",
+    "cat_co_other_expense": "Other Expense",
 }
 
 VALIDATION_ERRORS = {
     "Date is required.": "Date is required.",
     "Date must be a valid YYYY-MM-DD value.": "Date must be a valid YYYY-MM-DD value.",
-    "Direction must be income or expense.": "Direction must be income or expense.",
+    "Direction must be cash_in or cash_out.": "Direction must be cash_in or cash_out.",
     "Amount must be a positive number.": "Amount must be a positive number.",
     "Amount must be greater than 0.": "Amount must be greater than 0.",
     "Category must be a valid category id.": "Category must be a valid category id.",
@@ -216,29 +329,29 @@ VALIDATION_ERRORS = {
     "VAT rate must be one of 0, 5, 8, or 23.": (
         "VAT rate must be one of 0, 5, 8, or 23."
     ),
-    "Income type is required for income transactions.": (
-        "Income type is required for income transactions."
+    "Cash-in type is required for cash_in transactions.": (
+        "Cash-in type is required for cash_in transactions."
     ),
-    "Income type must be internal or external.": (
-        "Income type must be internal or external."
+    "Cash-in type must be internal or external.": (
+        "Cash-in type must be internal or external."
     ),
-    "VAT deductible percentage must be empty for income transactions.": (
-        "VAT deductible percentage must be empty for income transactions."
+    "VAT deductible percentage must be empty for cash_in transactions.": (
+        "VAT deductible percentage must be empty for cash_in transactions."
     ),
-    "Income type must be empty for expense transactions.": (
-        "Income type must be empty for expense transactions."
+    "Cash-in type must be empty for cash_out transactions.": (
+        "Cash-in type must be empty for cash_out transactions."
     ),
-    "VAT deductible percentage is required for expense transactions.": (
-        "VAT deductible percentage is required for expense transactions."
+    "VAT deductible percentage is required for cash_out transactions.": (
+        "VAT deductible percentage is required for cash_out transactions."
     ),
     "VAT deductible percentage must be one of 0, 50, or 100.": (
         "VAT deductible percentage must be one of 0, 50, or 100."
     ),
-    "Internal income must use a VAT rate of 0.": (
-        "Internal income must use a VAT rate of 0."
+    "Internal cash_in must use a VAT rate of 0.": (
+        "Internal cash_in must use a VAT rate of 0."
     ),
-    "Internal income must use cash as payment method.": (
-        "Internal income must use cash as payment method."
+    "Internal cash_in must use cash as payment method.": (
+        "Internal cash_in must use cash as payment method."
     ),
     "Category direction must match transaction direction.": (
         "Category direction must match transaction direction."

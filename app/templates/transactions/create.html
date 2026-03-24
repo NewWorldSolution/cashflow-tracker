@@ -28,15 +28,15 @@
     <div class="form-group">
       <label class="form-label">{{ t('form_direction') }}</label>
       <div class="toggle-group">
-        <label class="toggle-btn {{ 'active' if form_data.get('direction') == 'income' else '' }}">
-          <input type="radio" name="direction" value="income"
-            {% if form_data.get('direction') == 'income' %}checked{% endif %} style="display:none">
-          {{ t('form_income') }}
+        <label class="toggle-btn {{ 'active' if form_data.get('direction') == 'cash_in' else '' }}">
+          <input type="radio" name="direction" value="cash_in"
+            {% if form_data.get('direction') == 'cash_in' %}checked{% endif %} style="display:none">
+          {{ t('form_cash_in') }}
         </label>
-        <label class="toggle-btn {{ 'active' if form_data.get('direction', 'expense') == 'expense' else '' }}">
-          <input type="radio" name="direction" value="expense"
-            {% if form_data.get('direction', 'expense') == 'expense' %}checked{% endif %} style="display:none">
-          {{ t('form_expense') }}
+        <label class="toggle-btn {{ 'active' if form_data.get('direction', 'cash_out') == 'cash_out' else '' }}">
+          <input type="radio" name="direction" value="cash_out"
+            {% if form_data.get('direction', 'cash_out') == 'cash_out' %}checked{% endif %} style="display:none">
+          {{ t('form_cash_out') }}
         </label>
       </div>
     </div>
@@ -67,28 +67,31 @@
   <!-- Section 3 — Details -->
   <div class="form-section">
     <!-- Income type row — shown/hidden by JS (above category because it determines locks) -->
-    <div class="form-group" id="income-type-row" style="display:none">
-      <label class="form-label" for="income_type">{{ t('form_income_type') }}</label>
-      <select id="income_type" name="income_type">
+    <div class="form-group" id="cash-in-type-row" style="display:none">
+      <label class="form-label" for="cash_in_type">{{ t('form_cash_in_type') }}</label>
+      <select id="cash_in_type" name="cash_in_type">
         <option value="">{{ t('form_category_placeholder') }}</option>
-        <option value="internal" {% if form_data.get('income_type') == 'internal' %}selected{% endif %}>{{ t('form_income_type_internal') }}</option>
-        <option value="external" {% if form_data.get('income_type') == 'external' %}selected{% endif %}>{{ t('form_income_type_external') }}</option>
+        <option value="internal" {% if form_data.get('cash_in_type') == 'internal' %}selected{% endif %}>{{ t('form_cash_in_type_internal') }}</option>
+        <option value="external" {% if form_data.get('cash_in_type') == 'external' %}selected{% endif %}>{{ t('form_cash_in_type_external') }}</option>
       </select>
     </div>
     <div class="form-row">
       <div class="form-group">
-        <label class="form-label" for="category_id">{{ t('form_category') }}</label>
-        <select id="category_id" name="category_id">
-          <option value="">{{ t('form_category_placeholder') }}</option>
-          {% for cat in categories %}
-            {% if cat.name != 'internal_transfer' %}
-            <option value="{{ cat.category_id }}"
-              data-direction="{{ cat.direction }}"
-              {% if form_data.get('category_id') | string == cat.category_id | string %}selected{% endif %}>
-              {{ t('category_' ~ cat.name) }}
-            </option>
-            {% endif %}
+        <label class="form-label" for="category_group">{{ t('form_category_group') }}</label>
+        <select id="category_group" data-selected-value="{{ selected_category_group_id }}">
+          <option value="">{{ t('select_category_group') }}</option>
+          {% for parent in category_groups %}
+          <option value="{{ parent.category_id }}"
+            {% if selected_category_group_id | string == parent.category_id | string %}selected{% endif %}>
+            {{ t('cat_' ~ parent.name) }}
+          </option>
           {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="category_id">{{ t('form_subcategory') }}</label>
+        <select id="category_id" name="category_id" data-selected-value="{{ form_data.get('category_id', '') }}">
+          <option value="">{{ t('select_subcategory') }}</option>
         </select>
       </div>
       <div class="form-group">
@@ -112,10 +115,26 @@
 
   <!-- Section 4 — VAT -->
   <div class="form-section">
+    <div id="vat-mode-section" class="form-group">
+      <label class="form-label">{{ t('form_vat_mode') }}</label>
+      <div class="toggle-group">
+        <label class="toggle-btn {{ 'active' if form_data.get('vat_mode', 'automatic') == 'automatic' else '' }}">
+          <input type="radio" name="vat_mode" value="automatic"
+            {% if form_data.get('vat_mode', 'automatic') == 'automatic' %}checked{% endif %} style="display:none">
+          {{ t('vat_mode_automatic') }}
+        </label>
+        <label class="toggle-btn {{ 'active' if form_data.get('vat_mode') == 'manual' else '' }}">
+          <input type="radio" name="vat_mode" value="manual"
+            {% if form_data.get('vat_mode') == 'manual' %}checked{% endif %} style="display:none">
+          {{ t('vat_mode_manual') }}
+        </label>
+      </div>
+    </div>
     <div class="form-row">
-      <div class="form-group">
+      <div class="form-group" id="vat-rate-row">
         <label class="form-label" for="vat_rate">{{ t('form_vat_rate') }}</label>
         <select id="vat_rate" name="vat_rate">
+          <option value="">{{ t('form_category_placeholder') }}</option>
           {% for rate in [0, 5, 8, 23] %}
             <option value="{{ rate }}"
               {% if form_data.get('vat_rate') | string == rate | string %}selected{% endif %}>
@@ -137,10 +156,43 @@
         </select>
       </div>
     </div>
+    <div id="manual-vat-fields" class="form-row" style="display:none">
+      <div class="form-group">
+        <label class="form-label" for="manual_vat_amount">{{ t('form_manual_vat_amount') }}</label>
+        <input type="number" id="manual_vat_amount" name="manual_vat_amount" step="0.01" min="0"
+               value="{{ form_data.get('manual_vat_amount', '') }}" placeholder="0.00">
+      </div>
+      <div class="form-group" id="manual-vat-deductible-section" style="display:none">
+        <label class="form-label" for="manual_vat_deductible_amount">{{ t('form_manual_vat_deductible_amount') }}</label>
+        <input type="number" id="manual_vat_deductible_amount" name="manual_vat_deductible_amount" step="0.01" min="0"
+               value="{{ form_data.get('manual_vat_deductible_amount', '') }}" placeholder="0.00">
+      </div>
+    </div>
   </div>
 
   <!-- Section 5 — Optional -->
   <div class="form-section">
+    <div class="form-row">
+      <div class="form-group" id="customer-type-section">
+        <label class="form-label" for="customer_type">{{ t('form_customer_type') }}</label>
+        <select id="customer_type" name="customer_type" required>
+          <option value="">{{ t('select_customer_type') }}</option>
+          <option value="private" {% if form_data.get('customer_type') == 'private' %}selected{% endif %}>{{ t('customer_type_private') }}</option>
+          <option value="company" {% if form_data.get('customer_type') == 'company' %}selected{% endif %}>{{ t('customer_type_company') }}</option>
+          <option value="other" {% if form_data.get('customer_type') == 'other' %}selected{% endif %}>{{ t('customer_type_other') }}</option>
+        </select>
+      </div>
+      <div class="form-group" id="document-flow-section">
+        <label class="form-label" for="document_flow">{{ t('form_document_flow') }}</label>
+        <select id="document_flow" name="document_flow">
+          <option value="">{{ t('select_document_flow') }}</option>
+          <option value="invoice" {% if form_data.get('document_flow') == 'invoice' %}selected{% endif %}>{{ t('document_flow_invoice') }}</option>
+          <option value="receipt" {% if form_data.get('document_flow') == 'receipt' %}selected{% endif %}>{{ t('document_flow_receipt') }}</option>
+          <option value="invoice_and_receipt" {% if form_data.get('document_flow') == 'invoice_and_receipt' %}selected{% endif %}>{{ t('document_flow_invoice_and_receipt') }}</option>
+          <option value="other_document" {% if form_data.get('document_flow') == 'other_document' %}selected{% endif %}>{{ t('document_flow_other_document') }}</option>
+        </select>
+      </div>
+    </div>
     <div class="form-group">
       <label class="form-label" for="description">
         {{ t('form_description') }}
@@ -151,7 +203,11 @@
     <div class="form-group">
       <label class="checkbox-label" for="for_accountant">
         <input type="checkbox" id="for_accountant" name="for_accountant" value="1"
-          {% if form_data.get('for_accountant') %}checked{% endif %}>
+          {% if is_correction %}
+            {% if form_data.get('for_accountant') %}checked{% endif %}
+          {% else %}
+            {% if form_data.get('for_accountant', '1') %}checked{% endif %}
+          {% endif %}>
         <span>{{ t('for_accountant_label') }}</span>
       </label>
     </div>
@@ -176,6 +232,9 @@
 
 </form>
 
+<script>
+  window.CATEGORY_HIERARCHY = {{ category_hierarchy_json | safe }};
+</script>
 <script src="/static/form.js"></script>
 
 {% endblock %}

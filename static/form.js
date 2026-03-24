@@ -1,138 +1,319 @@
 document.addEventListener('DOMContentLoaded', function () {
+  const categoryHierarchy = window.CATEGORY_HIERARCHY || { cash_in: [], cash_out: [] };
+  const categoryGroupSelect = document.getElementById('category_group');
+  const categorySelect = document.getElementById('category_id');
+  const cashInTypeRow = document.getElementById('cash-in-type-row');
+  const vatDeductibleRow = document.getElementById('vat-deductible-row');
+  const vatRateRow = document.getElementById('vat-rate-row');
+  const vatModeSection = document.getElementById('vat-mode-section');
+  const manualVatFields = document.getElementById('manual-vat-fields');
+  const manualVatAmountField = document.getElementById('manual_vat_amount');
+  const manualVatDeductibleSection = document.getElementById('manual-vat-deductible-section');
+  const manualVatDeductibleField = document.getElementById('manual_vat_deductible_amount');
+  const cardReminder = document.getElementById('card-reminder');
+  const descRequired = document.getElementById('desc-required');
+  const cashInTypeSelect = document.querySelector('select[name="cash_in_type"]');
+  const paymentSelect = document.querySelector('select[name="payment_method"]');
+  const vatRateField = document.querySelector('select[name="vat_rate"]');
+  const vatDeductibleField = document.querySelector('select[name="vat_deductible_pct"]');
+  const customerTypeSection = document.getElementById('customer-type-section');
+  const customerTypeSelect = document.getElementById('customer_type');
+  const documentFlowSection = document.getElementById('document-flow-section');
+  const documentFlowSelect = document.getElementById('document_flow');
+  const accountantField = document.querySelector('input[name="for_accountant"]');
+  const accountantGroup = accountantField ? accountantField.closest('.form-group') : null;
+  const vatModeRadios = Array.from(document.querySelectorAll('input[name="vat_mode"]'));
 
-  // Helpers: visually lock/unlock fields without using disabled
-  // (disabled fields are excluded from form submission)
+  let manualDeductibleTouched = Boolean(
+    manualVatDeductibleField && manualVatDeductibleField.value
+  );
+
   function _lockField(field) {
+    if (!field) return;
     field.dataset.locked = 'true';
     field.style.opacity = '0.5';
     field.style.pointerEvents = 'none';
   }
+
   function _unlockField(field) {
+    if (!field) return;
     delete field.dataset.locked;
     field.style.opacity = '';
     field.style.pointerEvents = '';
   }
 
-  // 1. Category lookup map — populated by the fetch in step 5d
-  let categoryMap = {};
+  function currentDirection() {
+    const checked = document.querySelector('input[name="direction"]:checked');
+    return checked ? checked.value : 'cash_out';
+  }
 
-  // 2. Filter category options to match the selected direction
-  function filterCategories(direction) {
-    const categorySelect = document.querySelector('select[name="category_id"]');
-    if (!categorySelect) return;
-    Array.from(categorySelect.options).forEach(opt => {
-      if (!opt.value) return; // keep the "— select —" placeholder
-      const optDir = opt.getAttribute('data-direction');
-      opt.hidden = optDir !== direction;
-      opt.disabled = optDir !== direction;
+  function currentVatMode() {
+    const checked = document.querySelector('input[name="vat_mode"]:checked');
+    return checked ? checked.value : 'automatic';
+  }
+
+  function setVatMode(mode) {
+    vatModeRadios.forEach(radio => {
+      radio.checked = radio.value === mode;
+      const label = radio.closest('.toggle-btn');
+      if (label) {
+        label.classList.toggle('active', radio.checked);
+      }
     });
-    // Reset selection if currently selected option is now hidden
-    const selected = categorySelect.options[categorySelect.selectedIndex];
-    if (selected && selected.hidden) {
-      categorySelect.value = '';
+  }
+
+  function getGroups(direction) {
+    return categoryHierarchy[direction] || [];
+  }
+
+  function findParentIdForCategory(direction, categoryId) {
+    const groups = getGroups(direction);
+    for (const group of groups) {
+      const match = group.children.find(child => String(child.id) === String(categoryId));
+      if (match) {
+        return String(group.id);
+      }
+    }
+    return '';
+  }
+
+  function findCategory(direction, categoryId) {
+    const groups = getGroups(direction);
+    for (const group of groups) {
+      const match = group.children.find(child => String(child.id) === String(categoryId));
+      if (match) {
+        return match;
+      }
+    }
+    return null;
+  }
+
+  function setPlaceholderOption(select, text) {
+    select.innerHTML = '';
+    const placeholder = document.createElement('option');
+    placeholder.value = '';
+    placeholder.textContent = text;
+    select.appendChild(placeholder);
+  }
+
+  function populateGroupOptions(direction, selectedGroupId) {
+    if (!categoryGroupSelect) return;
+    setPlaceholderOption(
+      categoryGroupSelect,
+      categoryGroupSelect.dataset.placeholder || 'Select category group'
+    );
+    for (const group of getGroups(direction)) {
+      const opt = document.createElement('option');
+      opt.value = group.id;
+      opt.textContent = group.label;
+      if (String(selectedGroupId) === String(group.id)) {
+        opt.selected = true;
+      }
+      categoryGroupSelect.appendChild(opt);
     }
   }
 
-  // 3. Show/hide conditional rows based on direction
-  function applyDirection(direction) {
-    const isIncome = direction === 'income';
-    const incomeRow = document.getElementById('income-type-row');
-    const vatRow = document.getElementById('vat-deductible-row');
-    if (incomeRow) incomeRow.style.display = isIncome ? '' : 'none';
-    if (vatRow) vatRow.style.display = isIncome ? 'none' : '';
-    filterCategories(direction);
+  function populateSubcategoryOptions(direction, parentId, selectedCategoryId) {
+    if (!categorySelect) return;
+    setPlaceholderOption(
+      categorySelect,
+      categorySelect.dataset.placeholder || 'Select subcategory'
+    );
+    const parent = getGroups(direction).find(group => String(group.id) === String(parentId));
+    if (!parent) {
+      categorySelect.value = '';
+      return;
+    }
+    for (const child of parent.children) {
+      const opt = document.createElement('option');
+      opt.value = child.id;
+      opt.textContent = child.label;
+      if (String(selectedCategoryId) === String(child.id)) {
+        opt.selected = true;
+      }
+      categorySelect.appendChild(opt);
+    }
   }
 
-  // 4. Direction change: apply rows + filter, clear dependent fields, release vat_rate lock
-  document.querySelectorAll('input[name="direction"]').forEach(radio => {
-    radio.addEventListener('change', function () {
-      applyDirection(this.value);
-      // Clear both dependent fields on every switch
-      const it = document.querySelector('select[name="income_type"]');
-      if (it) it.value = '';
-      const vd = document.querySelector('select[name="vat_deductible_pct"]');
-      if (vd) vd.value = '';
-      const vatRateField = document.querySelector('select[name="vat_rate"]');
-      if (vatRateField) _unlockField(vatRateField);
-      const paymentField = document.querySelector('select[name="payment_method"]');
-      if (paymentField) _unlockField(paymentField);
-      // Toggle button active class
-      document.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.remove('active'));
-      this.closest('.toggle-btn').classList.add('active');
-    });
-  });
-
-  // 5. Initialize on page load based on already-checked direction (covers error re-renders)
-  const checkedOnLoad = document.querySelector('input[name="direction"]:checked');
-  if (checkedOnLoad) {
-    applyDirection(checkedOnLoad.value);
+  function updateDescriptionRequirement(category) {
+    if (!descRequired) return;
+    descRequired.style.display =
+      category && (category.slug === 'ci_other_income' || category.slug === 'co_other_expense')
+        ? ''
+        : 'none';
   }
 
-  // 5b. Restore income_type=internal locks on load (VAT rate + payment method)
-  const incomeTypeOnLoad = document.querySelector('select[name="income_type"]');
-  if (incomeTypeOnLoad && incomeTypeOnLoad.value === 'internal') {
-    applyInternalLock(true);
+  function clearAutomaticVatFields() {
+    if (vatRateField && !vatRateField.dataset.locked) {
+      vatRateField.value = '';
+    }
+    if (vatDeductibleField) {
+      vatDeductibleField.value = '';
+    }
   }
 
-  // 5c. Restore card reminder on load
-  const paymentOnLoad = document.querySelector('select[name="payment_method"]');
-  const reminderOnLoad = document.getElementById('card-reminder');
-  if (paymentOnLoad && reminderOnLoad && paymentOnLoad.value === 'card') {
-    reminderOnLoad.style.display = '';
+  function clearManualVatFields() {
+    if (manualVatAmountField) {
+      manualVatAmountField.value = '';
+    }
+    if (manualVatDeductibleField) {
+      manualVatDeductibleField.value = '';
+    }
+    manualDeductibleTouched = false;
   }
 
-  // 5d. Restore desc-required indicator on load (needs categoryMap from fetch)
-  fetch('/categories')
-    .then(r => r.json())
-    .then(cats => {
-      cats.forEach(c => { categoryMap[c.category_id] = c; });
-      const catSelect = document.querySelector('select[name="category_id"]');
-      if (catSelect && catSelect.value) {
-        const cat = categoryMap[catSelect.value];
-        if (cat) {
-          const descReq = document.getElementById('desc-required');
-          if (descReq) {
-            descReq.style.display = (cat.name === 'other_expense' || cat.name === 'other_income') ? '' : 'none';
-          }
+  function applyCategoryDefaults(category) {
+    if (!category) {
+      updateDescriptionRequirement(null);
+      return;
+    }
+
+    if (currentVatMode() === 'automatic') {
+      if (vatRateField && !vatRateField.dataset.locked && category.vat_rate != null) {
+        vatRateField.value = String(category.vat_rate).replace('.0', '');
+      }
+      if (
+        vatDeductibleField &&
+        currentDirection() === 'cash_out' &&
+        category.vat_deductible_pct != null
+      ) {
+        vatDeductibleField.value = String(category.vat_deductible_pct).replace('.0', '');
+      }
+    }
+
+    updateDescriptionRequirement(category);
+  }
+
+  function syncPicker(direction, selectedGroupId, selectedCategoryId) {
+    populateGroupOptions(direction, selectedGroupId);
+    populateSubcategoryOptions(direction, selectedGroupId, selectedCategoryId);
+    applyCategoryDefaults(findCategory(direction, selectedCategoryId));
+  }
+
+  function resetCategoryPicker(direction) {
+    populateGroupOptions(direction, '');
+    populateSubcategoryOptions(direction, '', '');
+    updateDescriptionRequirement(null);
+  }
+
+  function updateCardReminder() {
+    if (!cardReminder || !paymentSelect) return;
+    cardReminder.style.display = paymentSelect.value === 'card' ? '' : 'none';
+  }
+
+  function updateDocumentFlowOptions() {
+    if (!documentFlowSelect || !customerTypeSelect) return;
+    const invoiceAndReceiptOption = documentFlowSelect.querySelector('option[value="invoice_and_receipt"]');
+    if (!invoiceAndReceiptOption) return;
+    const isPrivate = customerTypeSelect.value === 'private';
+    invoiceAndReceiptOption.disabled = !isPrivate;
+    invoiceAndReceiptOption.hidden = !isPrivate;
+    if (!isPrivate && documentFlowSelect.value === 'invoice_and_receipt') {
+      documentFlowSelect.value = '';
+    }
+  }
+
+  function updateProcedureMetadataVisibility() {
+    const direction = currentDirection();
+    const isCashIn = direction === 'cash_in';
+    const isInternal = isCashIn && cashInTypeSelect && cashInTypeSelect.value === 'internal';
+    const isExternalCashIn = isCashIn && !isInternal && cashInTypeSelect && cashInTypeSelect.value === 'external';
+
+    if (customerTypeSection) {
+      customerTypeSection.style.display = isInternal ? 'none' : '';
+    }
+    if (customerTypeSelect) {
+      if (isInternal) {
+        customerTypeSelect.value = 'private';
+      }
+      customerTypeSelect.required = !isInternal;
+    }
+
+    if (documentFlowSection) {
+      documentFlowSection.style.display = isInternal ? 'none' : '';
+    }
+    if (documentFlowSelect) {
+      if (isInternal) {
+        documentFlowSelect.value = '';
+        documentFlowSelect.dataset.autoDefault = 'false';
+        documentFlowSelect.required = false;
+      } else if (isExternalCashIn) {
+        documentFlowSelect.required = true;
+        if (!documentFlowSelect.value) {
+          documentFlowSelect.value = 'receipt';
+          documentFlowSelect.dataset.autoDefault = 'true';
         }
+      } else {
+        documentFlowSelect.required = false;
+        if (documentFlowSelect.dataset.autoDefault === 'true' && documentFlowSelect.value === 'receipt') {
+          documentFlowSelect.value = '';
+        }
+        documentFlowSelect.dataset.autoDefault = 'false';
       }
-    });
+    }
 
-  // 6. Category change: set defaults and update desc-required indicator
-  const categorySelect = document.querySelector('select[name="category_id"]');
-  if (categorySelect) {
-    categorySelect.addEventListener('change', function () {
-      const cat = categoryMap[this.value];
-      if (!cat) return;
-
-      const vatRateField = document.querySelector('select[name="vat_rate"]');
-      if (vatRateField && !vatRateField.dataset.locked) {
-        vatRateField.value = cat.default_vat_rate;
-      }
-
-      const checkedDirection = document.querySelector('input[name="direction"]:checked');
-      const isExpense = checkedDirection && checkedDirection.value === 'expense';
-      const vdField = document.querySelector('select[name="vat_deductible_pct"]');
-      if (vdField && isExpense && cat.default_vat_deductible_pct != null) {
-        vdField.value = cat.default_vat_deductible_pct;
-      }
-
-      const descReq = document.getElementById('desc-required');
-      if (descReq) {
-        descReq.style.display = (cat.name === 'other_expense' || cat.name === 'other_income') ? '' : 'none';
-      }
-    });
+    updateDocumentFlowOptions();
   }
 
-  // 7. income_type change: lock/unlock vat_rate and payment_method
-  function applyInternalLock(isInternal) {
-    const vatRateField = document.querySelector('select[name="vat_rate"]');
-    const paymentField = document.querySelector('select[name="payment_method"]');
-    const accountantField = document.querySelector('input[name="for_accountant"]');
-    const accountantGroup = accountantField ? accountantField.closest('.form-group') : null;
+  function updateVatModeVisibility() {
+    const direction = currentDirection();
+    const isCashIn = direction === 'cash_in';
+    const isInternal = isCashIn && cashInTypeSelect && cashInTypeSelect.value === 'internal';
+    const mode = currentVatMode();
+
+    if (vatModeSection) {
+      vatModeSection.style.display = isInternal ? 'none' : '';
+    }
+
     if (isInternal) {
-      if (vatRateField) { vatRateField.value = '0'; _lockField(vatRateField); }
-      if (paymentField) { paymentField.value = 'cash'; _lockField(paymentField); }
+      setVatMode('automatic');
+    }
+
+    const activeMode = isInternal ? 'automatic' : mode;
+    const showManual = activeMode === 'manual';
+
+    if (manualVatFields) {
+      manualVatFields.style.display = showManual ? '' : 'none';
+    }
+    if (vatRateRow) {
+      vatRateRow.style.display = showManual ? 'none' : '';
+    }
+    if (vatDeductibleRow) {
+      vatDeductibleRow.style.display =
+        !showManual && !isCashIn ? '' : 'none';
+    }
+    if (manualVatDeductibleSection) {
+      manualVatDeductibleSection.style.display =
+        showManual && !isCashIn ? '' : 'none';
+    }
+
+    if (showManual) {
+      clearAutomaticVatFields();
+    } else {
+      clearManualVatFields();
+      const category = findCategory(direction, categorySelect ? categorySelect.value : '');
+      applyCategoryDefaults(category);
+    }
+  }
+
+  function applyDirection(direction) {
+    const isCashIn = direction === 'cash_in';
+    if (cashInTypeRow) cashInTypeRow.style.display = isCashIn ? '' : 'none';
+    resetCategoryPicker(direction);
+    updateVatModeVisibility();
+    updateProcedureMetadataVisibility();
+  }
+
+  function applyInternalLock(isInternal) {
+    if (isInternal) {
+      if (vatRateField) {
+        vatRateField.value = '0';
+        _lockField(vatRateField);
+      }
+      if (paymentSelect) {
+        paymentSelect.value = 'cash';
+        _lockField(paymentSelect);
+      }
       if (accountantField) {
         accountantField.checked = false;
         accountantField.disabled = true;
@@ -140,9 +321,10 @@ document.addEventListener('DOMContentLoaded', function () {
       if (accountantGroup) {
         accountantGroup.style.display = 'none';
       }
+      setVatMode('automatic');
     } else {
-      if (vatRateField) _unlockField(vatRateField);
-      if (paymentField) _unlockField(paymentField);
+      _unlockField(vatRateField);
+      _unlockField(paymentSelect);
       if (accountantField) {
         accountantField.disabled = false;
       }
@@ -150,24 +332,114 @@ document.addEventListener('DOMContentLoaded', function () {
         accountantGroup.style.display = '';
       }
     }
+    updateVatModeVisibility();
+    updateProcedureMetadataVisibility();
   }
 
-  const incomeTypeSelect = document.querySelector('select[name="income_type"]');
-  if (incomeTypeSelect) {
-    incomeTypeSelect.addEventListener('change', function () {
+  document.querySelectorAll('input[name="direction"]').forEach(radio => {
+    radio.addEventListener('change', function () {
+      applyDirection(this.value);
+      if (cashInTypeSelect) {
+        cashInTypeSelect.value = '';
+      }
+      if (vatDeductibleField) {
+        vatDeductibleField.value = '';
+      }
+      applyInternalLock(false);
+      document.querySelectorAll('input[name="direction"]').forEach(r => {
+        r.closest('.toggle-btn').classList.toggle('active', r.checked);
+      });
+      updateVatModeVisibility();
+      updateProcedureMetadataVisibility();
+    });
+  });
+
+  vatModeRadios.forEach(radio => {
+    radio.addEventListener('change', function () {
+      setVatMode(this.value);
+      updateVatModeVisibility();
+    });
+  });
+
+  if (categoryGroupSelect) {
+    categoryGroupSelect.addEventListener('change', function () {
+      populateSubcategoryOptions(currentDirection(), this.value, '');
+      updateDescriptionRequirement(null);
+    });
+  }
+
+  if (categorySelect) {
+    categorySelect.addEventListener('change', function () {
+      applyCategoryDefaults(findCategory(currentDirection(), this.value));
+    });
+  }
+
+  if (cashInTypeSelect) {
+    cashInTypeSelect.addEventListener('change', function () {
       applyInternalLock(this.value === 'internal');
     });
   }
 
-  // 8. payment_method change: card reminder
-  const paymentSelect = document.querySelector('select[name="payment_method"]');
+  if (customerTypeSelect) {
+    customerTypeSelect.addEventListener('change', updateDocumentFlowOptions);
+  }
+
+  if (documentFlowSelect) {
+    documentFlowSelect.addEventListener('change', function () {
+      this.dataset.autoDefault = 'false';
+    });
+  }
+
   if (paymentSelect) {
-    paymentSelect.addEventListener('change', function () {
-      const reminder = document.getElementById('card-reminder');
-      if (reminder) {
-        reminder.style.display = this.value === 'card' ? '' : 'none';
+    paymentSelect.addEventListener('change', updateCardReminder);
+  }
+
+  if (manualVatAmountField) {
+    manualVatAmountField.addEventListener('input', function () {
+      if (
+        currentDirection() === 'cash_out' &&
+        manualVatDeductibleField &&
+        !manualDeductibleTouched
+      ) {
+        manualVatDeductibleField.value = this.value;
       }
     });
   }
 
+  if (manualVatDeductibleField) {
+    manualVatDeductibleField.addEventListener('input', function () {
+      manualDeductibleTouched = this.value !== '';
+    });
+  }
+
+  if (categoryGroupSelect) {
+    categoryGroupSelect.dataset.placeholder = categoryGroupSelect.options[0]
+      ? categoryGroupSelect.options[0].textContent
+      : 'Select category group';
+  }
+  if (categorySelect) {
+    categorySelect.dataset.placeholder = categorySelect.options[0]
+      ? categorySelect.options[0].textContent
+      : 'Select subcategory';
+  }
+
+  const direction = currentDirection();
+  const selectedCategoryId = categorySelect
+    ? (categorySelect.dataset.selectedValue || categorySelect.value)
+    : '';
+  const selectedGroupId = categoryGroupSelect
+    ? (categoryGroupSelect.dataset.selectedValue || findParentIdForCategory(direction, selectedCategoryId))
+    : '';
+
+  applyDirection(direction);
+  syncPicker(direction, selectedGroupId, selectedCategoryId);
+
+  if (cashInTypeSelect && cashInTypeSelect.value === 'internal') {
+    applyInternalLock(true);
+  } else {
+    updateVatModeVisibility();
+  }
+
+  updateProcedureMetadataVisibility();
+  updateCardReminder();
 });

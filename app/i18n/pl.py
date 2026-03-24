@@ -11,8 +11,8 @@ MESSAGES = {
     "dashboard_opening_balance": "Saldo początkowe",
     "dashboard_as_of": "na dzień",
     "dashboard_not_set": "Nie ustawiono",
-    "dashboard_total_income": "Łączny przychód",
-    "dashboard_total_expenses": "Łączne wydatki",
+    "dashboard_total_cash_in": "Łączne wpływy",
+    "dashboard_total_cash_out": "Łączne wypływy",
     "dashboard_transactions": "Transakcje",
     "dashboard_active": "aktywne",
     "dashboard_voided": "anulowane",
@@ -27,18 +27,38 @@ MESSAGES = {
     "form_title": "Nowa transakcja",
     "form_date": "Data",
     "form_direction": "Typ transakcji",
-    "form_income": "Przychód",
-    "form_expense": "Wydatek",
+    "form_cash_in": "Wpływ",
+    "form_cash_out": "Wypływ",
     "form_amount": "Kwota",
     "form_amount_helper": "Podaj kwotę brutto (z VAT)",
     "form_category": "Kategoria",
+    "form_category_group": "Grupa kategorii",
+    "form_subcategory": "Podkategoria",
     "form_category_placeholder": "— wybierz —",
+    "select_category_group": "Wybierz grupę kategorii",
+    "select_subcategory": "Wybierz podkategorię",
     "form_payment_method": "Metoda płatności",
-    "form_income_type": "Typ przychodu",
-    "form_income_type_internal": "Wewnętrzny",
-    "form_income_type_external": "Zewnętrzny",
+    "form_cash_in_type": "Typ wpływu",
+    "form_cash_in_type_internal": "Wewnętrzny",
+    "form_cash_in_type_external": "Zewnętrzny",
+    "form_vat_mode": "Tryb VAT",
+    "vat_mode_automatic": "Automatyczny",
+    "vat_mode_manual": "Ręczny",
     "form_vat_rate": "Stawka VAT (%)",
     "form_vat_deductible": "Odliczenie VAT (%)",
+    "form_manual_vat_amount": "Ręczna kwota VAT",
+    "form_manual_vat_deductible_amount": "Ręczna kwota VAT do odliczenia",
+    "form_customer_type": "Typ kontrahenta",
+    "select_customer_type": "Wybierz typ kontrahenta",
+    "customer_type_private": "Osoba prywatna",
+    "customer_type_company": "Firma",
+    "customer_type_other": "Inny",
+    "form_document_flow": "Obieg dokumentów",
+    "select_document_flow": "Wybierz obieg dokumentów",
+    "document_flow_invoice": "Faktura",
+    "document_flow_receipt": "Paragon",
+    "document_flow_invoice_and_receipt": "Faktura i paragon",
+    "document_flow_other_document": "Inny dokument",
     "form_description": "Opis",
     "form_description_required": "(wymagane)",
     "form_description_placeholder": "Opcjonalne notatki...",
@@ -87,10 +107,10 @@ MESSAGES = {
     "list_col_status": "Status",
     "list_no_transactions": "Brak transakcji.",
     "list_create_first": "Utwórz pierwszą transakcję",
-    "list_income": "Przychody",
-    "list_expenses": "Wydatki",
-    "list_no_income": "Brak transakcji przychodowych",
-    "list_no_expenses": "Brak transakcji wydatkowych",
+    "list_cash_in": "Wpływy",
+    "list_cash_out": "Wypływy",
+    "list_no_cash_in": "Brak transakcji wpływowych",
+    "list_no_cash_out": "Brak transakcji wypływowych",
 
     # Badges
     "badge_active": "Aktywna",
@@ -106,8 +126,18 @@ MESSAGES = {
     "detail_company": "Firma",
     "detail_amount_gross": "Kwota (brutto)",
     "detail_vat_rate": "Stawka VAT",
-    "detail_income_type": "Typ przychodu",
+    "detail_vat_mode": "Tryb VAT",
+    "detail_manual_vat_indicator": "Ręczny VAT",
+    "detail_cash_in_type": "Typ wpływu",
     "detail_vat_deductible": "Odliczenie VAT",
+    "detail_customer_type": "Typ kontrahenta",
+    "detail_document_flow": "Obieg dokumentów",
+    "detail_for_accountant": "Dla księgowej",
+    "detail_category_path": "Kategoria",
+    "detail_vat_amount": "VAT",
+    "detail_net_amount": "Netto",
+    "detail_vat_reclaimable": "VAT do odliczenia",
+    "detail_effective_cost": "Koszt efektywny",
     "detail_payment": "Płatność",
     "detail_description": "Opis",
     "detail_logged_by": "Dodał",
@@ -120,6 +150,8 @@ MESSAGES = {
     "for_accountant_label": "Dla księgowej",
     "for_accountant_yes": "Tak",
     "for_accountant_no": "Nie",
+    "value_yes": "Tak",
+    "value_no": "Nie",
 
     # Cancellation details
     "void_details_title": "Szczegóły anulowania",
@@ -168,13 +200,13 @@ MESSAGES = {
     "lang_switch_en": "EN",
 
     # Enum display labels
-    "direction_income": "Przychód",
-    "direction_expense": "Wydatek",
+    "direction_cash_in": "Wpływ",
+    "direction_cash_out": "Wypływ",
     "payment_cash": "Gotówka",
     "payment_card": "Karta",
     "payment_transfer": "Przelew",
-    "income_type_external": "Zewnętrzny",
-    "income_type_internal": "Wewnętrzny",
+    "cash_in_type_external": "Zewnętrzny",
+    "cash_in_type_internal": "Wewnętrzny",
 
     # Category labels
     "category_services": "Usługi",
@@ -199,12 +231,93 @@ MESSAGES = {
     "category_training": "Szkolenia i edukacja",
     "category_inventory": "Zakupy magazynowe",
     "category_other_expense": "Inne wydatki",
+    "cat_ci_services": "Usługi",
+    "cat_ci_training": "Szkolenia",
+    "cat_ci_products": "Sprzedaż produktów",
+    "cat_ci_commissions": "Prowizje / afiliacja",
+    "cat_ci_consulting": "Consulting",
+    "cat_ci_financial": "Finansowe",
+    "cat_ci_other": "Inne wpływy",
+    "cat_co_marketing": "Marketing",
+    "cat_co_operations": "Działalność operacyjna",
+    "cat_co_people": "Koszty osobowe",
+    "cat_co_taxes": "Podatki właściciela / firmy",
+    "cat_co_services": "Usługi i subskrypcje",
+    "cat_co_financial": "Finansowe",
+    "cat_co_inventory": "Towar handlowy",
+    "cat_co_capex": "CAPEX",
+    "cat_co_training_int": "Szkolenia - wewnętrzne",
+    "cat_co_training_del": "Szkolenia - realizacja",
+    "cat_co_private": "Właściciel / prywatne",
+    "cat_co_other": "Inne wydatki",
+    "cat_ci_services_test": "Test",
+    "cat_ci_services_package": "Pakiet",
+    "cat_ci_services_bioresonance": "Bioresonans",
+    "cat_ci_services_dietetic": "Dietetyka",
+    "cat_ci_services_naturopathic": "Naturopatia",
+    "cat_ci_training_income": "Przychód ze szkoleń",
+    "cat_ci_products_accessories": "Akcesoria / ampułki",
+    "cat_ci_products_zapper": "Zapper / chipcard",
+    "cat_ci_products_supplements": "Suplementy",
+    "cat_ci_products_trikombin": "Trikombin",
+    "cat_ci_commissions_affiliate": "Przychód afiliacyjny",
+    "cat_ci_commissions_partner": "Prowizje partnerskie",
+    "cat_ci_consulting_business": "Consulting biznesowy",
+    "cat_ci_consulting_it": "Consulting IT",
+    "cat_ci_financial_loan_repayment_received": "Spłata udzielonej pożyczki",
+    "cat_ci_financial_stock_exchange": "Przychód giełdowy",
+    "cat_ci_financial_other": "Inne przychody finansowe",
+    "cat_ci_financial_loan_taken": "Otrzymana pożyczka",
+    "cat_ci_other_rent": "Najem",
+    "cat_ci_other_income": "Inne wpływy",
+    "cat_co_marketing_paid_ads": "Reklamy płatne",
+    "cat_co_marketing_seo": "SEO",
+    "cat_co_marketing_agent_fees": "Opłaty agenta / polecenia",
+    "cat_co_operations_rent": "Czynsz",
+    "cat_co_operations_utilities": "Media",
+    "cat_co_operations_office_supplies": "Artykuły biurowe",
+    "cat_co_operations_transport": "Transport / paliwo",
+    "cat_co_operations_small_equipment": "Drobny sprzęt",
+    "cat_co_operations_maintenance": "Utrzymanie / naprawy",
+    "cat_co_people_salaries": "Wynagrodzenia",
+    "cat_co_people_bonuses": "Premie / dodatkowe wypłaty",
+    "cat_co_people_employee_zus": "ZUS pracownika",
+    "cat_co_people_employee_pit": "PIT pracownika",
+    "cat_co_people_contractors": "Podwykonawcy",
+    "cat_co_taxes_vat": "Płatności VAT",
+    "cat_co_taxes_income_tax": "Podatek dochodowy",
+    "cat_co_taxes_owner_zus": "ZUS właściciela",
+    "cat_co_services_accountant": "Księgowa",
+    "cat_co_services_software": "Software / SaaS",
+    "cat_co_services_other": "Inne usługi",
+    "cat_co_financial_bank_fees": "Opłaty bankowe",
+    "cat_co_financial_loan_repayment": "Spłata pożyczki",
+    "cat_co_financial_stock_exchange": "Wypływ giełdowy",
+    "cat_co_financial_other": "Inne koszty finansowe",
+    "cat_co_financial_loan_given": "Udzielona pożyczka",
+    "cat_co_inventory_devices": "Urządzenia do odsprzedaży",
+    "cat_co_inventory_supplements": "Suplementy",
+    "cat_co_inventory_accessories": "Akcesoria",
+    "cat_co_capex_machines": "Maszyny",
+    "cat_co_capex_equipment": "Wyposażenie",
+    "cat_co_capex_renovation": "Remont / ulepszenia",
+    "cat_co_training_int_course_fees": "Opłaty za kurs",
+    "cat_co_training_int_hotel": "Hotel",
+    "cat_co_training_int_transport": "Transport",
+    "cat_co_training_int_food": "Jedzenie / catering",
+    "cat_co_training_int_other": "Inne koszty szkolenia",
+    "cat_co_training_del_preparation": "Koszty przygotowania",
+    "cat_co_training_del_travel": "Podróż",
+    "cat_co_training_del_food": "Jedzenie / catering",
+    "cat_co_training_del_commissions": "Prowizje",
+    "cat_co_private_withdrawals": "Wypłaty prywatne",
+    "cat_co_other_expense": "Inne wydatki",
 }
 
 VALIDATION_ERRORS = {
     "Date is required.": "Data jest wymagana.",
     "Date must be a valid YYYY-MM-DD value.": "Data musi być w formacie RRRR-MM-DD.",
-    "Direction must be income or expense.": "Kierunek musi być przychód lub wydatek.",
+    "Direction must be cash_in or cash_out.": "Kierunek musi być cash_in lub cash_out.",
     "Amount must be a positive number.": "Kwota musi być liczbą dodatnią.",
     "Amount must be greater than 0.": "Kwota musi być większa od 0.",
     "Category must be a valid category id.": "Kategoria musi być prawidłowym identyfikatorem.",
@@ -214,29 +327,29 @@ VALIDATION_ERRORS = {
     "VAT rate must be one of 0, 5, 8, or 23.": (
         "Stawka VAT musi wynosić 0, 5, 8 lub 23."
     ),
-    "Income type is required for income transactions.": (
-        "Typ przychodu jest wymagany dla transakcji przychodowych."
+    "Cash-in type is required for cash_in transactions.": (
+        "Typ wpływu jest wymagany dla transakcji wpływowych."
     ),
-    "Income type must be internal or external.": (
-        "Typ przychodu musi być wewnętrzny lub zewnętrzny."
+    "Cash-in type must be internal or external.": (
+        "Typ wpływu musi być wewnętrzny lub zewnętrzny."
     ),
-    "VAT deductible percentage must be empty for income transactions.": (
-        "Procent odliczenia VAT musi być pusty dla transakcji przychodowych."
+    "VAT deductible percentage must be empty for cash_in transactions.": (
+        "Procent odliczenia VAT musi być pusty dla transakcji wpływowych."
     ),
-    "Income type must be empty for expense transactions.": (
-        "Typ przychodu musi być pusty dla transakcji wydatkowych."
+    "Cash-in type must be empty for cash_out transactions.": (
+        "Typ wpływu musi być pusty dla transakcji wypływowych."
     ),
-    "VAT deductible percentage is required for expense transactions.": (
-        "Procent odliczenia VAT jest wymagany dla transakcji wydatkowych."
+    "VAT deductible percentage is required for cash_out transactions.": (
+        "Procent odliczenia VAT jest wymagany dla transakcji wypływowych."
     ),
     "VAT deductible percentage must be one of 0, 50, or 100.": (
         "Procent odliczenia VAT musi wynosić 0, 50 lub 100."
     ),
-    "Internal income must use a VAT rate of 0.": (
-        "Przychód wewnętrzny musi mieć stawkę VAT 0."
+    "Internal cash_in must use a VAT rate of 0.": (
+        "Wpływ wewnętrzny musi mieć stawkę VAT 0."
     ),
-    "Internal income must use cash as payment method.": (
-        "Przychód wewnętrzny musi używać gotówki jako metody płatności."
+    "Internal cash_in must use cash as payment method.": (
+        "Wpływ wewnętrzny musi używać gotówki jako metody płatności."
     ),
     "Category direction must match transaction direction.": (
         "Kierunek kategorii musi odpowiadać kierunkowi transakcji."
