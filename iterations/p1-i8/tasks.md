@@ -47,7 +47,7 @@ All tasks are sequential. Each depends on the previous.
 |-------|------------------------------------------------|-------|------------|------------|--------|
 | I8-T1 | Direction rename + schema foundations          | —     | ✅ DONE    | —          | `feature/p1-i8/t1-direction-schema` |
 | I8-T2 | Category seed + hierarchy + i18n               | —     | ✅ DONE    | I8-T1      | `feature/p1-i8/t2-category-seed` |
-| I8-T3 | Validation + services                          | —     | ⏳ WAITING | I8-T2      | `feature/p1-i8/t3-validation-services` |
+| I8-T3 | Validation + services                          | —     | 🔄 IN PROGRESS | I8-T2      | `feature/p1-i8/t3-validation-services` |
 | I8-T4 | Category picker UI                             | —     | ⏳ WAITING | I8-T3      | `feature/p1-i8/t4-category-picker` |
 | I8-T5 | VAT mode UI                                    | —     | ⏳ WAITING | I8-T4      | `feature/p1-i8/t5-vat-mode-ui` |
 | I8-T6 | Procedure metadata UI                          | —     | ⏳ WAITING | I8-T5      | `feature/p1-i8/t6-procedure-metadata` |
