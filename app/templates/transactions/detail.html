@@ -23,10 +23,10 @@
       <dt>{{ t('detail_company') }}</dt><dd>{{ t('company_' ~ txn.company_name ~ '_full') if txn.company_name else '—' }}</dd>
       <dt>{{ t('detail_amount_gross') }}</dt><dd>{{ format_amount(txn.amount) }}</dd>
       <dt>{{ t('detail_vat_rate') }}</dt><dd>{{ txn.vat_rate | int }}%</dd>
-      {% if txn.direction == 'income' %}
-      <dt>{{ t('detail_income_type') }}</dt><dd>{{ t('income_type_' ~ txn.income_type) if txn.income_type else '—' }}</dd>
+      {% if txn.direction == 'cash_in' %}
+      <dt>{{ t('detail_cash_in_type') }}</dt><dd>{{ t('cash_in_type_' ~ txn.cash_in_type) if txn.cash_in_type else '—' }}</dd>
       {% endif %}
-      {% if txn.direction == 'expense' %}
+      {% if txn.direction == 'cash_out' %}
       <dt>{{ t('detail_vat_deductible') }}</dt><dd>{{ txn.vat_deductible_pct | int if txn.vat_deductible_pct is not none else '—' }}%</dd>
       {% endif %}
       <dt>{{ t('detail_payment') }}</dt><dd>{{ t('payment_' ~ txn.payment_method) }}</dd>

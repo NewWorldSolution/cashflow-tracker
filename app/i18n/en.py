@@ -11,8 +11,8 @@ MESSAGES = {
     "dashboard_opening_balance": "Opening Balance",
     "dashboard_as_of": "as of",
     "dashboard_not_set": "Not set",
-    "dashboard_total_income": "Total Income",
-    "dashboard_total_expenses": "Total Expenses",
+    "dashboard_total_cash_in": "Total Cash In",
+    "dashboard_total_cash_out": "Total Cash Out",
     "dashboard_transactions": "Transactions",
     "dashboard_active": "active",
     "dashboard_voided": "canceled",
@@ -27,16 +27,16 @@ MESSAGES = {
     "form_title": "New transaction",
     "form_date": "Date",
     "form_direction": "Transaction Type",
-    "form_income": "Income",
-    "form_expense": "Expense",
+    "form_cash_in": "Cash In",
+    "form_cash_out": "Cash Out",
     "form_amount": "Amount",
     "form_amount_helper": "Enter gross amount (VAT included)",
     "form_category": "Category",
     "form_category_placeholder": "— select —",
     "form_payment_method": "Payment Method",
-    "form_income_type": "Income Type",
-    "form_income_type_internal": "Internal",
-    "form_income_type_external": "External",
+    "form_cash_in_type": "Cash-In Type",
+    "form_cash_in_type_internal": "Internal",
+    "form_cash_in_type_external": "External",
     "form_vat_rate": "VAT Rate (%)",
     "form_vat_deductible": "VAT Deductible (%)",
     "form_description": "Description",
@@ -87,10 +87,10 @@ MESSAGES = {
     "list_col_status": "Status",
     "list_no_transactions": "No transactions yet.",
     "list_create_first": "Create your first transaction",
-    "list_income": "Income",
-    "list_expenses": "Expenses",
-    "list_no_income": "No income transactions",
-    "list_no_expenses": "No expense transactions",
+    "list_cash_in": "Cash In",
+    "list_cash_out": "Cash Out",
+    "list_no_cash_in": "No cash-in transactions",
+    "list_no_cash_out": "No cash-out transactions",
 
     # Badges
     "badge_active": "Active",
@@ -106,7 +106,7 @@ MESSAGES = {
     "detail_company": "Company",
     "detail_amount_gross": "Amount (gross)",
     "detail_vat_rate": "VAT rate",
-    "detail_income_type": "Income type",
+    "detail_cash_in_type": "Cash-in type",
     "detail_vat_deductible": "VAT deductible",
     "detail_payment": "Payment",
     "detail_description": "Description",
@@ -170,13 +170,13 @@ MESSAGES = {
     "lang_switch_en": "EN",
 
     # Enum display labels
-    "direction_income": "Income",
-    "direction_expense": "Expense",
+    "direction_cash_in": "Cash In",
+    "direction_cash_out": "Cash Out",
     "payment_cash": "Cash",
     "payment_card": "Card",
     "payment_transfer": "Transfer",
-    "income_type_external": "External",
-    "income_type_internal": "Internal",
+    "cash_in_type_external": "External",
+    "cash_in_type_internal": "Internal",
 
     # Category labels
     "category_services": "Services",
@@ -206,7 +206,7 @@ MESSAGES = {
 VALIDATION_ERRORS = {
     "Date is required.": "Date is required.",
     "Date must be a valid YYYY-MM-DD value.": "Date must be a valid YYYY-MM-DD value.",
-    "Direction must be income or expense.": "Direction must be income or expense.",
+    "Direction must be cash_in or cash_out.": "Direction must be cash_in or cash_out.",
     "Amount must be a positive number.": "Amount must be a positive number.",
     "Amount must be greater than 0.": "Amount must be greater than 0.",
     "Category must be a valid category id.": "Category must be a valid category id.",
@@ -216,29 +216,29 @@ VALIDATION_ERRORS = {
     "VAT rate must be one of 0, 5, 8, or 23.": (
         "VAT rate must be one of 0, 5, 8, or 23."
     ),
-    "Income type is required for income transactions.": (
-        "Income type is required for income transactions."
+    "Cash-in type is required for cash_in transactions.": (
+        "Cash-in type is required for cash_in transactions."
     ),
-    "Income type must be internal or external.": (
-        "Income type must be internal or external."
+    "Cash-in type must be internal or external.": (
+        "Cash-in type must be internal or external."
     ),
-    "VAT deductible percentage must be empty for income transactions.": (
-        "VAT deductible percentage must be empty for income transactions."
+    "VAT deductible percentage must be empty for cash_in transactions.": (
+        "VAT deductible percentage must be empty for cash_in transactions."
     ),
-    "Income type must be empty for expense transactions.": (
-        "Income type must be empty for expense transactions."
+    "Cash-in type must be empty for cash_out transactions.": (
+        "Cash-in type must be empty for cash_out transactions."
     ),
-    "VAT deductible percentage is required for expense transactions.": (
-        "VAT deductible percentage is required for expense transactions."
+    "VAT deductible percentage is required for cash_out transactions.": (
+        "VAT deductible percentage is required for cash_out transactions."
     ),
     "VAT deductible percentage must be one of 0, 50, or 100.": (
         "VAT deductible percentage must be one of 0, 50, or 100."
     ),
-    "Internal income must use a VAT rate of 0.": (
-        "Internal income must use a VAT rate of 0."
+    "Internal cash_in must use a VAT rate of 0.": (
+        "Internal cash_in must use a VAT rate of 0."
     ),
-    "Internal income must use cash as payment method.": (
-        "Internal income must use cash as payment method."
+    "Internal cash_in must use cash as payment method.": (
+        "Internal cash_in must use cash as payment method."
     ),
     "Category direction must match transaction direction.": (
         "Category direction must match transaction direction."

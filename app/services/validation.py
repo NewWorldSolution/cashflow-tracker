@@ -5,11 +5,11 @@ from datetime import date
 from decimal import Decimal, InvalidOperation
 
 
-ALLOWED_DIRECTIONS = {"income", "expense"}
+ALLOWED_DIRECTIONS = {"cash_in", "cash_out"}
 ALLOWED_PAYMENT_METHODS = {"cash", "card", "transfer"}
 ALLOWED_VAT_RATES = {Decimal("0"), Decimal("5"), Decimal("8"), Decimal("23")}
 ALLOWED_VAT_DEDUCTIBLE_PCTS = {Decimal("0"), Decimal("50"), Decimal("100")}
-ALLOWED_INCOME_TYPES = {"internal", "external"}
+ALLOWED_CASH_IN_TYPES = {"internal", "external"}
 BLOCKED_CATEGORY_NAMES = {"internal_transfer"}
 
 
@@ -48,7 +48,7 @@ def validate_transaction(data: dict, db: sqlite3.Connection) -> list[str]:
     raw_company_id = data.get("company_id")
     raw_payment_method = data.get("payment_method")
     raw_vat_rate = data.get("vat_rate")
-    income_type = data.get("income_type")
+    cash_in_type = data.get("cash_in_type")
     raw_vat_deductible_pct = data.get("vat_deductible_pct")
     description = data.get("description")
     raw_logged_by = data.get("logged_by")
@@ -63,7 +63,7 @@ def validate_transaction(data: dict, db: sqlite3.Connection) -> list[str]:
 
     direction = str(raw_direction) if raw_direction is not None else None
     if direction not in ALLOWED_DIRECTIONS:
-        errors.append("Direction must be income or expense.")
+        errors.append("Direction must be cash_in or cash_out.")
 
     amount = _parse_decimal(raw_amount)
     if amount is None:
@@ -105,21 +105,21 @@ def validate_transaction(data: dict, db: sqlite3.Connection) -> list[str]:
         errors.append("VAT rate must be one of 0, 5, 8, or 23.")
 
     vat_deductible_pct = _parse_decimal(raw_vat_deductible_pct)
-    if direction == "income":
-        if income_type is None:
-            errors.append("Income type is required for income transactions.")
-        elif income_type not in ALLOWED_INCOME_TYPES:
-            errors.append("Income type must be internal or external.")
+    if direction == "cash_in":
+        if cash_in_type is None:
+            errors.append("Cash-in type is required for cash_in transactions.")
+        elif cash_in_type not in ALLOWED_CASH_IN_TYPES:
+            errors.append("Cash-in type must be internal or external.")
         if raw_vat_deductible_pct is not None:
             errors.append(
-                "VAT deductible percentage must be empty for income transactions."
+                "VAT deductible percentage must be empty for cash_in transactions."
             )
-    elif direction == "expense":
-        if income_type is not None:
-            errors.append("Income type must be empty for expense transactions.")
+    elif direction == "cash_out":
+        if cash_in_type is not None:
+            errors.append("Cash-in type must be empty for cash_out transactions.")
         if raw_vat_deductible_pct is None:
             errors.append(
-                "VAT deductible percentage is required for expense transactions."
+                "VAT deductible percentage is required for cash_out transactions."
             )
 
     if raw_vat_deductible_pct is not None:
@@ -132,11 +132,11 @@ def validate_transaction(data: dict, db: sqlite3.Connection) -> list[str]:
                 "VAT deductible percentage must be one of 0, 50, or 100."
             )
 
-    if income_type == "internal" and vat_rate is not None and vat_rate != Decimal("0"):
-        errors.append("Internal income must use a VAT rate of 0.")
+    if cash_in_type == "internal" and vat_rate is not None and vat_rate != Decimal("0"):
+        errors.append("Internal cash_in must use a VAT rate of 0.")
 
-    if income_type == "internal" and payment_method != "cash":
-        errors.append("Internal income must use cash as payment method.")
+    if cash_in_type == "internal" and payment_method != "cash":
+        errors.append("Internal cash_in must use cash as payment method.")
 
     if category_row is not None and direction in ALLOWED_DIRECTIONS:
         if category_row["direction"] != direction:

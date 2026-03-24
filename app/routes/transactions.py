@@ -25,7 +25,7 @@ def _get_db() -> Generator[sqlite3.Connection, None, None]:
 
 
 def _normalize_for_accountant_flag(data: dict) -> str:
-    if data["direction"] == "income" and data["income_type"] == "internal":
+    if data["direction"] == "cash_in" and data["cash_in_type"] == "internal":
         return ""
     return data["for_accountant"]
 
@@ -66,7 +66,7 @@ async def post_create_transaction(
     company_id: str = Form(default=""),
     payment_method: str = Form(default=""),
     vat_rate: str = Form(default=""),
-    income_type: str = Form(default=""),
+    cash_in_type: str = Form(default=""),
     vat_deductible_pct: str = Form(default=""),
     description: str = Form(default=""),
     for_accountant: str = Form(default=""),
@@ -90,7 +90,7 @@ async def post_create_transaction(
         "company_id": _s(company_id),
         "payment_method": _s(payment_method),
         "vat_rate": _s(vat_rate),
-        "income_type": _opt(income_type),
+        "cash_in_type": _opt(cash_in_type),
         "vat_deductible_pct": _opt(vat_deductible_pct),
         "description": _opt(description),
         "for_accountant": "1" if _s(for_accountant) else "",
@@ -138,7 +138,7 @@ async def post_create_transaction(
     db.execute(
         "INSERT INTO transactions "
         "(date, amount, direction, category_id, company_id, payment_method, "
-        "vat_rate, income_type, vat_deductible_pct, description, for_accountant, logged_by) "
+        "vat_rate, cash_in_type, vat_deductible_pct, description, for_accountant, logged_by) "
         "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (
             data["date"],
@@ -148,7 +148,7 @@ async def post_create_transaction(
             comp_id,
             data["payment_method"],
             vat_rate_val,
-            data["income_type"],
+            data["cash_in_type"],
             vat_deductible_val,
             data["description"],
             1 if data["for_accountant"] else 0,
@@ -205,7 +205,7 @@ async def get_transaction_list(
         va = vat_amount(gross, row["vat_rate"])
         ec = (
             effective_cost(gross, row["vat_rate"], row["vat_deductible_pct"])
-            if row["direction"] == "expense"
+            if row["direction"] == "cash_out"
             else None
         )
         t = dict(row)
@@ -318,7 +318,7 @@ async def get_correct_transaction(
         "company_id": str(txn["company_id"]),
         "payment_method": txn["payment_method"],
         "vat_rate": str(int(txn["vat_rate"])),
-        "income_type": txn["income_type"] or "",
+        "cash_in_type": txn["cash_in_type"] or "",
         "vat_deductible_pct": str(int(txn["vat_deductible_pct"])) if txn["vat_deductible_pct"] is not None else "",
         "description": txn["description"] or "",
         "for_accountant": "1" if txn["for_accountant"] else "",
@@ -350,7 +350,7 @@ async def post_correct_transaction(
     company_id: str = Form(default=""),
     payment_method: str = Form(default=""),
     vat_rate: str = Form(default=""),
-    income_type: str = Form(default=""),
+    cash_in_type: str = Form(default=""),
     vat_deductible_pct: str = Form(default=""),
     description: str = Form(default=""),
     for_accountant: str = Form(default=""),
@@ -377,7 +377,7 @@ async def post_correct_transaction(
         "company_id": _s(company_id),
         "payment_method": _s(payment_method),
         "vat_rate": _s(vat_rate),
-        "income_type": _opt(income_type),
+        "cash_in_type": _opt(cash_in_type),
         "vat_deductible_pct": _opt(vat_deductible_pct),
         "description": _opt(description),
         "for_accountant": "1" if _s(for_accountant) else "",
@@ -431,7 +431,7 @@ async def post_correct_transaction(
     db.execute(
         "INSERT INTO transactions "
         "(date, amount, direction, category_id, company_id, payment_method, "
-        "vat_rate, income_type, vat_deductible_pct, description, for_accountant, logged_by) "
+        "vat_rate, cash_in_type, vat_deductible_pct, description, for_accountant, logged_by) "
         "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
         (
             data["date"],
@@ -441,7 +441,7 @@ async def post_correct_transaction(
             comp_id,
             data["payment_method"],
             vat_rate_val,
-            data["income_type"],
+            data["cash_in_type"],
             vat_deductible_val,
             data["description"],
             1 if data["for_accountant"] else 0,

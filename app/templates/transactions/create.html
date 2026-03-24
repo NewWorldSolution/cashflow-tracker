@@ -28,15 +28,15 @@
     <div class="form-group">
       <label class="form-label">{{ t('form_direction') }}</label>
       <div class="toggle-group">
-        <label class="toggle-btn {{ 'active' if form_data.get('direction') == 'income' else '' }}">
-          <input type="radio" name="direction" value="income"
-            {% if form_data.get('direction') == 'income' %}checked{% endif %} style="display:none">
-          {{ t('form_income') }}
+        <label class="toggle-btn {{ 'active' if form_data.get('direction') == 'cash_in' else '' }}">
+          <input type="radio" name="direction" value="cash_in"
+            {% if form_data.get('direction') == 'cash_in' %}checked{% endif %} style="display:none">
+          {{ t('form_cash_in') }}
         </label>
-        <label class="toggle-btn {{ 'active' if form_data.get('direction', 'expense') == 'expense' else '' }}">
-          <input type="radio" name="direction" value="expense"
-            {% if form_data.get('direction', 'expense') == 'expense' %}checked{% endif %} style="display:none">
-          {{ t('form_expense') }}
+        <label class="toggle-btn {{ 'active' if form_data.get('direction', 'cash_out') == 'cash_out' else '' }}">
+          <input type="radio" name="direction" value="cash_out"
+            {% if form_data.get('direction', 'cash_out') == 'cash_out' %}checked{% endif %} style="display:none">
+          {{ t('form_cash_out') }}
         </label>
       </div>
     </div>
@@ -67,12 +67,12 @@
   <!-- Section 3 — Details -->
   <div class="form-section">
     <!-- Income type row — shown/hidden by JS (above category because it determines locks) -->
-    <div class="form-group" id="income-type-row" style="display:none">
-      <label class="form-label" for="income_type">{{ t('form_income_type') }}</label>
-      <select id="income_type" name="income_type">
+    <div class="form-group" id="cash-in-type-row" style="display:none">
+      <label class="form-label" for="cash_in_type">{{ t('form_cash_in_type') }}</label>
+      <select id="cash_in_type" name="cash_in_type">
         <option value="">{{ t('form_category_placeholder') }}</option>
-        <option value="internal" {% if form_data.get('income_type') == 'internal' %}selected{% endif %}>{{ t('form_income_type_internal') }}</option>
-        <option value="external" {% if form_data.get('income_type') == 'external' %}selected{% endif %}>{{ t('form_income_type_external') }}</option>
+        <option value="internal" {% if form_data.get('cash_in_type') == 'internal' %}selected{% endif %}>{{ t('form_cash_in_type_internal') }}</option>
+        <option value="external" {% if form_data.get('cash_in_type') == 'external' %}selected{% endif %}>{{ t('form_cash_in_type_external') }}</option>
       </select>
     </div>
     <div class="form-row">
