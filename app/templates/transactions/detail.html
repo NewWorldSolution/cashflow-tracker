@@ -19,18 +19,50 @@
     <dl class="detail-grid">
       <dt>{{ t('detail_date') }}</dt><dd>{{ format_date(txn.date) }}</dd>
       <dt>{{ t('detail_direction') }}</dt><dd>{{ t('direction_' ~ txn.direction) }}</dd>
-      <dt>{{ t('detail_category') }}</dt><dd>{{ t('category_' ~ txn.category_name) }}</dd>
-      <dt>{{ t('detail_company') }}</dt><dd>{{ t('company_' ~ txn.company_name ~ '_full') if txn.company_name else '—' }}</dd>
+      <dt>{{ t('detail_category_path') }}</dt>
+      <dd>
+        {% if txn.parent_category_name %}
+          {{ t('cat_' ~ txn.parent_category_name) }} &gt; {{ t('cat_' ~ txn.category_name) }}
+        {% else %}
+          {{ t('cat_' ~ txn.category_name) }}
+        {% endif %}
+      </dd>
+      <dt>{{ t('detail_company') }}</dt><dd>{{ t('company_' ~ txn.company_slug ~ '_full') if txn.company_slug else '—' }}</dd>
       <dt>{{ t('detail_amount_gross') }}</dt><dd>{{ format_amount(txn.amount) }}</dd>
+      <dt>{{ t('detail_vat_mode') }}</dt>
+      <dd>
+        {{ t('vat_mode_' ~ txn.vat_mode) }}
+        {% if txn.vat_mode == 'manual' %}
+        <span class="badge badge-corrected">{{ t('detail_manual_vat_indicator') }}</span>
+        {% endif %}
+      </dd>
+      {% if txn.vat_mode == 'manual' %}
+      <dt>{{ t('form_manual_vat_amount') }}</dt><dd>{{ format_amount(txn.manual_vat_amount) }}</dd>
+      {% else %}
       <dt>{{ t('detail_vat_rate') }}</dt><dd>{{ txn.vat_rate | int }}%</dd>
+      {% endif %}
       {% if txn.direction == 'cash_in' %}
       <dt>{{ t('detail_cash_in_type') }}</dt><dd>{{ t('cash_in_type_' ~ txn.cash_in_type) if txn.cash_in_type else '—' }}</dd>
       {% endif %}
       {% if txn.direction == 'cash_out' %}
+      {% if txn.vat_mode == 'manual' %}
+      <dt>{{ t('form_manual_vat_deductible_amount') }}</dt><dd>{{ format_amount(txn.manual_vat_deductible_amount) }}</dd>
+      {% else %}
       <dt>{{ t('detail_vat_deductible') }}</dt><dd>{{ txn.vat_deductible_pct | int if txn.vat_deductible_pct is not none else '—' }}%</dd>
       {% endif %}
+      {% endif %}
+      <dt>{{ t('detail_customer_type') }}</dt><dd>{{ t('customer_type_' ~ txn.customer_type) if txn.customer_type else '—' }}</dd>
+      {% if txn.document_flow %}
+      <dt>{{ t('detail_document_flow') }}</dt><dd>{{ t('document_flow_' ~ txn.document_flow) }}</dd>
+      {% endif %}
       <dt>{{ t('detail_payment') }}</dt><dd>{{ t('payment_' ~ txn.payment_method) }}</dd>
-      <dt>{{ t('for_accountant_label') }}</dt><dd>{{ t('for_accountant_yes') if txn.for_accountant else t('for_accountant_no') }}</dd>
+      <dt>{{ t('detail_for_accountant') }}</dt><dd>{{ t('value_yes') if txn.for_accountant else t('value_no') }}</dd>
+      <dt>{{ t('detail_vat_amount') }}</dt><dd>{{ format_amount(txn.vat_amount_value) }}</dd>
+      <dt>{{ t('detail_net_amount') }}</dt><dd>{{ format_amount(txn.net_amount_value) }}</dd>
+      {% if txn.direction == 'cash_out' %}
+      <dt>{{ t('detail_vat_reclaimable') }}</dt><dd>{{ format_amount(txn.vat_reclaimable_value) }}</dd>
+      <dt>{{ t('detail_effective_cost') }}</dt><dd>{{ format_amount(txn.effective_cost_value) }}</dd>
+      {% endif %}
       {% if txn.description %}
       <dt>{{ t('detail_description') }}</dt><dd>{{ txn.description }}</dd>
       {% endif %}
