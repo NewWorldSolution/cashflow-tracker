@@ -52,7 +52,7 @@ All tasks are sequential. Each depends on the previous.
 | I8-T5 | VAT mode UI                                    | —     | ✅ DONE    | I8-T4      | `feature/p1-i8/t5-vat-mode-ui` |
 | I8-T6 | Procedure metadata UI                          | —     | ✅ DONE    | I8-T5      | `feature/p1-i8/t6-procedure-metadata` |
 | I8-T7 | List/detail/dashboard display                  | —     | ✅ DONE    | I8-T6      | `feature/p1-i8/t7-display` |
-| I8-T8 | Tests                                          | —     | 🔄 IN PROGRESS | I8-T7      | `feature/p1-i8/t8-tests` |
+| I8-T8 | Tests                                          | —     | ✅ DONE    | I8-T7      | `feature/p1-i8/t8-tests` |
 
 ---
 
