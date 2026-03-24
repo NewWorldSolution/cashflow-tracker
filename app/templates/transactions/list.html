@@ -84,10 +84,10 @@
 var STRINGS = {
   splitView: '{{ t("list_split_view") }}',
   combinedView: '{{ t("list_combined_view") }}',
-  noIncome: '{{ t("list_no_income") }}',
-  noExpenses: '{{ t("list_no_expenses") }}',
-  income: '{{ t("list_income") }}',
-  expenses: '{{ t("list_expenses") }}'
+  noCashIn: '{{ t("list_no_cash_in") }}',
+  noCashOut: '{{ t("list_no_cash_out") }}',
+  cashIn: '{{ t("list_cash_in") }}',
+  cashOut: '{{ t("list_cash_out") }}'
 };
 document.addEventListener('DOMContentLoaded', function() {
   var toggle = document.getElementById('split-view-toggle');
@@ -121,34 +121,34 @@ document.addEventListener('DOMContentLoaded', function() {
     if (existing) existing.remove();
 
     var rows = document.querySelectorAll('.table-wrap tbody tr');
-    var incomeRows = [];
-    var expenseRows = [];
+    var cashInRows = [];
+    var cashOutRows = [];
 
     rows.forEach(function(row) {
       var dirCell = row.querySelector('[data-direction]');
       var direction = dirCell ? dirCell.dataset.direction : '';
-      if (direction === 'income') incomeRows.push(row.cloneNode(true));
-      else expenseRows.push(row.cloneNode(true));
+      if (direction === 'cash_in') cashInRows.push(row.cloneNode(true));
+      else cashOutRows.push(row.cloneNode(true));
     });
 
     var container = document.createElement('div');
     container.id = 'split-view-container';
     container.className = 'split-view';
 
-    container.innerHTML = '<div class="split-view-col"><h3>' + STRINGS.income + '</h3><div class="table-wrap">' +
+    container.innerHTML = '<div class="split-view-col"><h3>' + STRINGS.cashIn + '</h3><div class="table-wrap">' +
       '<table><thead>' + document.querySelector('.table-wrap thead').innerHTML + '</thead><tbody></tbody></table></div></div>' +
-      '<div class="split-view-col"><h3>' + STRINGS.expenses + '</h3><div class="table-wrap">' +
+      '<div class="split-view-col"><h3>' + STRINGS.cashOut + '</h3><div class="table-wrap">' +
       '<table><thead>' + document.querySelector('.table-wrap thead').innerHTML + '</thead><tbody></tbody></table></div></div>';
 
     var bodies = container.querySelectorAll('tbody');
-    incomeRows.forEach(function(r) { bodies[0].appendChild(r); });
-    expenseRows.forEach(function(r) { bodies[1].appendChild(r); });
+    cashInRows.forEach(function(r) { bodies[0].appendChild(r); });
+    cashOutRows.forEach(function(r) { bodies[1].appendChild(r); });
 
-    if (incomeRows.length === 0) {
-      bodies[0].innerHTML = '<tr><td colspan="99" class="text-center text-muted" style="padding:24px;">' + STRINGS.noIncome + '</td></tr>';
+    if (cashInRows.length === 0) {
+      bodies[0].innerHTML = '<tr><td colspan="99" class="text-center text-muted" style="padding:24px;">' + STRINGS.noCashIn + '</td></tr>';
     }
-    if (expenseRows.length === 0) {
-      bodies[1].innerHTML = '<tr><td colspan="99" class="text-center text-muted" style="padding:24px;">' + STRINGS.noExpenses + '</td></tr>';
+    if (cashOutRows.length === 0) {
+      bodies[1].innerHTML = '<tr><td colspan="99" class="text-center text-muted" style="padding:24px;">' + STRINGS.noCashOut + '</td></tr>';
     }
 
     document.querySelector('.table-wrap').insertAdjacentElement('afterend', container);

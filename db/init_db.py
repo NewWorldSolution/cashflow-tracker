@@ -25,39 +25,24 @@ def initialise_db(conn: sqlite3.Connection | None = None) -> None:
     if conn is None:
         conn = sqlite3.connect(DB_PATH)
 
+    conn.executescript(
+        """
+        DROP TABLE IF EXISTS settings_audit;
+        DROP TABLE IF EXISTS settings;
+        DROP TABLE IF EXISTS transactions;
+        DROP TABLE IF EXISTS companies;
+        DROP TABLE IF EXISTS categories;
+        DROP TABLE IF EXISTS users;
+        """
+    )
+
     # Apply schema
     schema = SCHEMA_PATH.read_text()
     conn.executescript(schema)
 
-    # Migration: add voided_at column for existing databases
-    try:
-        conn.execute("ALTER TABLE transactions ADD COLUMN voided_at TIMESTAMP")
-    except Exception:
-        pass  # Column already exists
-
-    # Migration: add company_id column for existing databases.
-    # Legacy SQLite schemas cannot add a new NOT NULL FK column safely, so migrate
-    # as nullable/defaulted and backfill existing rows to the default company.
-    try:
-        conn.execute(
-            "ALTER TABLE transactions ADD COLUMN company_id INTEGER REFERENCES companies(id) DEFAULT 1"
-        )
-    except Exception:
-        pass  # Column already exists
-
-    # Migration: add for_accountant column for existing databases.
-    try:
-        conn.execute(
-            "ALTER TABLE transactions ADD COLUMN for_accountant BOOLEAN NOT NULL DEFAULT FALSE"
-        )
-    except Exception:
-        pass  # Column already exists
-
     # Seed companies before backfilling company_id so the FK target exists.
     companies_sql = COMPANIES_SQL.read_text()
     conn.executescript(companies_sql)
-
-    conn.execute("UPDATE transactions SET company_id = 1 WHERE company_id IS NULL")
 
     # Seed categories
     categories_sql = CATEGORIES_SQL.read_text()

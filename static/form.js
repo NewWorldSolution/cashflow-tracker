@@ -35,11 +35,11 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // 3. Show/hide conditional rows based on direction
   function applyDirection(direction) {
-    const isIncome = direction === 'income';
-    const incomeRow = document.getElementById('income-type-row');
+    const isCashIn = direction === 'cash_in';
+    const cashInRow = document.getElementById('cash-in-type-row');
     const vatRow = document.getElementById('vat-deductible-row');
-    if (incomeRow) incomeRow.style.display = isIncome ? '' : 'none';
-    if (vatRow) vatRow.style.display = isIncome ? 'none' : '';
+    if (cashInRow) cashInRow.style.display = isCashIn ? '' : 'none';
+    if (vatRow) vatRow.style.display = isCashIn ? 'none' : '';
     filterCategories(direction);
   }
 
@@ -48,7 +48,7 @@ document.addEventListener('DOMContentLoaded', function () {
     radio.addEventListener('change', function () {
       applyDirection(this.value);
       // Clear both dependent fields on every switch
-      const it = document.querySelector('select[name="income_type"]');
+      const it = document.querySelector('select[name="cash_in_type"]');
       if (it) it.value = '';
       const vd = document.querySelector('select[name="vat_deductible_pct"]');
       if (vd) vd.value = '';
@@ -68,9 +68,9 @@ document.addEventListener('DOMContentLoaded', function () {
     applyDirection(checkedOnLoad.value);
   }
 
-  // 5b. Restore income_type=internal locks on load (VAT rate + payment method)
-  const incomeTypeOnLoad = document.querySelector('select[name="income_type"]');
-  if (incomeTypeOnLoad && incomeTypeOnLoad.value === 'internal') {
+  // 5b. Restore cash_in_type=internal locks on load (VAT rate + payment method)
+  const cashInTypeOnLoad = document.querySelector('select[name="cash_in_type"]');
+  if (cashInTypeOnLoad && cashInTypeOnLoad.value === 'internal') {
     applyInternalLock(true);
   }
 
@@ -111,9 +111,9 @@ document.addEventListener('DOMContentLoaded', function () {
       }
 
       const checkedDirection = document.querySelector('input[name="direction"]:checked');
-      const isExpense = checkedDirection && checkedDirection.value === 'expense';
+      const isCashOut = checkedDirection && checkedDirection.value === 'cash_out';
       const vdField = document.querySelector('select[name="vat_deductible_pct"]');
-      if (vdField && isExpense && cat.default_vat_deductible_pct != null) {
+      if (vdField && isCashOut && cat.default_vat_deductible_pct != null) {
         vdField.value = cat.default_vat_deductible_pct;
       }
 
@@ -124,7 +124,7 @@ document.addEventListener('DOMContentLoaded', function () {
     });
   }
 
-  // 7. income_type change: lock/unlock vat_rate and payment_method
+  // 7. cash_in_type change: lock/unlock vat_rate and payment_method
   function applyInternalLock(isInternal) {
     const vatRateField = document.querySelector('select[name="vat_rate"]');
     const paymentField = document.querySelector('select[name="payment_method"]');
@@ -152,9 +152,9 @@ document.addEventListener('DOMContentLoaded', function () {
     }
   }
 
-  const incomeTypeSelect = document.querySelector('select[name="income_type"]');
-  if (incomeTypeSelect) {
-    incomeTypeSelect.addEventListener('change', function () {
+  const cashInTypeSelect = document.querySelector('select[name="cash_in_type"]');
+  if (cashInTypeSelect) {
+    cashInTypeSelect.addEventListener('change', function () {
       applyInternalLock(this.value === 'internal');
     });
   }

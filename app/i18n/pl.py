@@ -11,8 +11,8 @@ MESSAGES = {
     "dashboard_opening_balance": "Saldo początkowe",
     "dashboard_as_of": "na dzień",
     "dashboard_not_set": "Nie ustawiono",
-    "dashboard_total_income": "Łączny przychód",
-    "dashboard_total_expenses": "Łączne wydatki",
+    "dashboard_total_cash_in": "Łączne wpływy",
+    "dashboard_total_cash_out": "Łączne wypływy",
     "dashboard_transactions": "Transakcje",
     "dashboard_active": "aktywne",
     "dashboard_voided": "anulowane",
@@ -27,16 +27,16 @@ MESSAGES = {
     "form_title": "Nowa transakcja",
     "form_date": "Data",
     "form_direction": "Typ transakcji",
-    "form_income": "Przychód",
-    "form_expense": "Wydatek",
+    "form_cash_in": "Wpływ",
+    "form_cash_out": "Wypływ",
     "form_amount": "Kwota",
     "form_amount_helper": "Podaj kwotę brutto (z VAT)",
     "form_category": "Kategoria",
     "form_category_placeholder": "— wybierz —",
     "form_payment_method": "Metoda płatności",
-    "form_income_type": "Typ przychodu",
-    "form_income_type_internal": "Wewnętrzny",
-    "form_income_type_external": "Zewnętrzny",
+    "form_cash_in_type": "Typ wpływu",
+    "form_cash_in_type_internal": "Wewnętrzny",
+    "form_cash_in_type_external": "Zewnętrzny",
     "form_vat_rate": "Stawka VAT (%)",
     "form_vat_deductible": "Odliczenie VAT (%)",
     "form_description": "Opis",
@@ -87,10 +87,10 @@ MESSAGES = {
     "list_col_status": "Status",
     "list_no_transactions": "Brak transakcji.",
     "list_create_first": "Utwórz pierwszą transakcję",
-    "list_income": "Przychody",
-    "list_expenses": "Wydatki",
-    "list_no_income": "Brak transakcji przychodowych",
-    "list_no_expenses": "Brak transakcji wydatkowych",
+    "list_cash_in": "Wpływy",
+    "list_cash_out": "Wypływy",
+    "list_no_cash_in": "Brak transakcji wpływowych",
+    "list_no_cash_out": "Brak transakcji wypływowych",
 
     # Badges
     "badge_active": "Aktywna",
@@ -106,7 +106,7 @@ MESSAGES = {
     "detail_company": "Firma",
     "detail_amount_gross": "Kwota (brutto)",
     "detail_vat_rate": "Stawka VAT",
-    "detail_income_type": "Typ przychodu",
+    "detail_cash_in_type": "Typ wpływu",
     "detail_vat_deductible": "Odliczenie VAT",
     "detail_payment": "Płatność",
     "detail_description": "Opis",
@@ -168,13 +168,13 @@ MESSAGES = {
     "lang_switch_en": "EN",
 
     # Enum display labels
-    "direction_income": "Przychód",
-    "direction_expense": "Wydatek",
+    "direction_cash_in": "Wpływ",
+    "direction_cash_out": "Wypływ",
     "payment_cash": "Gotówka",
     "payment_card": "Karta",
     "payment_transfer": "Przelew",
-    "income_type_external": "Zewnętrzny",
-    "income_type_internal": "Wewnętrzny",
+    "cash_in_type_external": "Zewnętrzny",
+    "cash_in_type_internal": "Wewnętrzny",
 
     # Category labels
     "category_services": "Usługi",
@@ -204,7 +204,7 @@ MESSAGES = {
 VALIDATION_ERRORS = {
     "Date is required.": "Data jest wymagana.",
     "Date must be a valid YYYY-MM-DD value.": "Data musi być w formacie RRRR-MM-DD.",
-    "Direction must be income or expense.": "Kierunek musi być przychód lub wydatek.",
+    "Direction must be cash_in or cash_out.": "Kierunek musi być cash_in lub cash_out.",
     "Amount must be a positive number.": "Kwota musi być liczbą dodatnią.",
     "Amount must be greater than 0.": "Kwota musi być większa od 0.",
     "Category must be a valid category id.": "Kategoria musi być prawidłowym identyfikatorem.",
@@ -214,29 +214,29 @@ VALIDATION_ERRORS = {
     "VAT rate must be one of 0, 5, 8, or 23.": (
         "Stawka VAT musi wynosić 0, 5, 8 lub 23."
     ),
-    "Income type is required for income transactions.": (
-        "Typ przychodu jest wymagany dla transakcji przychodowych."
+    "Cash-in type is required for cash_in transactions.": (
+        "Typ wpływu jest wymagany dla transakcji wpływowych."
     ),
-    "Income type must be internal or external.": (
-        "Typ przychodu musi być wewnętrzny lub zewnętrzny."
+    "Cash-in type must be internal or external.": (
+        "Typ wpływu musi być wewnętrzny lub zewnętrzny."
     ),
-    "VAT deductible percentage must be empty for income transactions.": (
-        "Procent odliczenia VAT musi być pusty dla transakcji przychodowych."
+    "VAT deductible percentage must be empty for cash_in transactions.": (
+        "Procent odliczenia VAT musi być pusty dla transakcji wpływowych."
     ),
-    "Income type must be empty for expense transactions.": (
-        "Typ przychodu musi być pusty dla transakcji wydatkowych."
+    "Cash-in type must be empty for cash_out transactions.": (
+        "Typ wpływu musi być pusty dla transakcji wypływowych."
     ),
-    "VAT deductible percentage is required for expense transactions.": (
-        "Procent odliczenia VAT jest wymagany dla transakcji wydatkowych."
+    "VAT deductible percentage is required for cash_out transactions.": (
+        "Procent odliczenia VAT jest wymagany dla transakcji wypływowych."
     ),
     "VAT deductible percentage must be one of 0, 50, or 100.": (
         "Procent odliczenia VAT musi wynosić 0, 50 lub 100."
     ),
-    "Internal income must use a VAT rate of 0.": (
-        "Przychód wewnętrzny musi mieć stawkę VAT 0."
+    "Internal cash_in must use a VAT rate of 0.": (
+        "Wpływ wewnętrzny musi mieć stawkę VAT 0."
     ),
-    "Internal income must use cash as payment method.": (
-        "Przychód wewnętrzny musi używać gotówki jako metody płatności."
+    "Internal cash_in must use cash as payment method.": (
+        "Wpływ wewnętrzny musi używać gotówki jako metody płatności."
     ),
     "Category direction must match transaction direction.": (
         "Kierunek kategorii musi odpowiadać kierunkowi transakcji."

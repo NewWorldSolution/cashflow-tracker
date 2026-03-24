@@ -47,14 +47,14 @@ async def get_dashboard(
     ).fetchone()[0]
 
     # Totals (active only)
-    total_income = db.execute(
+    total_cash_in = db.execute(
         "SELECT COALESCE(SUM(amount), 0) FROM transactions "
-        "WHERE is_active = 1 AND direction = 'income'" + company_filter,
+        "WHERE is_active = 1 AND direction = 'cash_in'" + company_filter,
         company_params,
     ).fetchone()[0]
-    total_expense = db.execute(
+    total_cash_out = db.execute(
         "SELECT COALESCE(SUM(amount), 0) FROM transactions "
-        "WHERE is_active = 1 AND direction = 'expense'" + company_filter,
+        "WHERE is_active = 1 AND direction = 'cash_out'" + company_filter,
         company_params,
     ).fetchone()[0]
 
@@ -77,8 +77,8 @@ async def get_dashboard(
             "as_of_date": as_of_date,
             "active_count": active_count,
             "voided_count": voided_count,
-            "total_income": total_income,
-            "total_expense": total_expense,
+            "total_cash_in": total_cash_in,
+            "total_cash_out": total_cash_out,
             "recent": recent,
             "companies": companies,
             "selected_company_id": selected_company_id,
