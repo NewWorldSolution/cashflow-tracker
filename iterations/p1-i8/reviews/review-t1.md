@@ -14,10 +14,12 @@ Review only the changes in this task branch. Report precise problems with file r
 
 ## What was supposed to be built
 
+> **Note for reviewer:** T1 is a broad app-wide rename, not a schema-only change. The task prompt's goal line originally said "no validation changes, no UI changes" — that wording was corrected after review, but any residual confusion should be resolved in favour of the deliverables list below. Edits to `validation.py`, routes, templates, JS, and i18n are all **in scope** for T1, provided they are renames of existing direction/field references and not new business logic.
+
 - `db/schema.sql` — direction CHECK constraints updated, `income_type` renamed to `cash_in_type`, `parent_id` added to categories, new transaction columns added (`vat_mode`, `manual_vat_deductible_amount`, `customer_type`, `document_flow`), `vat_rate` made nullable
 - `db/init_db.py` — runs updated schema cleanly
 - `seed/categories.sql` — old 22 test categories removed, file emptied or commented
-- `app/services/validation.py` — `ALLOWED_DIRECTIONS` updated, `income_type` → `cash_in_type` references updated
+- `app/services/validation.py` — `ALLOWED_DIRECTIONS` updated, `income_type` → `cash_in_type` references updated (rename only — no new validation rules)
 - `app/services/transaction_service.py` — all `income`/`expense` string literals → `cash_in`/`cash_out`, `income_type` → `cash_in_type`
 - `app/services/calculations.py` — direction references updated if any
 - `app/routes/transactions.py` — direction and column name references updated

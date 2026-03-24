@@ -45,7 +45,8 @@ Review only the changes in this task branch. Report precise problems with file r
 12. Verify `db/init_db.py` seeds parents before children (foreign key order).
 13. Verify EN labels exist for all parent and child categories in `app/i18n/en.py`.
 14. Verify PL labels exist for all parent and child categories in `app/i18n/pl.py`.
-15. Verify no application code, routes, templates, or tests were modified.
+15. **Translation key convention** — verify all 81 category keys use the single `cat_{slug}` scheme (e.g., `cat_ci_services`, `cat_co_marketing_paid_ads`). A `cat_group_` prefix or any other variant is a failure — one scheme only, so T4/T7 can look up both parent and child labels the same way.
+16. Verify no application code, routes, templates, or tests were modified.
 16. Run:
 
 ```bash
@@ -98,6 +99,7 @@ Files modified outside `seed/categories.sql`, `db/init_db.py`, `app/i18n/en.py`,
 - [PASS|FAIL] `init_db.py` seeds parents before children
 - [PASS|FAIL] EN translations present for all 81 labels
 - [PASS|FAIL] PL translations present for all 81 labels
+- [PASS|FAIL] all keys use `cat_{slug}` convention — no `cat_group_` prefix or other variant
 - [PASS|FAIL] no routes/services/templates/tests modified
 - [PASS|FAIL] ruff clean
 

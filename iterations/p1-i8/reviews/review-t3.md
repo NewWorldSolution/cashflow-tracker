@@ -61,7 +61,7 @@ Review only the changes in this task branch. Report precise problems with file r
 8. **transaction_service.py** — verify:
    - INSERT/UPDATE queries include all new columns: `vat_mode`, `manual_vat_deductible_amount`, `customer_type`, `document_flow`
    - SELECT queries return new columns
-   - `for_accountant` default changed to `true` for new transactions
+   - The service persists whatever `for_accountant` value it receives — it must NOT inject a default itself. The create-form default (`true`) is owned by the route (T6); the service is a pass-through.
    - Category path helper exists (returns "Parent > Child" format)
 
 9. **calculations.py** — verify:
@@ -123,7 +123,7 @@ Files modified outside `app/services/validation.py`, `app/services/transaction_s
 - [PASS|FAIL] parent group category_id rejected (leaf-only)
 - [PASS|FAIL] category direction mismatch rejected
 - [PASS|FAIL] transaction service persists all new columns
-- [PASS|FAIL] `for_accountant` defaults to `true` in transaction service
+- [PASS|FAIL] transaction service does NOT inject a `for_accountant` default (that is the route's job in T6)
 - [PASS|FAIL] category path helper returns "Parent > Child" format
 - [PASS|FAIL] calculations handle both automatic and manual VAT modes
 - [PASS|FAIL] no routes/templates/JS/i18n/tests modified

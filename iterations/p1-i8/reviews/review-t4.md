@@ -39,10 +39,11 @@ Review only the changes in this task branch. Report precise problems with file r
    - The parent group selector does NOT have a `name` attribute that gets submitted (it is cosmetic only).
    - Both dropdowns filter by direction (cash_in/cash_out).
 
-5. **Template — hierarchy JSON embed:**
-   - `window.CATEGORY_HIERARCHY` (or similar) is set via a `<script>` block on page load.
-   - Contains both cash_in and cash_out hierarchies.
+5. **Template — hierarchy data embed:**
+   - Category hierarchy is embedded in the page (via a `<script>` block, a data attribute, or inline JSON) — no form of API call or fetch is used to retrieve it.
+   - Embedded data covers both cash_in and cash_out hierarchies.
    - Each subcategory entry includes `vat_rate` and `vat_deductible_pct`.
+   - The exact variable name (e.g., `window.CATEGORY_HIERARCHY`) does not matter — what matters is that the data is present on page load and the JS cascade uses it exclusively.
 
 6. **JS — cascade logic:**
    - Parent group change populates subcategory dropdown with the parent's children only.
@@ -56,11 +57,12 @@ Review only the changes in this task branch. Report precise problems with file r
 
 8. **No API calls** — all cascade logic uses embedded data, no fetch/XHR.
 
-9. **i18n labels** — verify EN and PL translations exist for:
+9. **i18n labels** — verify EN and PL translations exist for picker UI elements:
    - `select_category_group`
    - `select_subcategory`
    - `form_category_group`
    - `form_subcategory`
+10. **Category label key convention** — verify that category names rendered in the dropdowns are looked up via `cat_{slug}` keys (e.g., `cat_ci_services`, `cat_co_marketing_paid_ads`), consistent with the T2 seeding convention. Hardcoded label strings or a `cat_group_` prefix are a failure.
 
 10. Verify VAT mode toggle (T5's work), customer_type, document_flow, and for_accountant (T6's work) were NOT added in this task.
 11. Run:
@@ -106,14 +108,15 @@ Files modified outside `app/routes/transactions.py`, `app/templates/transactions
 - [PASS|FAIL] correct GET passes parent_id and category_id for pre-selection
 - [PASS|FAIL] two separate dropdowns in template (parent group + subcategory)
 - [PASS|FAIL] only `category_id` is submitted (parent group is cosmetic)
-- [PASS|FAIL] `window.CATEGORY_HIERARCHY` (or equivalent) embedded as JSON on page load
-- [PASS|FAIL] JSON includes VAT defaults per subcategory
+- [PASS|FAIL] hierarchy data embedded on page load (no API calls, any variable name acceptable)
+- [PASS|FAIL] embedded data includes VAT defaults per subcategory
 - [PASS|FAIL] JS cascade: parent selection populates subcategory dropdown
 - [PASS|FAIL] JS cascade: subcategory selection auto-fills VAT defaults
 - [PASS|FAIL] JS: direction change resets and repopulates both dropdowns
 - [PASS|FAIL] JS: correction pre-selects parent and subcategory on page load
 - [PASS|FAIL] no API calls for cascade (all data embedded)
-- [PASS|FAIL] EN + PL i18n labels for picker elements
+- [PASS|FAIL] EN + PL i18n labels for picker UI elements
+- [PASS|FAIL] category labels use `cat_{slug}` key convention (no hardcoded strings or `cat_group_` prefix)
 - [PASS|FAIL] no VAT mode, customer_type, or document_flow added (T5/T6 scope)
 - [PASS|FAIL] pytest passes
 - [PASS|FAIL] ruff clean
