@@ -50,7 +50,7 @@ All tasks are sequential. Each depends on the previous.
 | I8-T3 | Validation + services                          | —     | ✅ DONE    | I8-T2      | `feature/p1-i8/t3-validation-services` |
 | I8-T4 | Category picker UI                             | —     | ✅ DONE    | I8-T3      | `feature/p1-i8/t4-category-picker` |
 | I8-T5 | VAT mode UI                                    | —     | ✅ DONE    | I8-T4      | `feature/p1-i8/t5-vat-mode-ui` |
-| I8-T6 | Procedure metadata UI                          | —     | ⏳ WAITING | I8-T5      | `feature/p1-i8/t6-procedure-metadata` |
+| I8-T6 | Procedure metadata UI                          | —     | 🔄 IN PROGRESS | I8-T5      | `feature/p1-i8/t6-procedure-metadata` |
 | I8-T7 | List/detail/dashboard display                  | —     | ⏳ WAITING | I8-T6      | `feature/p1-i8/t7-display` |
 | I8-T8 | Tests                                          | —     | ⏳ WAITING | I8-T7      | `feature/p1-i8/t8-tests` |
 
