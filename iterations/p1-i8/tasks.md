@@ -45,7 +45,7 @@ All tasks are sequential. Each depends on the previous.
 
 | ID    | Title                                          | Owner | Status     | Depends on | Branch |
 |-------|------------------------------------------------|-------|------------|------------|--------|
-| I8-T1 | Direction rename + schema foundations          | —     | ⏳ WAITING | —          | `feature/p1-i8/t1-direction-schema` |
+| I8-T1 | Direction rename + schema foundations          | —     | ✅ DONE    | —          | `feature/p1-i8/t1-direction-schema` |
 | I8-T2 | Category seed + hierarchy + i18n               | —     | ⏳ WAITING | I8-T1      | `feature/p1-i8/t2-category-seed` |
 | I8-T3 | Validation + services                          | —     | ⏳ WAITING | I8-T2      | `feature/p1-i8/t3-validation-services` |
 | I8-T4 | Category picker UI                             | —     | ⏳ WAITING | I8-T3      | `feature/p1-i8/t4-category-picker` |
