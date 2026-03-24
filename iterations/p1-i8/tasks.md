@@ -1,7 +1,7 @@
 # P1-I8 — Hierarchical Categories + Manual VAT + Procedure Metadata
 ## Task Board
 
-**Status:** NOT STARTED
+**Status:** IN PROGRESS
 **Last updated:** 2026-03-24
 **Iteration branch:** `feature/phase-1/iteration-8` ← all task PRs target this branch
 **Final PR:** `feature/phase-1/iteration-8` → `main` ← QA agent approves before merge

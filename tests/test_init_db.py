@@ -143,6 +143,82 @@ def test_direction_check_constraint_uses_cash_in_cash_out(db):
     assert f"'{legacy_cash_out}'" not in sql
 
 
+def test_legacy_i7_schema_is_rebuilt_to_i8():
+    conn = sqlite3.connect(":memory:")
+    conn.row_factory = sqlite3.Row
+    conn.executescript(
+        """
+        CREATE TABLE users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT NOT NULL UNIQUE,
+            password_hash TEXT NOT NULL,
+            telegram_user_id TEXT UNIQUE,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+
+        CREATE TABLE categories (
+            category_id INTEGER PRIMARY KEY,
+            name TEXT NOT NULL UNIQUE,
+            label TEXT NOT NULL,
+            direction TEXT NOT NULL CHECK(direction IN ('income','expense')),
+            default_vat_rate REAL NOT NULL,
+            default_vat_deductible_pct REAL
+        );
+
+        CREATE TABLE companies (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            name TEXT NOT NULL UNIQUE,
+            slug TEXT NOT NULL UNIQUE,
+            is_active BOOLEAN NOT NULL DEFAULT TRUE
+        );
+
+        CREATE TABLE transactions (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            date DATE NOT NULL,
+            amount DECIMAL(10,2) NOT NULL,
+            direction TEXT NOT NULL CHECK(direction IN ('income','expense')),
+            category_id INTEGER NOT NULL REFERENCES categories(category_id),
+            company_id INTEGER NOT NULL DEFAULT 1 REFERENCES companies(id),
+            payment_method TEXT NOT NULL CHECK(payment_method IN ('cash','card','transfer')),
+            vat_rate REAL NOT NULL,
+            income_type TEXT CHECK(income_type IN ('internal','external')),
+            vat_deductible_pct REAL,
+            manual_vat_amount DECIMAL(10,2),
+            description TEXT,
+            for_accountant BOOLEAN NOT NULL DEFAULT FALSE,
+            logged_by INTEGER NOT NULL REFERENCES users(id),
+            is_active BOOLEAN NOT NULL DEFAULT TRUE,
+            void_reason TEXT,
+            voided_by INTEGER REFERENCES users(id),
+            voided_at TIMESTAMP,
+            replacement_transaction_id INTEGER REFERENCES transactions(id),
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        );
+        """
+    )
+
+    initialise_db(conn)
+
+    category_columns = {row["name"] for row in conn.execute("PRAGMA table_info(categories)")}
+    transaction_columns = {
+        row["name"] for row in conn.execute("PRAGMA table_info(transactions)")
+    }
+    parent_count = conn.execute(
+        "SELECT COUNT(*) FROM categories WHERE parent_id IS NULL"
+    ).fetchone()[0]
+    child_count = conn.execute(
+        "SELECT COUNT(*) FROM categories WHERE parent_id IS NOT NULL"
+    ).fetchone()[0]
+
+    assert "parent_id" in category_columns
+    assert "cash_in_type" in transaction_columns
+    assert "customer_type" in transaction_columns
+    assert "vat_mode" in transaction_columns
+    assert parent_count == 19
+    assert child_count == 62
+    conn.close()
+
+
 def test_opening_balance_saves_to_settings(client):
     response = client.post(
         "/settings/opening-balance",
