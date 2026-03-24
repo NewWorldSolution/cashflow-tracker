@@ -77,18 +77,21 @@
     </div>
     <div class="form-row">
       <div class="form-group">
-        <label class="form-label" for="category_id">{{ t('form_category') }}</label>
-        <select id="category_id" name="category_id">
-          <option value="">{{ t('form_category_placeholder') }}</option>
-          {% for cat in categories %}
-            {% if cat.name != 'internal_transfer' %}
-            <option value="{{ cat.category_id }}"
-              data-direction="{{ cat.direction }}"
-              {% if form_data.get('category_id') | string == cat.category_id | string %}selected{% endif %}>
-              {{ t('category_' ~ cat.name) }}
-            </option>
-            {% endif %}
+        <label class="form-label" for="category_group">{{ t('form_category_group') }}</label>
+        <select id="category_group" data-selected-value="{{ selected_category_group_id }}">
+          <option value="">{{ t('select_category_group') }}</option>
+          {% for parent in category_groups %}
+          <option value="{{ parent.category_id }}"
+            {% if selected_category_group_id | string == parent.category_id | string %}selected{% endif %}>
+            {{ t('cat_' ~ parent.name) }}
+          </option>
           {% endfor %}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="category_id">{{ t('form_subcategory') }}</label>
+        <select id="category_id" name="category_id" data-selected-value="{{ form_data.get('category_id', '') }}">
+          <option value="">{{ t('select_subcategory') }}</option>
         </select>
       </div>
       <div class="form-group">
@@ -176,6 +179,9 @@
 
 </form>
 
+<script>
+  window.CATEGORY_HIERARCHY = {{ category_hierarchy_json | safe }};
+</script>
 <script src="/static/form.js"></script>
 
 {% endblock %}

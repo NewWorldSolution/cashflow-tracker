@@ -1,3 +1,4 @@
+import json
 import sqlite3
 from datetime import date
 from decimal import Decimal
@@ -7,10 +8,17 @@ from fastapi import APIRouter, Depends, Form, HTTPException, Request
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from fastapi.templating import Jinja2Templates
 
-from app.i18n import translate_error
+from app.i18n import translate, translate_error
 from app.services.auth_service import require_auth
 from app.services.calculations import effective_cost, vat_amount
-from app.services.transaction_service import get_transaction, void_transaction
+from app.services.transaction_service import (
+    correct_transaction,
+    create_transaction,
+    get_categories_by_direction,
+    get_category,
+    get_transaction,
+    void_transaction,
+)
 from app.services.validation import validate_transaction
 
 router = APIRouter()
@@ -30,29 +38,98 @@ def _normalize_for_accountant_flag(data: dict) -> str:
     return data["for_accountant"]
 
 
+def _get_companies(db: sqlite3.Connection):
+    return db.execute(
+        "SELECT id, name, slug FROM companies WHERE is_active = TRUE ORDER BY id"
+    ).fetchall()
+
+
+def _get_selected_parent_id(
+    category_id: str | int | None, db: sqlite3.Connection
+) -> str:
+    if not category_id:
+        return ""
+    try:
+        category = get_category(int(category_id), db)
+    except (TypeError, ValueError):
+        return ""
+    if category is None or category["parent_id"] is None:
+        return ""
+    return str(category["parent_id"])
+
+
+def _build_category_hierarchy_json(locale: str, db: sqlite3.Connection) -> str:
+    hierarchy: dict[str, list[dict]] = {}
+    for direction in ("cash_in", "cash_out"):
+        groups = []
+        for parent in get_categories_by_direction(direction, db):
+            groups.append(
+                {
+                    "id": parent["category_id"],
+                    "slug": parent["name"],
+                    "label": translate(f"cat_{parent['name']}", locale),
+                    "children": [
+                        {
+                            "id": child["category_id"],
+                            "slug": child["name"],
+                            "label": translate(f"cat_{child['name']}", locale),
+                            "vat_rate": child["default_vat_rate"],
+                            "vat_deductible_pct": child["default_vat_deductible_pct"],
+                            "parent_id": parent["category_id"],
+                        }
+                        for child in parent["children"]
+                    ],
+                }
+            )
+        hierarchy[direction] = groups
+    return json.dumps(hierarchy)
+
+
+def _build_form_template_payload(
+    request: Request,
+    db: sqlite3.Connection,
+    *,
+    form_data: dict,
+    errors: list[str],
+    today: str,
+    form_action: str = "/transactions/new",
+    is_correction: bool = False,
+):
+    locale = request.state.locale
+    direction = form_data.get("direction", "cash_out") or "cash_out"
+    category_groups = get_categories_by_direction(direction, db)
+    selected_parent_id = form_data.get("category_group") or _get_selected_parent_id(
+        form_data.get("category_id"), db
+    )
+    return {
+        "category_groups": category_groups,
+        "category_hierarchy_json": _build_category_hierarchy_json(locale, db),
+        "selected_category_group_id": selected_parent_id,
+        "companies": _get_companies(db),
+        "errors": errors,
+        "form_data": form_data,
+        "today": today,
+        "form_action": form_action,
+        "is_correction": is_correction,
+    }
+
+
 @router.get("/transactions/new", response_class=HTMLResponse)
 async def get_create_transaction(
     request: Request,
     db: sqlite3.Connection = Depends(_get_db),
 ) -> HTMLResponse:
     user = require_auth(request)  # noqa: F841
-    cats = db.execute(
-        "SELECT category_id, name, label, direction, default_vat_rate, default_vat_deductible_pct "
-        "FROM categories ORDER BY direction, label"
-    ).fetchall()
-    companies = db.execute(
-        "SELECT id, name, slug FROM companies WHERE is_active = TRUE ORDER BY id"
-    ).fetchall()
     return templates.TemplateResponse(
         request,
         "transactions/create.html",
-        {
-            "categories": cats,
-            "companies": companies,
-            "errors": [],
-            "form_data": {},
-            "today": str(date.today()),
-        },
+        _build_form_template_payload(
+            request,
+            db,
+            form_data={},
+            errors=[],
+            today=str(date.today()),
+        ),
     )
 
 
@@ -94,6 +171,13 @@ async def post_create_transaction(
         "vat_deductible_pct": _opt(vat_deductible_pct),
         "description": _opt(description),
         "for_accountant": "1" if _s(for_accountant) else "",
+        "vat_mode": "automatic",
+        "manual_vat_amount": None,
+        "manual_vat_deductible_amount": None,
+        "customer_type": "private" if _s(direction) == "cash_in" else "company",
+        "document_flow": "receipt"
+        if _s(direction) == "cash_in" and _opt(cash_in_type) == "external"
+        else None,
         "logged_by": user["id"],
         "is_active": True,
     }
@@ -104,57 +188,20 @@ async def post_create_transaction(
     if errors:
         locale = request.state.locale
         errors = [translate_error(e, locale) for e in errors]
-        cats = db.execute(
-            "SELECT category_id, name, label, direction, default_vat_rate, default_vat_deductible_pct "
-            "FROM categories ORDER BY direction, label"
-        ).fetchall()
-        companies = db.execute(
-            "SELECT id, name, slug FROM companies WHERE is_active = TRUE ORDER BY id"
-        ).fetchall()
         return templates.TemplateResponse(
             request,
             "transactions/create.html",
-            {
-                "categories": cats,
-                "companies": companies,
-                "errors": errors,
-                "form_data": data,
-                "today": str(date.today()),
-            },
+            _build_form_template_payload(
+                request,
+                db,
+                form_data=data,
+                errors=errors,
+                today=str(date.today()),
+            ),
             status_code=422,
         )
 
-    # Cast safely after validation passed
-    gross = Decimal(str(data["amount"]))
-    vat_rate_val = float(data["vat_rate"])
-    vat_deductible_val = (
-        float(data["vat_deductible_pct"])
-        if data["vat_deductible_pct"] is not None
-        else None
-    )
-    cat_id = int(data["category_id"])
-    comp_id = int(data["company_id"])
-
-    db.execute(
-        "INSERT INTO transactions "
-        "(date, amount, direction, category_id, company_id, payment_method, "
-        "vat_rate, cash_in_type, vat_deductible_pct, description, for_accountant, logged_by) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        (
-            data["date"],
-            str(gross),
-            data["direction"],
-            cat_id,
-            comp_id,
-            data["payment_method"],
-            vat_rate_val,
-            data["cash_in_type"],
-            vat_deductible_val,
-            data["description"],
-            1 if data["for_accountant"] else 0,
-            data["logged_by"],
-        ),
-    )
+    create_transaction(data, db)
     db.commit()
     request.session["flash"] = {
         "type": "success",
@@ -303,21 +350,15 @@ async def get_correct_transaction(
     txn = get_transaction(transaction_id, db)
     if txn is None or not txn["is_active"]:
         raise HTTPException(status_code=404)
-    cats = db.execute(
-        "SELECT category_id, name, label, direction, default_vat_rate, default_vat_deductible_pct "
-        "FROM categories ORDER BY direction, label"
-    ).fetchall()
-    companies = db.execute(
-        "SELECT id, name, slug FROM companies WHERE is_active = TRUE ORDER BY id"
-    ).fetchall()
     form_data = {
         "date": txn["date"],
         "direction": txn["direction"],
         "amount": txn["amount"],
         "category_id": str(txn["category_id"]),
+        "category_group": str(txn["parent_id"]) if txn["parent_id"] is not None else "",
         "company_id": str(txn["company_id"]),
         "payment_method": txn["payment_method"],
-        "vat_rate": str(int(txn["vat_rate"])),
+        "vat_rate": str(int(txn["vat_rate"])) if txn["vat_rate"] is not None else "",
         "cash_in_type": txn["cash_in_type"] or "",
         "vat_deductible_pct": str(int(txn["vat_deductible_pct"])) if txn["vat_deductible_pct"] is not None else "",
         "description": txn["description"] or "",
@@ -327,15 +368,15 @@ async def get_correct_transaction(
     return templates.TemplateResponse(
         request,
         "transactions/create.html",
-        {
-            "categories": cats,
-            "companies": companies,
-            "errors": [],
-            "form_data": form_data,
-            "today": str(date.today()),
-            "form_action": f"/transactions/{transaction_id}/correct",
-            "is_correction": True,
-        },
+        _build_form_template_payload(
+            request,
+            db,
+            form_data=form_data,
+            errors=[],
+            today=str(date.today()),
+            form_action=f"/transactions/{transaction_id}/correct",
+            is_correction=True,
+        ),
     )
 
 
@@ -381,6 +422,19 @@ async def post_correct_transaction(
         "vat_deductible_pct": _opt(vat_deductible_pct),
         "description": _opt(description),
         "for_accountant": "1" if _s(for_accountant) else "",
+        "vat_mode": "automatic",
+        "manual_vat_amount": None,
+        "manual_vat_deductible_amount": None,
+        "customer_type": txn["customer_type"] if txn["customer_type"] else (
+            "private" if _s(direction) == "cash_in" else "company"
+        ),
+        "document_flow": txn["document_flow"]
+        if txn["document_flow"] is not None
+        else (
+            "receipt"
+            if _s(direction) == "cash_in" and _opt(cash_in_type) == "external"
+            else None
+        ),
         "logged_by": user["id"],
         "is_active": True,
         "correction_reason": _s(correction_reason),
@@ -396,65 +450,27 @@ async def post_correct_transaction(
     if errors:
         locale = request.state.locale
         errors = [translate_error(e, locale) for e in errors]
-        cats = db.execute(
-            "SELECT category_id, name, label, direction, default_vat_rate, default_vat_deductible_pct "
-            "FROM categories ORDER BY direction, label"
-        ).fetchall()
-        companies = db.execute(
-            "SELECT id, name, slug FROM companies WHERE is_active = TRUE ORDER BY id"
-        ).fetchall()
         return templates.TemplateResponse(
             request,
             "transactions/create.html",
-            {
-                "categories": cats,
-                "companies": companies,
-                "errors": errors,
-                "form_data": data,
-                "today": str(date.today()),
-                "form_action": f"/transactions/{transaction_id}/correct",
-                "is_correction": True,
-            },
+            _build_form_template_payload(
+                request,
+                db,
+                form_data=data,
+                errors=errors,
+                today=str(date.today()),
+                form_action=f"/transactions/{transaction_id}/correct",
+                is_correction=True,
+            ),
             status_code=422,
         )
 
-    gross = Decimal(str(data["amount"]))
-    vat_rate_val = float(data["vat_rate"])
-    vat_deductible_val = (
-        float(data["vat_deductible_pct"])
-        if data["vat_deductible_pct"] is not None
-        else None
-    )
-    cat_id = int(data["category_id"])
-    comp_id = int(data["company_id"])
-
-    db.execute(
-        "INSERT INTO transactions "
-        "(date, amount, direction, category_id, company_id, payment_method, "
-        "vat_rate, cash_in_type, vat_deductible_pct, description, for_accountant, logged_by) "
-        "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
-        (
-            data["date"],
-            str(gross),
-            data["direction"],
-            cat_id,
-            comp_id,
-            data["payment_method"],
-            vat_rate_val,
-            data["cash_in_type"],
-            vat_deductible_val,
-            data["description"],
-            1 if data["for_accountant"] else 0,
-            data["logged_by"],
-        ),
-    )
-    new_id = db.execute("SELECT last_insert_rowid()").fetchone()[0]
-    db.execute(
-        "UPDATE transactions "
-        "SET is_active = 0, void_reason = ?, voided_by = ?, "
-        "voided_at = CURRENT_TIMESTAMP, replacement_transaction_id = ? "
-        "WHERE id = ?",
-        (data["correction_reason"], user["id"], new_id, transaction_id),
+    correct_transaction(
+        transaction_id,
+        data,
+        data["correction_reason"],
+        user["id"],
+        db,
     )
     db.commit()
     request.session["flash"] = {
