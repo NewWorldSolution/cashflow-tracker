@@ -217,5 +217,6 @@ New: 19 parent groups + 62 leaf subcategories.
 - **Access control** — role-based (receptionist: view/create/correct within 7 days; admin: full access)
 - **Category-level defaults** — customer_type and document_flow auto-fill from category to reduce form friction
 - **Cybersecurity** — access restrictions, audit logging
+- **Invoice receivables tracking** — record a sale on the invoice date as a pending receivable, then mark it paid when cash arrives in the bank. Design: separate `invoices` table (id, date_issued, amount, customer_type, category_id, company_id, description, logged_by, status: pending/paid/void, paid_transaction_id FK). Flow: create invoice → shows in pending receivables list (excluded from cashflow) → mark paid → system auto-creates the transaction and links back to the invoice. Both invoice date and payment date are recorded. VAT calculated on actual payment. This keeps cashflow totals correct (only real cash) while giving visibility into outstanding receivables. Requested by wife 2026-03-24.
 
 These are brainstorm items from 2026-03-24. Validate before planning Phase 2 iterations.
