@@ -115,10 +115,26 @@
 
   <!-- Section 4 — VAT -->
   <div class="form-section">
+    <div id="vat-mode-section" class="form-group">
+      <label class="form-label">{{ t('form_vat_mode') }}</label>
+      <div class="toggle-group">
+        <label class="toggle-btn {{ 'active' if form_data.get('vat_mode', 'automatic') == 'automatic' else '' }}">
+          <input type="radio" name="vat_mode" value="automatic"
+            {% if form_data.get('vat_mode', 'automatic') == 'automatic' %}checked{% endif %} style="display:none">
+          {{ t('vat_mode_automatic') }}
+        </label>
+        <label class="toggle-btn {{ 'active' if form_data.get('vat_mode') == 'manual' else '' }}">
+          <input type="radio" name="vat_mode" value="manual"
+            {% if form_data.get('vat_mode') == 'manual' %}checked{% endif %} style="display:none">
+          {{ t('vat_mode_manual') }}
+        </label>
+      </div>
+    </div>
     <div class="form-row">
-      <div class="form-group">
+      <div class="form-group" id="vat-rate-row">
         <label class="form-label" for="vat_rate">{{ t('form_vat_rate') }}</label>
         <select id="vat_rate" name="vat_rate">
+          <option value="">{{ t('form_category_placeholder') }}</option>
           {% for rate in [0, 5, 8, 23] %}
             <option value="{{ rate }}"
               {% if form_data.get('vat_rate') | string == rate | string %}selected{% endif %}>
@@ -138,6 +154,18 @@
             </option>
           {% endfor %}
         </select>
+      </div>
+    </div>
+    <div id="manual-vat-fields" class="form-row" style="display:none">
+      <div class="form-group">
+        <label class="form-label" for="manual_vat_amount">{{ t('form_manual_vat_amount') }}</label>
+        <input type="number" id="manual_vat_amount" name="manual_vat_amount" step="0.01" min="0"
+               value="{{ form_data.get('manual_vat_amount', '') }}" placeholder="0.00">
+      </div>
+      <div class="form-group" id="manual-vat-deductible-section" style="display:none">
+        <label class="form-label" for="manual_vat_deductible_amount">{{ t('form_manual_vat_deductible_amount') }}</label>
+        <input type="number" id="manual_vat_deductible_amount" name="manual_vat_deductible_amount" step="0.01" min="0"
+               value="{{ form_data.get('manual_vat_deductible_amount', '') }}" placeholder="0.00">
       </div>
     </div>
   </div>

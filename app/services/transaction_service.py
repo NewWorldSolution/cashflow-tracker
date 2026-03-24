@@ -154,7 +154,7 @@ def correct_transaction(
 
 def get_transaction(transaction_id: int, db: sqlite3.Connection) -> dict | None:
     row = db.execute(
-        "SELECT t.*, c.label AS category_label, c.name AS category_name, "
+        "SELECT t.*, c.label AS category_label, c.name AS category_name, c.parent_id AS parent_id, "
         "p.label AS parent_category_label, p.name AS parent_category_name, "
         "u.username AS logged_by_username, "
         "vb.username AS voided_by_username, "

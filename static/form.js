@@ -3,7 +3,13 @@ document.addEventListener('DOMContentLoaded', function () {
   const categoryGroupSelect = document.getElementById('category_group');
   const categorySelect = document.getElementById('category_id');
   const cashInTypeRow = document.getElementById('cash-in-type-row');
-  const vatRow = document.getElementById('vat-deductible-row');
+  const vatDeductibleRow = document.getElementById('vat-deductible-row');
+  const vatRateRow = document.getElementById('vat-rate-row');
+  const vatModeSection = document.getElementById('vat-mode-section');
+  const manualVatFields = document.getElementById('manual-vat-fields');
+  const manualVatAmountField = document.getElementById('manual_vat_amount');
+  const manualVatDeductibleSection = document.getElementById('manual-vat-deductible-section');
+  const manualVatDeductibleField = document.getElementById('manual_vat_deductible_amount');
   const cardReminder = document.getElementById('card-reminder');
   const descRequired = document.getElementById('desc-required');
   const cashInTypeSelect = document.querySelector('select[name="cash_in_type"]');
@@ -12,6 +18,11 @@ document.addEventListener('DOMContentLoaded', function () {
   const vatDeductibleField = document.querySelector('select[name="vat_deductible_pct"]');
   const accountantField = document.querySelector('input[name="for_accountant"]');
   const accountantGroup = accountantField ? accountantField.closest('.form-group') : null;
+  const vatModeRadios = Array.from(document.querySelectorAll('input[name="vat_mode"]'));
+
+  let manualDeductibleTouched = Boolean(
+    manualVatDeductibleField && manualVatDeductibleField.value
+  );
 
   function _lockField(field) {
     if (!field) return;
@@ -30,6 +41,21 @@ document.addEventListener('DOMContentLoaded', function () {
   function currentDirection() {
     const checked = document.querySelector('input[name="direction"]:checked');
     return checked ? checked.value : 'cash_out';
+  }
+
+  function currentVatMode() {
+    const checked = document.querySelector('input[name="vat_mode"]:checked');
+    return checked ? checked.value : 'automatic';
+  }
+
+  function setVatMode(mode) {
+    vatModeRadios.forEach(radio => {
+      radio.checked = radio.value === mode;
+      const label = radio.closest('.toggle-btn');
+      if (label) {
+        label.classList.toggle('active', radio.checked);
+      }
+    });
   }
 
   function getGroups(direction) {
@@ -68,7 +94,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function populateGroupOptions(direction, selectedGroupId) {
     if (!categoryGroupSelect) return;
-    setPlaceholderOption(categoryGroupSelect, categoryGroupSelect.dataset.placeholder || 'Select category group');
+    setPlaceholderOption(
+      categoryGroupSelect,
+      categoryGroupSelect.dataset.placeholder || 'Select category group'
+    );
     for (const group of getGroups(direction)) {
       const opt = document.createElement('option');
       opt.value = group.id;
@@ -82,7 +111,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function populateSubcategoryOptions(direction, parentId, selectedCategoryId) {
     if (!categorySelect) return;
-    setPlaceholderOption(categorySelect, categorySelect.dataset.placeholder || 'Select subcategory');
+    setPlaceholderOption(
+      categorySelect,
+      categorySelect.dataset.placeholder || 'Select subcategory'
+    );
     const parent = getGroups(direction).find(group => String(group.id) === String(parentId));
     if (!parent) {
       categorySelect.value = '';
@@ -101,7 +133,29 @@ document.addEventListener('DOMContentLoaded', function () {
 
   function updateDescriptionRequirement(category) {
     if (!descRequired) return;
-    descRequired.style.display = (category && (category.slug === 'ci_other_income' || category.slug === 'co_other_expense')) ? '' : 'none';
+    descRequired.style.display =
+      category && (category.slug === 'ci_other_income' || category.slug === 'co_other_expense')
+        ? ''
+        : 'none';
+  }
+
+  function clearAutomaticVatFields() {
+    if (vatRateField && !vatRateField.dataset.locked) {
+      vatRateField.value = '';
+    }
+    if (vatDeductibleField) {
+      vatDeductibleField.value = '';
+    }
+  }
+
+  function clearManualVatFields() {
+    if (manualVatAmountField) {
+      manualVatAmountField.value = '';
+    }
+    if (manualVatDeductibleField) {
+      manualVatDeductibleField.value = '';
+    }
+    manualDeductibleTouched = false;
   }
 
   function applyCategoryDefaults(category) {
@@ -109,12 +163,20 @@ document.addEventListener('DOMContentLoaded', function () {
       updateDescriptionRequirement(null);
       return;
     }
-    if (vatRateField && !vatRateField.dataset.locked && category.vat_rate != null) {
-      vatRateField.value = String(category.vat_rate).replace('.0', '');
+
+    if (currentVatMode() === 'automatic') {
+      if (vatRateField && !vatRateField.dataset.locked && category.vat_rate != null) {
+        vatRateField.value = String(category.vat_rate).replace('.0', '');
+      }
+      if (
+        vatDeductibleField &&
+        currentDirection() === 'cash_out' &&
+        category.vat_deductible_pct != null
+      ) {
+        vatDeductibleField.value = String(category.vat_deductible_pct).replace('.0', '');
+      }
     }
-    if (vatDeductibleField && currentDirection() === 'cash_out' && category.vat_deductible_pct != null) {
-      vatDeductibleField.value = String(category.vat_deductible_pct).replace('.0', '');
-    }
+
     updateDescriptionRequirement(category);
   }
 
@@ -130,11 +192,57 @@ document.addEventListener('DOMContentLoaded', function () {
     updateDescriptionRequirement(null);
   }
 
+  function updateCardReminder() {
+    if (!cardReminder || !paymentSelect) return;
+    cardReminder.style.display = paymentSelect.value === 'card' ? '' : 'none';
+  }
+
+  function updateVatModeVisibility() {
+    const direction = currentDirection();
+    const isCashIn = direction === 'cash_in';
+    const isInternal = isCashIn && cashInTypeSelect && cashInTypeSelect.value === 'internal';
+    const mode = currentVatMode();
+
+    if (vatModeSection) {
+      vatModeSection.style.display = isInternal ? 'none' : '';
+    }
+
+    if (isInternal) {
+      setVatMode('automatic');
+    }
+
+    const activeMode = isInternal ? 'automatic' : mode;
+    const showManual = activeMode === 'manual';
+
+    if (manualVatFields) {
+      manualVatFields.style.display = showManual ? '' : 'none';
+    }
+    if (vatRateRow) {
+      vatRateRow.style.display = showManual ? 'none' : '';
+    }
+    if (vatDeductibleRow) {
+      vatDeductibleRow.style.display =
+        !showManual && !isCashIn ? '' : 'none';
+    }
+    if (manualVatDeductibleSection) {
+      manualVatDeductibleSection.style.display =
+        showManual && !isCashIn ? '' : 'none';
+    }
+
+    if (showManual) {
+      clearAutomaticVatFields();
+    } else {
+      clearManualVatFields();
+      const category = findCategory(direction, categorySelect ? categorySelect.value : '');
+      applyCategoryDefaults(category);
+    }
+  }
+
   function applyDirection(direction) {
     const isCashIn = direction === 'cash_in';
     if (cashInTypeRow) cashInTypeRow.style.display = isCashIn ? '' : 'none';
-    if (vatRow) vatRow.style.display = isCashIn ? 'none' : '';
     resetCategoryPicker(direction);
+    updateVatModeVisibility();
   }
 
   function applyInternalLock(isInternal) {
@@ -154,6 +262,7 @@ document.addEventListener('DOMContentLoaded', function () {
       if (accountantGroup) {
         accountantGroup.style.display = 'none';
       }
+      setVatMode('automatic');
     } else {
       _unlockField(vatRateField);
       _unlockField(paymentSelect);
@@ -164,11 +273,7 @@ document.addEventListener('DOMContentLoaded', function () {
         accountantGroup.style.display = '';
       }
     }
-  }
-
-  function updateCardReminder() {
-    if (!cardReminder || !paymentSelect) return;
-    cardReminder.style.display = paymentSelect.value === 'card' ? '' : 'none';
+    updateVatModeVisibility();
   }
 
   document.querySelectorAll('input[name="direction"]').forEach(radio => {
@@ -181,8 +286,17 @@ document.addEventListener('DOMContentLoaded', function () {
         vatDeductibleField.value = '';
       }
       applyInternalLock(false);
-      document.querySelectorAll('.toggle-btn').forEach(btn => btn.classList.remove('active'));
-      this.closest('.toggle-btn').classList.add('active');
+      document.querySelectorAll('input[name="direction"]').forEach(r => {
+        r.closest('.toggle-btn').classList.toggle('active', r.checked);
+      });
+      updateVatModeVisibility();
+    });
+  });
+
+  vatModeRadios.forEach(radio => {
+    radio.addEventListener('change', function () {
+      setVatMode(this.value);
+      updateVatModeVisibility();
     });
   });
 
@@ -209,15 +323,39 @@ document.addEventListener('DOMContentLoaded', function () {
     paymentSelect.addEventListener('change', updateCardReminder);
   }
 
+  if (manualVatAmountField) {
+    manualVatAmountField.addEventListener('input', function () {
+      if (
+        currentDirection() === 'cash_out' &&
+        manualVatDeductibleField &&
+        !manualDeductibleTouched
+      ) {
+        manualVatDeductibleField.value = this.value;
+      }
+    });
+  }
+
+  if (manualVatDeductibleField) {
+    manualVatDeductibleField.addEventListener('input', function () {
+      manualDeductibleTouched = this.value !== '';
+    });
+  }
+
   if (categoryGroupSelect) {
-    categoryGroupSelect.dataset.placeholder = categoryGroupSelect.options[0] ? categoryGroupSelect.options[0].textContent : 'Select category group';
+    categoryGroupSelect.dataset.placeholder = categoryGroupSelect.options[0]
+      ? categoryGroupSelect.options[0].textContent
+      : 'Select category group';
   }
   if (categorySelect) {
-    categorySelect.dataset.placeholder = categorySelect.options[0] ? categorySelect.options[0].textContent : 'Select subcategory';
+    categorySelect.dataset.placeholder = categorySelect.options[0]
+      ? categorySelect.options[0].textContent
+      : 'Select subcategory';
   }
 
   const direction = currentDirection();
-  const selectedCategoryId = categorySelect ? (categorySelect.dataset.selectedValue || categorySelect.value) : '';
+  const selectedCategoryId = categorySelect
+    ? (categorySelect.dataset.selectedValue || categorySelect.value)
+    : '';
   const selectedGroupId = categoryGroupSelect
     ? (categoryGroupSelect.dataset.selectedValue || findParentIdForCategory(direction, selectedCategoryId))
     : '';
@@ -227,6 +365,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
   if (cashInTypeSelect && cashInTypeSelect.value === 'internal') {
     applyInternalLock(true);
+  } else {
+    updateVatModeVisibility();
   }
+
   updateCardReminder();
 });
