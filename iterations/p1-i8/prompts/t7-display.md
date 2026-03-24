@@ -8,7 +8,11 @@
 
 ## Goal
 
-Update the list view, detail view, and dashboard to display category paths (Parent > Subcategory), manual VAT indicator, customer_type, document_flow, and for_accountant status. After this task, all I8 data is visible to users across all views.
+Update the list view, detail view, and dashboard to surface I8 data correctly.
+
+- **List view**: category path (Parent > Subcategory) and translated direction labels. No metadata columns.
+- **Detail view**: full category path, manual VAT indicator, customer_type, document_flow (when present), and for_accountant.
+- **Dashboard**: translated `cash_in`/`cash_out` direction labels and VAT-mode-aware aggregations. Category breakdown by parent group only if the dashboard already has a category breakdown — do not add one if it does not exist.
 
 ---
 

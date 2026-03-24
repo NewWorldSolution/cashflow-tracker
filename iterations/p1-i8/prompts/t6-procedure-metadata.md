@@ -20,7 +20,7 @@ iterations/p1-i8/prompt.md
 iterations/p1-i8/scope-decisions.md     ← internal cash_in consolidated rules table
 app/routes/transactions.py
 app/templates/transactions/create.html
-app/templates/transactions/detail.html
+app/templates/transactions/detail.html  ← read only, do NOT modify (T7 scope)
 static/form.js
 app/i18n/en.py
 app/i18n/pl.py
@@ -146,7 +146,7 @@ Add to both `app/i18n/en.py` and `app/i18n/pl.py`:
 - **Internal cash_in consolidated rules** — customer_type forced to `private` (hidden), document_flow hidden (NULL), for_accountant forced to `false`. These must work together with the existing internal cash_in JS logic from earlier tasks.
 - **invoice_and_receipt only for private** — this is both a JS UX rule and a backend validation rule.
 - **Correction does NOT re-apply defaults** — it shows stored values. This applies to for_accountant, customer_type, and document_flow.
-- **Do NOT modify list/detail/dashboard** — that is T7's job.
+- **Do NOT modify `detail.html`, `list.html`, or `dashboard.html`** — display of these fields belongs to T7. `detail.html` may be read for context but must not be changed in this task.
 
 ---
 
@@ -155,12 +155,13 @@ Add to both `app/i18n/en.py` and `app/i18n/pl.py`:
 ```text
 app/routes/transactions.py
 app/templates/transactions/create.html
-app/templates/transactions/detail.html
 static/form.js
 app/i18n/en.py
 app/i18n/pl.py
 iterations/p1-i8/tasks.md
 ```
+
+`app/templates/transactions/detail.html` is **read-only** in this task — display of metadata belongs to T7.
 
 ---
 

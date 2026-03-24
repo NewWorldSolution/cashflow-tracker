@@ -65,7 +65,7 @@ Insert 62 subcategory rows with:
 
 Add translations for all category labels to both `app/i18n/en.py` and `app/i18n/pl.py`.
 
-Use a consistent key convention: `cat_{slug}` (e.g., `cat_ci_services`, `cat_co_marketing_paid_ads`).
+Use a single consistent key convention for all categories: `cat_{slug}` (e.g., `cat_ci_services`, `cat_co_marketing_paid_ads`). Parent groups use the same pattern as children — `cat_ci_services`, `cat_co_marketing`, etc. Do not introduce a separate `cat_group_` prefix; that creates two lookup schemes where one is sufficient.
 
 **English labels** — use the display names from `category-taxonomy.md` directly.
 
@@ -78,9 +78,6 @@ Use a consistent key convention: `cat_{slug}` (e.g., `cat_ci_services`, `cat_co_
 - People Costs → Koszty osobowe
 - Financial → Finansowe
 - etc.
-
-Also add parent group labels (for the picker UI):
-- `cat_group_ci_services` / `cat_group_co_marketing` etc.
 
 ---
 

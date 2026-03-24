@@ -8,7 +8,9 @@
 
 ## Goal
 
-Rename direction values from `income`/`expense` to `cash_in`/`cash_out`, rename the `income_type` column to `cash_in_type`, add all new schema columns, make `vat_rate` nullable, and drop the old 22 test categories. This task lays the schema foundation for the entire iteration — no seed data, no validation changes, no UI changes.
+Rename direction values from `income`/`expense` to `cash_in`/`cash_out` and `income_type` to `cash_in_type` everywhere in the codebase — schema, validation constants, service layer, routes, templates, JS, and i18n. Also add all new schema columns, make `vat_rate` nullable, and clear the old 22 test categories.
+
+This task is a **broad app-wide rename**, not a schema-only change. Every file that contains the old direction strings or `income_type` must be updated. What is explicitly out of scope: new validation rules for the new columns (T3), new category seed data (T2), new UI elements for new fields (T4–T6).
 
 ---
 
@@ -96,8 +98,9 @@ document_flow TEXT                          -- CHECK(document_flow IN ('invoice'
 
 - **Fresh start** — all old data is testing-only. No production migration needed. Drop and recreate is acceptable.
 - **Do NOT seed new categories** — that is T2's job. Just clear the old ones.
-- **Do NOT update validation rules** for new fields yet — that is T3's job. Only update direction/cash_in_type references.
-- **Do NOT add UI elements** for new fields — that is T4-T6's job.
+- **Rename, do not add** — every edit in validation.py, routes, templates, JS, and i18n must be a rename of existing direction/field references, not new business logic.
+- **Do NOT add validation rules** for the new columns (vat_mode, customer_type, etc.) — that is T3's job.
+- **Do NOT add UI elements** for new fields — that is T4–T6's job.
 - All CHECK constraints for new columns should be in schema.sql.
 - `manual_vat_amount` column already exists in schema — do not add it again.
 

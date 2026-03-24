@@ -70,16 +70,17 @@ When `cash_in_type = internal`, force/validate:
 - Category direction must match transaction direction
 
 #### for_accountant default
-- Default to `true` for new transactions
-- Internal cash_in forces `false`
-- Correction preserves stored value — do NOT re-apply default
+- The service layer accepts whatever value the route passes — it does not inject a default.
+- The route is responsible for applying the default (`true`) on create and preserving the stored value on correction.
+- Internal cash_in forces `false` — the validation service must reject `for_accountant = true` when `cash_in_type = internal`.
+- Document this boundary clearly so T6 (which owns the route/form logic) knows where ownership lies.
 
 ### 2. Transaction service updates in `app/services/transaction_service.py`
 
 - Accept and persist all new fields: `vat_mode`, `manual_vat_deductible_amount`, `customer_type`, `document_flow`
 - Update INSERT and UPDATE queries to include new columns
 - Update SELECT queries to return new columns
-- Ensure `for_accountant` default is `true` (was likely `false` before)
+- Do NOT inject a `for_accountant` default in the service — the route owns that (T6). The service persists whatever it receives.
 - Category queries should join to get parent info for path display (or provide a helper)
 
 ### 3. Calculations updates in `app/services/calculations.py`
