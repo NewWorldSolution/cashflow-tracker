@@ -12,14 +12,17 @@
 
 ### Amounts and VAT
 - Always store gross amounts — never net. VAT is extracted from gross, never added on top.
-- `income_type = internal` forces `vat_rate = 0`. Enforced in UI and backend. Not a default — a hard rule.
-- `vat_deductible_pct` is mandatory on every expense row. Default 100. Never NULL.
+- `cash_in_type = internal` forces `vat_rate = 0`, `payment_method = cash`, `for_accountant = false`, `customer_type = private`, `document_flow = NULL`, `vat_mode = automatic`. Enforced in UI and backend. Not defaults — hard rules.
+- `vat_deductible_pct` is mandatory on every cash_out row (automatic mode). Default 100. Never NULL.
+- `vat_rate` is nullable — NULL when `vat_mode = manual`. No sentinel values.
 - VAT amount, net amount, vat_reclaimable, and effective_cost are always derived at query time — never stored in the database.
 
 ### Categories
-- `category_id` is always an integer FK — never store or accept free-text category names.
-- The category list is fixed (4 income, 18 expense). Do not add categories without a migration plan.
+- `category_id` is always an integer FK to a leaf subcategory — never store or accept free-text category names.
+- Categories use a two-level hierarchy: 19 parent groups + 62 leaf subcategories. Only leaf nodes are selectable.
+- Direction values are `cash_in` / `cash_out` (not income/expense).
 - `other_expense` and `other_income` require a non-empty `description`. Enforce in UI and backend.
+- Do not add categories without a migration plan.
 
 ### Audit trail
 - Transactions are never hard-deleted. Soft-delete only: set `is_active = FALSE`, provide `void_reason` and `voided_by` (FK to users.id).
@@ -32,7 +35,8 @@
 
 ### Schema constraints
 - VAT rate validation lives in the application layer only — no CHECK constraint in the database.
-- The PostgreSQL conditional CHECK for `vat_deductible_pct NOT NULL on expenses` is added at go-live only, not in the SQLite sandbox.
+- The PostgreSQL conditional CHECK for `vat_deductible_pct NOT NULL on cash_out` is added at go-live only, not in the SQLite sandbox.
+- Every transaction requires `company_id` (FK to companies), `customer_type`, and `for_accountant`.
 
 ### No LLM in logic layers
 - No LLM calls in validation, calculation, or reporting. All financial logic is deterministic Python.

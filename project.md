@@ -28,9 +28,9 @@ Internal use only. No public access. All 3 users interact via web form (Phases 1
 - Validation service: `app/services/validation.py` — 15 rules, single enforcement point
 - Calculations service: `app/services/calculations.py` — vat_amount, net_amount, vat_reclaimable, effective_cost (Decimal, never stored)
 - Transaction routes: `GET/POST /transactions/new`, `GET /transactions/`, `GET /categories`
-- Create template: all fields, inline errors, preserved input, card reminder, income/expense field toggling
-- List template: last 20 active transactions with derived va/ec columns
-- `static/form.js`: category auto-defaults, income_type VAT lock, card reminder, direction row toggling
+- Create template: all fields, inline errors, preserved input, card reminder, cash_in/cash_out field toggling
+- List template: last 20 active transactions with derived columns
+- `static/form.js`: category auto-defaults, cash_in_type VAT lock, card reminder, direction row toggling
 - 61 passing tests (25 P1-I1/I2 + 36 new), ruff clean
 
 ### P1-I4 — Corrections, Hardening & Acceptance (merged to main 2026-03-22)
@@ -48,22 +48,52 @@ Internal use only. No public access. All 3 users interact via web form (Phases 1
 
 ### P1-I6 — Multi-Language Foundation + Polish UI (merged to main 2026-03-23)
 - i18n system: `app/i18n/` with `translate()`, `translate_error()`, `format_date()`, `format_amount()`, `format_datetime()`
-- English + Polish dictionaries: all UI labels, validation errors, category labels (22 keys)
+- English + Polish dictionaries: all UI labels, validation errors, category labels
 - Template extraction: all hardcoded strings → `{{ t('key') }}`; locale-aware formatting throughout
 - Language switcher (PL | EN) in nav, session-persistent, default locale `pl`
 - `voided_at TIMESTAMP` column with idempotent migration
-- UX polish: "Direction" → "Transaction Type", "Void" → "Cancel" in UI, distinct correction vs cancellation details, correction reason required, `format_datetime()` for audit timestamps, "Logged by" removed from detail
+- UX polish: "Direction" → "Transaction Type", "Void" → "Cancel" in UI, distinct correction vs cancellation details, correction reason required
 - 102 passing tests, ruff clean
 
-## What comes next
-**Phase 1 — Web form (in progress)**
-- P1-I6: Multi-language foundation + Polish UI (merged to main)
-- P1-I7: Multi-company support (JDG, LTD, Foundation, Private) + `for_accountant` flag
-- P1-I8: Sub-categories (hierarchical category system — structure first, real taxonomy from user testing)
-- P1-I9: Azure / server / deployment (SQLite → PostgreSQL, go-live)
+### P1-I7 — Multi-Company Support (merged to main 2026-03-23)
+- `companies` table: 4 entities — Sole Proprietorship (JDG), Limited Company (Sp. z o.o.), Family Foundation, Private
+- `company_id` FK added to transactions (NOT NULL, DEFAULT 1)
+- `for_accountant` boolean flag on transactions — available in create/correct flows
+- Company selector dropdown in create/correct forms, company filter in list/dashboard
+- Company displayed in list (short label) and detail (full label)
+- i18n: company labels (short + full) in EN and PL
+- Validation updated to require company_id as FK
+- ~120 passing tests, ruff clean
 
-**Intentionally deferred beyond Phase 1:**
+### P1-I8 — Hierarchical Categories + Manual VAT + Procedure Metadata (merged to main 2026-03-24)
+- **Direction rename:** `income`/`expense` → `cash_in`/`cash_out` throughout DB, validation, routes, templates, i18n
+- **Field rename:** `income_type` → `cash_in_type`
+- **Hierarchical categories:** dropped 22 test categories, seeded 19 parent groups + 62 leaf subcategories from real business taxonomy. Two-level max, only leaves selectable
+- **Two-level category picker:** parent group → subcategory cascade in create/correct forms (vanilla JS, no API calls)
+- **Manual VAT mode:** `vat_mode` column (automatic/manual), `vat_rate` now nullable (NULL in manual mode), `manual_vat_deductible_amount` for cash_out manual mode
+- **customer_type:** required on all transactions — `private` / `company` / `other`
+- **document_flow:** `invoice` / `receipt` / `invoice_and_receipt` / `other_document` — required for external cash_in, optional for cash_out, hidden for internal cash_in
+- **Cross-field validation:** `invoice_and_receipt` only when customer_type=private, manual_vat_deductible_amount ≤ manual_vat_amount, and more
+- **Internal cash_in consolidated rules:** forces vat_mode=automatic, vat_rate=0, payment=cash, for_accountant=false, customer_type=private, document_flow=NULL
+- **for_accountant default changed to TRUE** (except internal cash_in)
+- 84 passing tests, ruff clean
+
+## What comes next
+
+**Phase 1 — Web form (one iteration remaining)**
+- P1-I9: Azure deployment (SQLite → PostgreSQL, go-live)
+
+**Phase 2 — Reporting & Business Logic**
+- Per-company balances (each entity has own cash position)
+- Internal transfers between companies
+- Reporting leveraging parent-group / subcategory hierarchy
+- Per-category defaults for customer_type and document_flow
+- Role-based access control (receptionist vs admin)
+- Time-based correction limits
+- Invoice receivables tracking (pending → paid flow)
+
+**Intentionally deferred beyond Phase 2:**
 - Multi-currency / exchange rates — too large, deeply affects calculations, validation, reporting, and transaction semantics. Will be its own future major iteration.
 
 ## Stack (locked)
-Python · FastAPI · SQLite sandbox → Azure PostgreSQL production · Jinja2 templates · python-telegram-bot (Phase 5) · Claude Haiku/Sonnet (Phase 6 only)
+Python · FastAPI · SQLite sandbox → Azure PostgreSQL production · Jinja2 templates · Vanilla JS · python-telegram-bot (Phase 5) · Claude Haiku/Sonnet (Phase 6 only)
