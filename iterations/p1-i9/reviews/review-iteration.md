@@ -3,34 +3,25 @@
 **Branch:** `feature/phase-1/iteration-9`
 **PR target:** `main`
 **Trigger:** Run only after ALL tasks (T1–T5) show ✅ DONE in `iterations/p1-i9/tasks.md`
-**Reference docs:** `iterations/p1-i9/prompt.md`, `iterations/p1-i9/tasks.md`, `iterations/phase-1-plan.md`, `CLAUDE.md`
+**Reference docs:** `iterations/p1-i9/prompt.md`, `iterations/p1-i9/tasks.md`, `iterations/p1-i9/prompts/t1-azure-setup.md`, `iterations/p1-i9/prompts/t2-prod-config.md`, `iterations/p1-i9/prompts/t3-pg-migration.md`, `iterations/p1-i9/prompts/t4-ops.md`, `iterations/p1-i9/prompts/t5-deploy-pipeline.md`, `CLAUDE.md`
 
 ---
 
 ## QA Agent Role
 
-You are the QA agent for Phase 1 Iteration 9. Individual task reviews verify each task in isolation; this review verifies the whole iteration before merge to `main`.
+You are the QA agent for Phase 1 Iteration 9. Individual task reviews verified each task in isolation — this review verifies the whole iteration integrates correctly before merge to `main`. Focus on cross-task integration: do the pieces fit together, are there contradictions between tasks, and does the final result match the go-live requirements?
 
 **Verdict options:** `PASS` | `CHANGES REQUIRED` | `BLOCKED`
-
-Use the reference docs above as the detailed source of truth. The task prompt files for I9 are still placeholders, so this QA review must anchor itself to the iteration brief and task board.
 
 ---
 
 ## What this iteration was supposed to deliver
 
-1. Azure hosting model selected and implemented
-2. Production configuration and secrets strategy moved to deployment settings
-3. App can run against PostgreSQL in production while retaining SQLite for local dev/test
-4. `db/init_db.py` and seed/bootstrap flow work for PostgreSQL
-5. PostgreSQL-specific CHECK for non-null `vat_deductible_pct` on expenses is handled correctly
-6. `GET /health` exists and reflects database connectivity
-7. Logging and static-file serving are production-ready
-8. Deployment is documented and repeatable
-9. CI/CD pipeline validates the app and supports deployment flow
-10. Smoke-test checklist exists for go-live verification
-11. No secrets are committed
-12. SANDBOX banner is removed for go-live
+1. **T1 — Dual-engine connection layer** in `app/main.py`: `_is_postgres()`, refactored `_connect()`, updated `get_db()` and `AuthGate`, `psycopg2-binary` in requirements, `docs/deployment.md` stub
+2. **T2 — Production config hardening**: `ENVIRONMENT` detection and validation, `ALLOWED_HOSTS` enforcement with `TrustedHostMiddleware` in production, session cookie `https_only`, `DEFAULT_LOCALE` from env, `.env.example`, `.env` in `.gitignore`
+3. **T3 — PostgreSQL migration**: `db/schema_pg.sql` with SERIAL keys and `chk_expense_vat_deductible` CHECK, dual-engine `db/init_db.py`, `_PgConnectionWrapper` translating `?`→`%s` in `app/main.py`, PostgreSQL test fixtures and passing test suite on both engines
+4. **T4 — Ops**: `GET /health` (200/503, unauthenticated), `_configure_logging()` (JSON in prod, plain in dev), `RequestLoggingMiddleware`, WhiteNoise in production, SANDBOX banner conditional on `ENVIRONMENT`, `app.state.environment` set
+5. **T5 — Delivery**: `docs/deployment.md` complete runbook, smoke test checklist, `.github/workflows/ci.yml`
 
 ---
 
@@ -51,10 +42,15 @@ pytest -v
 ruff check .
 ```
 
-Expected:
+Expected: all tests pass, ruff clean.
 
-- All tests pass
-- Ruff is clean
+If `DATABASE_URL` is available for PostgreSQL:
+
+```bash
+DATABASE_URL=postgresql://... pytest -v
+```
+
+Expected: all tests pass including the `pg_*` fixtures.
 
 ### Step 3 — Scope verification
 
@@ -62,96 +58,108 @@ Expected:
 git diff --name-only main
 ```
 
-Expected implementation files may include:
+Expected modified/created files:
 
 ```text
 app/main.py
-app/routes/*.py
-app/services/*.py
 app/templates/base.html
-db/schema.sql
+db/schema_pg.sql
 db/init_db.py
-seed/*.sql
 requirements.txt
-Dockerfile
-.dockerignore
-.github/workflows/*.yml
+.env.example
+.gitignore
 docs/deployment.md
-docs/runbook.md
-docs/smoke-test.md
-```
-
-Iteration planning files may also appear in the diff; this is expected:
-
-```text
+.github/workflows/ci.yml
+tests/conftest.py and/or tests/test_init_db.py
 iterations/p1-i9/tasks.md
-iterations/p1-i9/prompt.md
 iterations/p1-i9/prompts/*.md
 iterations/p1-i9/reviews/*.md
 ```
 
-Unexpected broad feature work outside deployment/go-live scope is a failure.
+Files that must NOT be modified (no feature regression):
 
-### Step 4 — Architecture checks
+```text
+app/services/validation.py
+app/services/calculations.py
+app/services/transaction_service.py
+app/services/auth_service.py
+app/routes/transactions.py
+app/routes/dashboard.py
+app/routes/auth.py
+app/routes/settings.py
+app/i18n/
+db/schema.sql            ← SQLite schema unchanged
+seed/categories.sql      ← seed files unchanged (adaptation is runtime-only)
+seed/companies.sql
+```
 
-Verify by code inspection:
+### Step 4 — Cross-task integration checks
 
-- [ ] No hard deletes introduced
-- [ ] No derived VAT/net/effective-cost values started being stored directly
-- [ ] Validation remains centralized in the service layer
-- [ ] `category_id` remains an integer FK, never free text
-- [ ] `logged_by` and `voided_by` remain integer FKs
-- [ ] PostgreSQL migration work does not fork business logic between engines
+Verify the tasks connect cleanly end to end:
 
-### Step 5 — Deployment/config checks
+- [ ] `DATABASE_URL` from T2 (`.env.example`) matches the format consumed by T1 (`_is_postgres()`) and T3 (`init_db.py` engine detection)
+- [ ] `ENVIRONMENT` from T2 gates T4's WhiteNoise wrapping and SANDBOX banner correctly (`app.state.environment` set in `create_app()`)
+- [ ] `_PgConnectionWrapper` from T3 is returned by `_connect()` from T1 — both are in `app/main.py` and must be consistent
+- [ ] `_is_postgres()` from T1 correctly identifies the wrapper from T3 (not just raw psycopg2 connections)
+- [ ] `get_db()` from T1 uses the wrapper path for PostgreSQL so service layer `?` placeholders work end to end
+- [ ] `AuthGate` from T1 also uses the wrapper so auth queries run on PostgreSQL
+- [ ] `/health` from T4 is in `EXEMPT_PATHS` from T1 — unauthenticated access must work
 
-Verify by code inspection:
+### Step 5 — Architecture checks
 
-- [ ] Azure hosting path is clear and internally consistent
-- [ ] Required env vars are defined and consumed consistently
-- [ ] no production secrets are committed
-- [ ] SQLite remains available for local dev/test
-- [ ] PostgreSQL is the production path
-- [ ] SANDBOX banner has been removed for go-live
+Verify by code inspection that no pre-existing invariants were broken:
 
-### Step 6 — Database/bootstrap checks
+- [ ] No hard deletes introduced anywhere
+- [ ] No derived values (vat_amount, net_amount, vat_reclaimable, effective_cost) newly stored in the database
+- [ ] Validation still centralized in `app/services/validation.py`
+- [ ] `category_id` still an integer FK — no free-text category anywhere
+- [ ] `logged_by` and `voided_by` still integer FKs
+- [ ] PostgreSQL-specific code does not fork business logic (engine differences are in connection/init layer only)
+- [ ] All queries still filter `WHERE is_active = TRUE` (soft-delete audit trail intact)
 
-Verify by code inspection and, if possible, execution:
+### Step 6 — Production config checks
 
-- [ ] `db/init_db.py` supports both SQLite and PostgreSQL
-- [ ] bootstrap/seed flow is idempotent
-- [ ] PostgreSQL-specific CHECK for expense deductible pct is handled correctly
-- [ ] no SQLite-only SQL remains in the PostgreSQL path
-- [ ] schema remains logically consistent with pre-I9 business rules
+- [ ] `ENVIRONMENT` validated — invalid values raise an error at startup
+- [ ] `ALLOWED_HOSTS` enforced in production (RuntimeError if empty)
+- [ ] `SECRET_KEY` still required — existing RuntimeError preserved
+- [ ] Session cookie uses `https_only=True` in production
+- [ ] No secrets committed in `.env.example`, `docs/deployment.md`, or CI workflow files
 
-### Step 7 — Ops/runtime checks
+### Step 7 — Database/bootstrap checks
 
-Verify by code inspection and manual run if needed:
+- [ ] `db/schema.sql` (SQLite) is unchanged from pre-I9
+- [ ] `db/schema_pg.sql` uses `SERIAL PRIMARY KEY`, no `AUTOINCREMENT`
+- [ ] `chk_expense_vat_deductible` CHECK constraint present in `schema_pg.sql`, absent from `schema.sql`
+- [ ] `init_db.py` runs idempotently on both engines (rerunnable without errors or duplicate rows)
+- [ ] Seed files use `INSERT OR IGNORE` — adaptation to `ON CONFLICT DO NOTHING` happens at runtime in `init_db.py`
 
-- [ ] `GET /health` exists
-- [ ] health endpoint checks DB connectivity
-- [ ] unhealthy DB returns 503
-- [ ] request logging captures method/path/status/latency
-- [ ] static assets are served in deployed runtime
+### Step 8 — Ops/runtime checks
 
-### Step 8 — Delivery checks
+- [ ] `GET /health` accessible without authentication
+- [ ] `/health` runs a real DB query — not a hardcoded response
+- [ ] `/health` returns 503 on DB failure
+- [ ] JSON logging active when `ENVIRONMENT=production`
+- [ ] Request logging covers method, path, status, response time
+- [ ] SANDBOX banner hidden in production, visible in development
+- [ ] WhiteNoise wraps app only when `ENVIRONMENT=production`
 
-Verify by reading workflow/docs:
+### Step 9 — Delivery checks
 
-- [ ] CI runs tests and ruff
-- [ ] deployment path is documented end to end
-- [ ] rollback/recovery guidance exists
-- [ ] smoke-test checklist covers key flows after deployment
+- [ ] `docs/deployment.md` contains complete runbook with `az` commands, App Settings, init verification (row counts), startup command, health check config, update cycle, troubleshooting
+- [ ] Smoke test checklist covers: health, auth, cash_in create, cash_out create, void, correct, company filter, SANDBOX absent, data persistence
+- [ ] `.github/workflows/ci.yml` runs `pytest` and `ruff check .` (or deferral documented)
+- [ ] CI workflow uses `ENVIRONMENT=test` and `SECRET_KEY` from env — no hardcoded secrets
 
-### Step 9 — PostgreSQL verification
+### Step 10 — PostgreSQL verification
 
-If PostgreSQL access is available for QA, verify:
+If a PostgreSQL connection is available:
 
-- [ ] app boots against PostgreSQL
-- [ ] existing tests pass against PostgreSQL
-- [ ] health endpoint reports healthy against PostgreSQL
+- [ ] App boots against PostgreSQL (`DATABASE_URL=postgresql://...`)
+- [ ] `pytest -v` passes against PostgreSQL (including `pg_*` fixtures)
+- [ ] `/health` reports `{"database": "connected"}` against PostgreSQL
+- [ ] `vat_deductible_pct` NULL on cash_out is rejected by the CHECK constraint
 
-If PostgreSQL access is not available, state that explicitly and judge the code/docs readiness from the committed implementation.
+If PostgreSQL is not available: state this explicitly and confirm that the implementation is structurally correct from code inspection.
 
 ---
 
@@ -184,22 +192,27 @@ If none: `None.`
 
 ### 5. Acceptance Criteria Check
 
-- [PASS|FAIL] pytest passes
-- [PASS|FAIL] ruff clean
-- [PASS|FAIL] Azure hosting path is implemented clearly
-- [PASS|FAIL] production config/secrets strategy is environment-driven
-- [PASS|FAIL] SQLite remains usable for local dev/test
-- [PASS|FAIL] PostgreSQL bootstrap path is implemented correctly
-- [PASS|FAIL] PostgreSQL-specific expense deductible CHECK is handled correctly
-- [PASS|FAIL] `GET /health` exists and reflects DB state
-- [PASS|FAIL] logging and static-file serving are production-ready
-- [PASS|FAIL] deployment docs are complete and repeatable
-- [PASS|FAIL] CI/CD validates the app and supports deployment flow
-- [PASS|FAIL] smoke-test checklist covers critical go-live checks
-- [PASS|FAIL] no secrets are committed
-- [PASS|FAIL] SANDBOX banner removed
-- [PASS|FAIL] no architecture principles were violated
-- [PASS|FAIL] PostgreSQL readiness is demonstrated or any environment limitation is clearly stated
+- [PASS|FAIL] `pytest -v` passes (SQLite)
+- [PASS|FAIL] `ruff check .` passes
+- [PASS|FAIL] T1–T5 cross-task integration is consistent (DATABASE_URL, ENVIRONMENT, _PgConnectionWrapper, EXEMPT_PATHS)
+- [PASS|FAIL] `psycopg2-binary` in requirements; SQLite remains for dev/test
+- [PASS|FAIL] `ENVIRONMENT` detection and `ALLOWED_HOSTS` enforcement correct
+- [PASS|FAIL] session cookie `https_only` in production
+- [PASS|FAIL] `.env.example` complete; no secrets committed
+- [PASS|FAIL] `db/schema.sql` unchanged; `db/schema_pg.sql` created with SERIAL + CHECK constraint
+- [PASS|FAIL] `init_db.py` dual-engine with idempotent bootstrap
+- [PASS|FAIL] `_PgConnectionWrapper` translates `?`→`%s`; service layer unchanged
+- [PASS|FAIL] PostgreSQL test fixtures skip gracefully; pg tests cover tables/seeds/CHECK
+- [PASS|FAIL] `GET /health` unauthenticated, real DB check, 200/503
+- [PASS|FAIL] JSON logging in production, plain in development
+- [PASS|FAIL] request logging covers method/path/status/latency
+- [PASS|FAIL] WhiteNoise in production; StaticFiles mount in dev
+- [PASS|FAIL] SANDBOX banner conditional on `ENVIRONMENT`
+- [PASS|FAIL] `docs/deployment.md` complete runbook
+- [PASS|FAIL] smoke test checklist covers all critical flows
+- [PASS|FAIL] CI/CD pipeline (or documented deferral)
+- [PASS|FAIL] no architecture principles violated (no hard deletes, no derived storage, no free-text categories, no LLM in logic)
+- [PASS|FAIL] PostgreSQL readiness demonstrated or limitation clearly stated
 
 ### 6. Exact Fixes Required
 

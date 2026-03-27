@@ -1,7 +1,7 @@
-# Review — I9-T4: Health Check + Logging + Static Files
+# Review — I9-T4: Health Check + Logging + Static Files + SANDBOX Removal
 **Branch:** `feature/p1-i9/t4-ops`
 **PR target:** `feature/phase-1/iteration-9`
-**Reference docs:** `iterations/p1-i9/prompt.md`, `iterations/p1-i9/tasks.md`, `iterations/phase-1-plan.md`
+**Reference docs:** `iterations/p1-i9/prompts/t4-ops.md`, `iterations/p1-i9/prompt.md`, `iterations/p1-i9/tasks.md`
 
 ---
 
@@ -11,53 +11,79 @@ Review only the changes in this task branch. Report precise problems with file r
 
 **Verdict options:** `PASS` | `CHANGES REQUIRED` | `BLOCKED`
 
-This task prompt file is still a placeholder, so use the reference docs above as the source of truth for scope and intent.
-
 ---
 
 ## What was supposed to be built
 
-- `GET /health` endpoint for operational monitoring
-- health response reports app/database status
-- unhealthy database state returns 503
-- production-appropriate logging added
-- request logging covers method, path, status, and response time
-- static file serving is prepared for deployed use
+- `GET /health` endpoint in `app/main.py` — returns `{"status", "database", "version", "environment"}`, HTTP 200 when healthy, 503 when DB unreachable
+- `/health` added to `EXEMPT_PATHS` — no authentication required
+- `_JsonFormatter` + `_configure_logging()` in `app/main.py` — JSON format in production, plain text in development; called once at module level
+- `RequestLoggingMiddleware` logging method, path, status code, response time (ms) — registered last in `create_app()` so it wraps all other middleware
+- `whitenoise>=6.0.0` added to `requirements.txt`
+- WhiteNoise wraps the ASGI app at module level when `ENVIRONMENT == "production"`; dev uses FastAPI's `StaticFiles` mount as-is
+- SANDBOX banner in `app/templates/base.html` made conditional: visible when `ENVIRONMENT != production`, hidden in production
+- `app.state.environment = ENVIRONMENT` set in `create_app()` so the template can read it
+- Startup log message emitted from the lifespan function
+- No schema changes, no route changes, no CI/CD work
 
 ---
 
 ## Review Steps
 
-1. Confirm diff scope is limited to ops/runtime files only. Expected files may include:
+1. **Diff scope** — confirm only these files appear:
    - `app/main.py`
-   - `app/routes/*.py`
-   - new logging/helpers under `app/`
-   - tests for health/runtime behavior
+   - `app/templates/base.html`
+   - `requirements.txt`
    - iteration planning files under `iterations/p1-i9/`
-2. Verify `GET /health` exists and is unauthenticated unless the branch explicitly justifies a different operational model.
-3. Verify the endpoint checks database connectivity rather than returning a hardcoded healthy response.
-4. Verify response behavior:
-   - HTTP 200 when healthy
-   - HTTP 503 when unhealthy
-   - structured payload including at least app status and database status
-5. Verify logging is production-oriented:
-   - INFO/WARNING/ERROR levels used appropriately
-   - request logging includes method, path, status code, and latency
-   - no secret values or credentials are logged
-6. Verify static files are served in a way compatible with deployed runtime and do not depend on debug/dev-only behavior.
-7. Verify this task does not mix in:
-   - schema migration work
-   - production secret/config work
-   - CI/CD pipeline changes
-   - unrelated transaction feature work
-8. Run:
+   Any other files need justification.
+
+2. **`GET /health` endpoint**
+   - Defined in `app/main.py` (not in a separate router file)
+   - Runs a real DB query (`SELECT 1`) wrapped in a try/except
+   - Returns `JSONResponse` with `status`, `database`, `version`, `environment` keys
+   - Returns HTTP 200 when query succeeds, HTTP 503 when exception is raised
+   - `/health` present in `EXEMPT_PATHS` — not gated by `AuthGate`
+
+3. **Logging**
+   - `_JsonFormatter` produces JSON with `timestamp`, `level`, `logger`, `message` keys
+   - `_configure_logging()` called at module level, before `create_app()`
+   - `ENVIRONMENT == "production"` → JSON formatter; other environments → plain text formatter
+   - `logger = logging.getLogger(__name__)` defined at module level
+   - No passwords, session tokens, or personal data in logged fields
+
+4. **`RequestLoggingMiddleware`**
+   - Logs method, path, status code, and response time in milliseconds
+   - Registered in `create_app()` after `SessionMiddleware` (so it is outermost — wraps everything)
+   - Does NOT log request/response bodies
+
+5. **WhiteNoise**
+   - `whitenoise>=6.0.0` in `requirements.txt`
+   - `app = WhiteNoise(app, root="static", prefix="static")` at module level, conditional on `ENVIRONMENT == "production"`
+   - Dev path still uses `app.mount("/static", StaticFiles(...))` — unchanged
+
+6. **SANDBOX banner in `base.html`**
+   - Wrapped in `{% if request.app.state.environment != 'production' %}` … `{% endif %}`
+   - Banner HTML is preserved — just conditionally rendered
+   - `app.state.environment = ENVIRONMENT` set in `create_app()` so the Jinja2 context can read it
+
+7. **Startup log**
+   - Lifespan function emits an INFO log stating environment and database engine
+
+8. **No scope creep**
+   - No schema or route changes
+   - No new business logic or validation
+   - No CI/CD pipeline files added here (T5 scope)
+
+9. **Run tests and lint:**
 
 ```bash
 pytest -v
 ruff check .
 ```
 
-If practical in the branch, hit `/health` in both a healthy and simulated-unhealthy state and report the observed status codes.
+Additionally, manually verify:
+- `curl http://localhost:8000/health` → `{"status": "healthy", ...}` with 200
+- Stop the database (or set `DATABASE_URL` to an invalid URL) → `{"status": "unhealthy", "database": "unreachable"}` with 503
 
 ---
 
@@ -86,22 +112,30 @@ If none: `None.`
 
 ### 4. Scope Violations
 
-Files modified outside ops/runtime scope for this task.
+Files modified outside `app/main.py`, `app/templates/base.html`, `requirements.txt`, and iteration planning files.
 
 ### 5. Acceptance Criteria Check
 
-- [PASS|FAIL] diff scope limited to ops/runtime files
-- [PASS|FAIL] `GET /health` exists
-- [PASS|FAIL] health endpoint checks database connectivity
-- [PASS|FAIL] health endpoint returns 200 when healthy
-- [PASS|FAIL] health endpoint returns 503 when unhealthy
-- [PASS|FAIL] health response includes app/database status
-- [PASS|FAIL] request logging includes method, path, status, and latency
-- [PASS|FAIL] logging avoids secrets/credentials
-- [PASS|FAIL] static file serving is production-compatible
-- [PASS|FAIL] no migration/config/pipeline/feature work mixed into this task
-- [PASS|FAIL] pytest passes
-- [PASS|FAIL] ruff clean
+- [PASS|FAIL] `GET /health` defined in `app/main.py`
+- [PASS|FAIL] `/health` in `EXEMPT_PATHS` — no auth required
+- [PASS|FAIL] health endpoint runs a real DB query (not hardcoded)
+- [PASS|FAIL] returns HTTP 200 when DB reachable
+- [PASS|FAIL] returns HTTP 503 when DB unreachable
+- [PASS|FAIL] response body includes `status`, `database`, `version`, `environment`
+- [PASS|FAIL] JSON logging active when `ENVIRONMENT=production`
+- [PASS|FAIL] plain text logging active when `ENVIRONMENT=development`
+- [PASS|FAIL] `RequestLoggingMiddleware` logs method, path, status, response time
+- [PASS|FAIL] middleware registered outermost (after `SessionMiddleware`)
+- [PASS|FAIL] no sensitive data logged
+- [PASS|FAIL] `whitenoise>=6.0.0` in `requirements.txt`
+- [PASS|FAIL] WhiteNoise wraps app when `ENVIRONMENT=production`
+- [PASS|FAIL] SANDBOX banner hidden when `ENVIRONMENT=production`
+- [PASS|FAIL] SANDBOX banner visible when `ENVIRONMENT=development`
+- [PASS|FAIL] `app.state.environment` set in `create_app()`
+- [PASS|FAIL] startup log message emitted from lifespan
+- [PASS|FAIL] no schema, route, service, or CI/CD changes
+- [PASS|FAIL] `pytest -v` passes
+- [PASS|FAIL] `ruff check .` passes
 
 ### 6. Exact Fixes Required
 

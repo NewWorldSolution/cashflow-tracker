@@ -1,7 +1,7 @@
 # Review — I9-T1: Azure Hosting + Database Setup
 **Branch:** `feature/p1-i9/t1-azure-setup`
 **PR target:** `feature/phase-1/iteration-9`
-**Reference docs:** `iterations/p1-i9/prompt.md`, `iterations/p1-i9/tasks.md`, `iterations/phase-1-plan.md`
+**Reference docs:** `iterations/p1-i9/prompts/t1-azure-setup.md`, `iterations/p1-i9/prompt.md`, `iterations/p1-i9/tasks.md`
 
 ---
 
@@ -11,52 +11,74 @@ Review only the changes in this task branch. Report precise problems with file r
 
 **Verdict options:** `PASS` | `CHANGES REQUIRED` | `BLOCKED`
 
-This task prompt file is still a placeholder, so use the reference docs above as the source of truth for scope and intent.
-
 ---
 
 ## What was supposed to be built
 
-- Azure hosting approach chosen and committed in code/config, with one clear deployment path only
-- PostgreSQL production runtime dependency added
-- Production startup/bootstrap path prepared for Azure hosting
-- App entrypoint updated only as needed for deployment bootstrap
-- No secrets committed to the repository
-- No schema-migration implementation beyond setup/bootstrap decisions yet
+- `psycopg2-binary>=2.9.0` added to `requirements.txt` (binary variant — no C compiler dependency)
+- `DATABASE_URL` env var read in `app/main.py` defaulting to `sqlite:///./cashflow.db`
+- `_is_postgres(url: str) -> bool` helper added
+- `_connect()` refactored to return a `sqlite3.Connection` for SQLite URLs and a psycopg2 connection for PostgreSQL URLs; psycopg2 connections have `autocommit = False`
+- `get_db()` FastAPI dependency provides dict-like row access for both engines (`sqlite3.Row` for SQLite, `RealDictCursor` for PostgreSQL)
+- `AuthGate` middleware updated to use the new `_connect()` factory
+- `:memory:` SQLite special case (`_memory_keeper` keep-alive) preserved for test compatibility
+- Comment in `main.py` documenting the `?` vs `%s` placeholder problem — NOT yet fixed (T3 scope)
+- `docs/deployment.md` stub created noting: Azure App Service (Linux), Python 3.11+, brief rationale
+- No `init_db.py` changes, no `schema.sql` changes, no `ENVIRONMENT`/secrets/config work, no health/logging/static/CI work
 
 ---
 
 ## Review Steps
 
-1. Confirm diff scope is limited to hosting/bootstrap files only. Expected files may include:
-   - `requirements.txt`
+1. **Diff scope** — confirm only these files appear:
    - `app/main.py`
-   - `Dockerfile`
-   - `.dockerignore`
-   - Azure/startup bootstrap files such as `startup.sh`, `azure.yaml`, or similar deployment config
+   - `requirements.txt`
+   - `docs/deployment.md` (stub only)
    - iteration planning files under `iterations/p1-i9/`
-2. Verify exactly one hosting path is implemented clearly:
-   - App Service startup configuration, or
-   - Containerized deployment via `Dockerfile`
-   Mixed or contradictory deployment strategies are a failure unless explicitly justified.
-3. Verify PostgreSQL support is added through an appropriate runtime dependency (`psycopg2`, `psycopg`, or `asyncpg`) and that SQLite is not removed for local dev/test.
-4. Verify the startup path is production-safe:
-   - binds to Azure-provided host/port environment variables
-   - does not require `--reload`
-   - does not hardcode localhost-only assumptions
-5. Verify no secrets, connection strings, or private keys are committed in tracked files.
-6. Verify no application feature work is mixed into this task:
-   - no transaction validation changes
-   - no template/UI work
-   - no CI/CD pipeline work
-   - no health endpoint/logging/static implementation yet
-7. Verify any new deployment file actually matches the chosen hosting strategy.
-8. Run:
+   Any other modified files need justification.
+
+2. **`requirements.txt`**
+   - `psycopg2-binary` present (not `psycopg2` — the non-binary build requires a C compiler unavailable on Azure App Service)
+   - Version constraint `>=2.9.0`
+
+3. **`app/main.py` — DATABASE_URL**
+   - `DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./cashflow.db")`
+   - Must NOT use the old `.removeprefix("sqlite:///./")` pattern as the default value
+
+4. **`app/main.py` — `_is_postgres()`**
+   - Detects `postgresql://` and `postgres://` prefixes
+   - Used consistently everywhere a branch on engine type is needed
+
+5. **`app/main.py` — `_connect()`**
+   - SQLite branch: handles `sqlite:///./` prefix stripping and the `:memory:` special case with `_memory_keeper`
+   - PostgreSQL branch: calls `psycopg2.connect(url)` and sets `autocommit = False`
+
+6. **`app/main.py` — `get_db()`**
+   - SQLite path: sets `conn.row_factory = sqlite3.Row`
+   - PostgreSQL path: uses `RealDictCursor` so `.fetchone()` / `.fetchall()` return dict-like objects
+   - Both paths `yield conn` and `finally: conn.close()`
+
+7. **`app/main.py` — `AuthGate`**
+   - Uses `_connect(DATABASE_URL)` (not a hardcoded `sqlite3.connect(...)`)
+   - Sets row factory / cursor factory appropriate to the engine
+
+8. **Placeholder comment**
+   - A comment in `main.py` explicitly documents that service layer uses `?` placeholders, PostgreSQL needs `%s`, and T3 handles this
+   - The service layer SQL must NOT have been modified to use `%s` in this task
+
+9. **`docs/deployment.md`**
+   - File exists (stub)
+   - States: hosting model = Azure App Service (Linux), runtime = Python 3.11+
+   - Does NOT contain a full runbook (T5 scope) or secrets
+
+10. **Run tests and lint:**
 
 ```bash
 pytest -v
 ruff check .
 ```
+
+Expected: all existing tests pass (SQLite path is unchanged), ruff clean.
 
 ---
 
@@ -85,22 +107,24 @@ If none: `None.`
 
 ### 4. Scope Violations
 
-Files modified outside hosting/bootstrap/config scope for this task.
+Files modified outside `app/main.py`, `requirements.txt`, `docs/deployment.md`, and iteration planning files.
 
 ### 5. Acceptance Criteria Check
 
-- [PASS|FAIL] diff scope limited to hosting/bootstrap files
-- [PASS|FAIL] one clear Azure hosting strategy is chosen
-- [PASS|FAIL] deployment artifacts match the chosen strategy
-- [PASS|FAIL] PostgreSQL runtime dependency added correctly
-- [PASS|FAIL] SQLite remains available for local dev/test
-- [PASS|FAIL] production startup path does not depend on dev-only reload/local assumptions
-- [PASS|FAIL] no secrets committed
-- [PASS|FAIL] no schema-migration implementation mixed into this task
-- [PASS|FAIL] no health/logging/static work mixed into this task
-- [PASS|FAIL] no CI/CD or runbook work mixed into this task
-- [PASS|FAIL] pytest passes
-- [PASS|FAIL] ruff clean
+- [PASS|FAIL] `psycopg2-binary>=2.9.0` in `requirements.txt` (binary, not `psycopg2`)
+- [PASS|FAIL] `DATABASE_URL` defaults to `sqlite:///./cashflow.db`
+- [PASS|FAIL] `_is_postgres()` correctly identifies both `postgresql://` and `postgres://`
+- [PASS|FAIL] `_connect()` returns `sqlite3.Connection` for SQLite and psycopg2 connection for PostgreSQL
+- [PASS|FAIL] `get_db()` provides dict-like row access on both engines
+- [PASS|FAIL] `AuthGate` uses the updated `_connect()` factory
+- [PASS|FAIL] `:memory:` SQLite path preserved (`_memory_keeper` pattern intact)
+- [PASS|FAIL] `?` vs `%s` placeholder compatibility note present — no premature fix in service layer
+- [PASS|FAIL] `docs/deployment.md` stub created with hosting model decision
+- [PASS|FAIL] no `db/init_db.py` or `db/schema.sql` changes
+- [PASS|FAIL] no `ENVIRONMENT` / secrets / `.env.example` work
+- [PASS|FAIL] no health endpoint, logging, WhiteNoise, or CI/CD work
+- [PASS|FAIL] `pytest -v` passes
+- [PASS|FAIL] `ruff check .` passes
 
 ### 6. Exact Fixes Required
 
