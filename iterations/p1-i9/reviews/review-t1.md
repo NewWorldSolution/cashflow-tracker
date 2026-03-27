@@ -17,14 +17,15 @@ Review only the changes in this task branch. Report precise problems with file r
 
 - `psycopg2-binary>=2.9.0` added to `requirements.txt` (binary variant — no C compiler dependency)
 - `DATABASE_URL` env var read in `app/main.py` defaulting to `sqlite:///./cashflow.db`
-- `_is_postgres(url: str) -> bool` helper added
-- `_connect()` refactored to return a `sqlite3.Connection` for SQLite URLs and a psycopg2 connection for PostgreSQL URLs; psycopg2 connections have `autocommit = False`
-- `get_db()` FastAPI dependency provides dict-like row access for both engines (`sqlite3.Row` for SQLite, `RealDictCursor` for PostgreSQL)
-- `AuthGate` middleware updated to use the new `_connect()` factory
+- `_is_postgres(url: str) -> bool` helper added, checking both `postgresql://` and `postgres://`
+- `_connect()` refactored: returns `sqlite3.Connection` for SQLite, raw `psycopg2` connection for PostgreSQL (with `autocommit = False`)
+- `get_db()` sets `row_factory = sqlite3.Row` for SQLite; yields raw psycopg2 connection for PostgreSQL (T3 adds the `_PgConnectionWrapper` — full service-layer PostgreSQL execution is NOT in T1)
+- `AuthGate` updated to use `_connect()`; sets `row_factory` for SQLite path only
 - `:memory:` SQLite special case (`_memory_keeper` keep-alive) preserved for test compatibility
-- Comment in `main.py` documenting the `?` vs `%s` placeholder problem — NOT yet fixed (T3 scope)
+- Comment in `main.py` documenting the `?` vs `%s` placeholder problem — NOT fixed here (T3 scope)
 - `docs/deployment.md` stub created noting: Azure App Service (Linux), Python 3.11+, brief rationale
 - No `init_db.py` changes, no `schema.sql` changes, no `ENVIRONMENT`/secrets/config work, no health/logging/static/CI work
+- **PostgreSQL end-to-end execution is deferred to T3** — T1 only establishes the connection factory skeleton
 
 ---
 
@@ -51,16 +52,16 @@ Review only the changes in this task branch. Report precise problems with file r
 
 5. **`app/main.py` — `_connect()`**
    - SQLite branch: handles `sqlite:///./` prefix stripping and the `:memory:` special case with `_memory_keeper`
-   - PostgreSQL branch: calls `psycopg2.connect(url)` and sets `autocommit = False`
+   - PostgreSQL branch: calls `psycopg2.connect(url)` and sets `autocommit = False`; returns raw connection (NOT a wrapper — that is T3's job)
 
 6. **`app/main.py` — `get_db()`**
-   - SQLite path: sets `conn.row_factory = sqlite3.Row`
-   - PostgreSQL path: uses `RealDictCursor` so `.fetchone()` / `.fetchall()` return dict-like objects
+   - SQLite path: sets `conn.row_factory = sqlite3.Row`, yields connection
+   - PostgreSQL path: yields the raw psycopg2 connection without RealDictCursor — T3 replaces this with `_PgConnectionWrapper`
    - Both paths `yield conn` and `finally: conn.close()`
 
 7. **`app/main.py` — `AuthGate`**
    - Uses `_connect(DATABASE_URL)` (not a hardcoded `sqlite3.connect(...)`)
-   - Sets row factory / cursor factory appropriate to the engine
+   - Sets `row_factory = sqlite3.Row` for SQLite path only; no cursor factory changes for PostgreSQL
 
 8. **Placeholder comment**
    - A comment in `main.py` explicitly documents that service layer uses `?` placeholders, PostgreSQL needs `%s`, and T3 handles this
@@ -115,8 +116,8 @@ Files modified outside `app/main.py`, `requirements.txt`, `docs/deployment.md`, 
 - [PASS|FAIL] `DATABASE_URL` defaults to `sqlite:///./cashflow.db`
 - [PASS|FAIL] `_is_postgres()` correctly identifies both `postgresql://` and `postgres://`
 - [PASS|FAIL] `_connect()` returns `sqlite3.Connection` for SQLite and psycopg2 connection for PostgreSQL
-- [PASS|FAIL] `get_db()` provides dict-like row access on both engines
-- [PASS|FAIL] `AuthGate` uses the updated `_connect()` factory
+- [PASS|FAIL] `get_db()` sets `row_factory` for SQLite; yields raw psycopg2 connection for PostgreSQL (wrapper is T3)
+- [PASS|FAIL] `AuthGate` uses `_connect()` and sets `row_factory` for SQLite only
 - [PASS|FAIL] `:memory:` SQLite path preserved (`_memory_keeper` pattern intact)
 - [PASS|FAIL] `?` vs `%s` placeholder compatibility note present — no premature fix in service layer
 - [PASS|FAIL] `docs/deployment.md` stub created with hosting model decision

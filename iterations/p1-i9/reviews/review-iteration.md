@@ -17,10 +17,10 @@ You are the QA agent for Phase 1 Iteration 9. Individual task reviews verified e
 
 ## What this iteration was supposed to deliver
 
-1. **T1 — Dual-engine connection layer** in `app/main.py`: `_is_postgres()`, refactored `_connect()`, updated `get_db()` and `AuthGate`, `psycopg2-binary` in requirements, `docs/deployment.md` stub
-2. **T2 — Production config hardening**: `ENVIRONMENT` detection and validation, `ALLOWED_HOSTS` enforcement with `TrustedHostMiddleware` in production, session cookie `https_only`, `DEFAULT_LOCALE` from env, `.env.example`, `.env` in `.gitignore`
-3. **T3 — PostgreSQL migration**: `db/schema_pg.sql` with SERIAL keys and `chk_expense_vat_deductible` CHECK, dual-engine `db/init_db.py`, `_PgConnectionWrapper` translating `?`→`%s` in `app/main.py`, PostgreSQL test fixtures and passing test suite on both engines
-4. **T4 — Ops**: `GET /health` (200/503, unauthenticated), `_configure_logging()` (JSON in prod, plain in dev), `RequestLoggingMiddleware`, WhiteNoise in production, SANDBOX banner conditional on `ENVIRONMENT`, `app.state.environment` set
+1. **T1 — Connection layer skeleton** in `app/main.py`: `_is_postgres()`, refactored `_connect()` returning raw psycopg2 for PostgreSQL, updated `get_db()` and `AuthGate`, `psycopg2-binary` in requirements, `docs/deployment.md` stub. Full PostgreSQL execution deferred to T3.
+2. **T2 — Production config hardening**: `ENVIRONMENT` detection and validation (if/raise, not assert), `ALLOWED_HOSTS` enforcement with `TrustedHostMiddleware` in production, session cookie `https_only`, `DEFAULT_LOCALE` from env, `.env.example`, `.env` in `.gitignore`
+3. **T3 — PostgreSQL migration**: single `db/schema.sql` (no `schema_pg.sql`); `_prepare_schema_for_pg()` AUTOINCREMENT→SERIAL; `_apply_pg_post_schema()` for idempotent CHECK constraint; seed files rewritten to `ON CONFLICT DO NOTHING`; `_PgConnectionWrapper` translating `?`→`%s` added to `app/main.py`; dual-engine `db/init_db.py`; PostgreSQL test fixtures; both engines passing
+4. **T4 — Ops**: `GET /health` (200/503, unauthenticated), `_configure_logging()` (JSON in prod, plain in dev), `RequestLoggingMiddleware`, WhiteNoise module-level wrapper in production (no `app.middleware_stack = None`), SANDBOX banner conditional on `ENVIRONMENT`, `app.state.environment` set
 5. **T5 — Delivery**: `docs/deployment.md` complete runbook, smoke test checklist, `.github/workflows/ci.yml`
 
 ---
@@ -88,9 +88,12 @@ app/routes/dashboard.py
 app/routes/auth.py
 app/routes/settings.py
 app/i18n/
-db/schema.sql            ← SQLite schema unchanged
-seed/categories.sql      ← seed files unchanged (adaptation is runtime-only)
-seed/companies.sql
+db/schema.sql            ← SQLite schema structurally unchanged (AUTOINCREMENT stays)
+```
+
+File that must NOT exist:
+```text
+db/schema_pg.sql         ← second schema file not allowed; single-schema design
 ```
 
 ### Step 4 — Cross-task integration checks
@@ -99,8 +102,8 @@ Verify the tasks connect cleanly end to end:
 
 - [ ] `DATABASE_URL` from T2 (`.env.example`) matches the format consumed by T1 (`_is_postgres()`) and T3 (`init_db.py` engine detection)
 - [ ] `ENVIRONMENT` from T2 gates T4's WhiteNoise wrapping and SANDBOX banner correctly (`app.state.environment` set in `create_app()`)
-- [ ] `_PgConnectionWrapper` from T3 is returned by `_connect()` from T1 — both are in `app/main.py` and must be consistent
-- [ ] `_is_postgres()` from T1 correctly identifies the wrapper from T3 (not just raw psycopg2 connections)
+- [ ] `_PgConnectionWrapper` (added in T3) is returned by `_connect()` for PostgreSQL — T1's raw psycopg2 return is now wrapped
+- [ ] `_is_postgres()` in both `main.py` and `init_db.py` recognises `_PgConnectionWrapper` instances
 - [ ] `get_db()` from T1 uses the wrapper path for PostgreSQL so service layer `?` placeholders work end to end
 - [ ] `AuthGate` from T1 also uses the wrapper so auth queries run on PostgreSQL
 - [ ] `/health` from T4 is in `EXEMPT_PATHS` from T1 — unauthenticated access must work
@@ -127,11 +130,11 @@ Verify by code inspection that no pre-existing invariants were broken:
 
 ### Step 7 — Database/bootstrap checks
 
-- [ ] `db/schema.sql` (SQLite) is unchanged from pre-I9
-- [ ] `db/schema_pg.sql` uses `SERIAL PRIMARY KEY`, no `AUTOINCREMENT`
-- [ ] `chk_expense_vat_deductible` CHECK constraint present in `schema_pg.sql`, absent from `schema.sql`
+- [ ] `db/schema_pg.sql` does NOT exist — single schema maintained
+- [ ] `db/schema.sql` structurally unchanged (AUTOINCREMENT stays; `_prepare_schema_for_pg()` adapts it at runtime)
+- [ ] `chk_expense_vat_deductible` CHECK applied via `_apply_pg_post_schema()` (PostgreSQL only, idempotent)
 - [ ] `init_db.py` runs idempotently on both engines (rerunnable without errors or duplicate rows)
-- [ ] Seed files use `INSERT OR IGNORE` — adaptation to `ON CONFLICT DO NOTHING` happens at runtime in `init_db.py`
+- [ ] Seed files use `ON CONFLICT DO NOTHING` — no `INSERT OR IGNORE` remains
 
 ### Step 8 — Ops/runtime checks
 
@@ -199,8 +202,9 @@ If none: `None.`
 - [PASS|FAIL] `ENVIRONMENT` detection and `ALLOWED_HOSTS` enforcement correct
 - [PASS|FAIL] session cookie `https_only` in production
 - [PASS|FAIL] `.env.example` complete; no secrets committed
-- [PASS|FAIL] `db/schema.sql` unchanged; `db/schema_pg.sql` created with SERIAL + CHECK constraint
-- [PASS|FAIL] `init_db.py` dual-engine with idempotent bootstrap
+- [PASS|FAIL] `db/schema_pg.sql` does NOT exist; single `db/schema.sql` maintained
+- [PASS|FAIL] `_prepare_schema_for_pg()` and `_apply_pg_post_schema()` handle PostgreSQL differences at init time
+- [PASS|FAIL] `init_db.py` dual-engine with idempotent bootstrap; seed files use `ON CONFLICT DO NOTHING`
 - [PASS|FAIL] `_PgConnectionWrapper` translates `?`→`%s`; service layer unchanged
 - [PASS|FAIL] PostgreSQL test fixtures skip gracefully; pg tests cover tables/seeds/CHECK
 - [PASS|FAIL] `GET /health` unauthenticated, real DB check, 200/503

@@ -155,26 +155,10 @@ The current `app.mount("/static", StaticFiles(...))` works for development but s
 
 Add `whitenoise>=6.0.0` to `requirements.txt`.
 
-In `create_app()`, wrap the ASGI app with WhiteNoise after building it:
+Wrap the app with WhiteNoise at **module level**, after `create_app()`, conditional on `ENVIRONMENT`:
 
 ```python
-from whitenoise import WhiteNoise
-
-# After all routers and mounts are registered:
-app.mount("/static", StaticFiles(directory="static"), name="static")
-
-# WhiteNoise — wraps the entire ASGI app for efficient static serving
-# Only active; StaticFiles mount remains for local dev fallback
-if ENVIRONMENT == "production":
-    app.middleware_stack = None  # force rebuild
-    # WhiteNoise wraps the app — replaces the StaticFiles mount in prod
-    # Set as module-level for uvicorn to pick up
-```
-
-Actually, the cleanest approach for FastAPI + WhiteNoise is to expose the wrapped app at module level:
-
-```python
-# At the bottom of main.py, after create_app()
+# bottom of main.py — after create_app()
 from whitenoise import WhiteNoise
 
 app = create_app()
@@ -183,9 +167,10 @@ if ENVIRONMENT == "production":
     app = WhiteNoise(app, root="static", prefix="static")
 ```
 
-This means `uvicorn app.main:app` in production gets the WhiteNoise-wrapped version. In dev, `app` is the plain FastAPI instance.
+- In production: `uvicorn app.main:app` gets the WhiteNoise-wrapped ASGI app. WhiteNoise intercepts all `/static/*` requests before they reach FastAPI — the `app.mount("/static", StaticFiles(...))` inside `create_app()` remains present but is never reached for static paths in production.
+- In development: `app` is the plain FastAPI instance; `StaticFiles` serves `/static/` as before.
 
-**Note:** When WhiteNoise wraps the app, the FastAPI `app.mount("/static", ...)` is still present but WhiteNoise intercepts `/static/*` requests before they reach FastAPI. This is harmless — WhiteNoise takes precedence.
+Do NOT use `app.middleware_stack = None` — that is an internal FastAPI detail and is not a safe or supported operation.
 
 ### 5. Remove SANDBOX banner from `base.html`
 

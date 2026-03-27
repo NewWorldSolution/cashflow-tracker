@@ -8,9 +8,9 @@
 
 ## Goal
 
-Choose the Azure hosting model, provision Azure PostgreSQL, and implement dual-engine database support in the application so it can connect to SQLite (dev/test) and PostgreSQL (production) from the same codebase. After this task, the app starts and serves pages against both database engines, driven purely by the `DATABASE_URL` environment variable.
+Choose the Azure hosting model and lay the connection-layer infrastructure: engine detection, a dual-path `_connect()` factory, and the PostgreSQL driver. After this task the SQLite path is unchanged and all existing tests pass. The PostgreSQL path returns a raw psycopg2 connection — placeholder compatibility (`?` vs `%s`) and `init_db.py` dual-engine support are T3's scope, so **full end-to-end PostgreSQL execution is NOT expected in T1**.
 
-This task is **infrastructure and connection plumbing only**. Schema migration, seed data, and init_db changes are T3's scope. Application logic does not change.
+This task is **URL detection + connection factory only**. No SQL runs against PostgreSQL in T1 except the `SELECT 1` in the health check (T4). Application logic does not change.
 
 ---
 
@@ -69,7 +69,6 @@ def _is_postgres(url: str) -> bool:
 ```python
 import sqlite3
 import psycopg2
-import psycopg2.extras
 
 _memory_keeper: sqlite3.Connection | None = None  # keep-alive for :memory:
 
@@ -77,7 +76,13 @@ _memory_keeper: sqlite3.Connection | None = None  # keep-alive for :memory:
 def _connect(url: str):
     """Return a live database connection for the given URL.
 
-    Returns sqlite3.Connection for SQLite URLs, psycopg2 connection for PostgreSQL.
+    Returns sqlite3.Connection for SQLite URLs.
+    Returns a raw psycopg2 connection for PostgreSQL URLs.
+
+    NOTE: The raw psycopg2 connection is NOT yet compatible with the service
+    layer — it uses ? placeholders and sqlite3.Row-style access. T3 wraps
+    this in _PgConnectionWrapper to solve both problems. T1 intentionally
+    returns the raw connection so T3 has a clean foundation to wrap.
     """
     if _is_postgres(url):
         conn = psycopg2.connect(url)
@@ -101,39 +106,29 @@ def _connect(url: str):
 def get_db():
     """FastAPI dependency — returns a live database connection.
 
-    For SQLite: sets row_factory = sqlite3.Row.
-    For PostgreSQL: uses RealDictCursor so rows behave like dicts.
+    SQLite: sets row_factory = sqlite3.Row (unchanged behaviour).
+    PostgreSQL: returns the raw psycopg2 connection. Placeholder and row
+    access compatibility is added by T3's _PgConnectionWrapper.
     """
-    if _is_postgres(DATABASE_URL):
-        conn = _connect(DATABASE_URL)
-        try:
-            yield conn
-        finally:
-            conn.close()
-    else:
-        conn = _connect(DATABASE_URL)
+    conn = _connect(DATABASE_URL)
+    if not _is_postgres(DATABASE_URL):
         conn.row_factory = sqlite3.Row
-        try:
-            yield conn
-        finally:
-            conn.close()
+    try:
+        yield conn
+    finally:
+        conn.close()
 ```
 
-**AuthGate** — update to use the same `_connect()` factory. For PostgreSQL connections, set a `RealDictCursor` as the cursor factory so rows behave dict-like:
+**AuthGate** — update to use `_connect()` instead of the old hardcoded `sqlite3.connect()`. Set `row_factory` for the SQLite path only:
 
 ```python
 # inside AuthGate.dispatch
 conn = _connect(DATABASE_URL)
-if _is_postgres(DATABASE_URL):
-    # rows accessed as dicts — psycopg2 default cursor returns tuples
-    # use RealDictCursor so service layer code (conn.execute(...).fetchone()) works
-    conn = psycopg2.connect(DATABASE_URL,
-                            cursor_factory=psycopg2.extras.RealDictCursor)
-else:
+if not _is_postgres(DATABASE_URL):
     conn.row_factory = sqlite3.Row
 ```
 
-Simplify this into the `_connect()` factory — pass `cursor_factory` for PostgreSQL connections rather than duplicating the logic in `AuthGate`.
+T3 will later replace these returned connections with `_PgConnectionWrapper` — `AuthGate` will not need further changes at that point.
 
 ### 4. SQL placeholder compatibility
 
@@ -158,7 +153,7 @@ Run:
 python -m uvicorn app.main:app --reload
 ```
 
-App must start without errors against SQLite. PostgreSQL connectivity will be verified end-to-end in T3.
+App must start without errors against SQLite. PostgreSQL connectivity is verified end-to-end in T3 — do not attempt to run the app against PostgreSQL in this task.
 
 ---
 
@@ -188,13 +183,14 @@ iterations/p1-i9/tasks.md
 
 - [ ] `psycopg2-binary>=2.9.0` in `requirements.txt`
 - [ ] `DATABASE_URL` read from environment, defaulting to `sqlite:///./cashflow.db`
-- [ ] `_is_postgres()` helper correctly identifies PostgreSQL URLs
-- [ ] `_connect()` returns `sqlite3.Connection` for SQLite URLs and `psycopg2` connection for PostgreSQL URLs
-- [ ] `get_db()` dependency works for both engines (dict-like row access in both cases)
-- [ ] `AuthGate` uses the updated `_connect()` factory
+- [ ] `_is_postgres(url: str)` helper correctly identifies both `postgresql://` and `postgres://`
+- [ ] `_connect()` returns `sqlite3.Connection` for SQLite URLs and a raw `psycopg2` connection for PostgreSQL URLs
+- [ ] `get_db()` sets `row_factory = sqlite3.Row` for SQLite; yields raw psycopg2 connection for PostgreSQL (T3 adds wrapper)
+- [ ] `AuthGate` uses `_connect()` and sets `row_factory` for SQLite path only
 - [ ] `:memory:` SQLite path still works (test compatibility preserved)
-- [ ] App starts without errors: `python -m uvicorn app.main:app --reload`
 - [ ] `docs/deployment.md` stub created with hosting model decision
-- [ ] Placeholder compatibility note comment added in `main.py`
+- [ ] Placeholder compatibility note comment in `main.py` — no `?` → `%s` rewriting (T3 scope)
+- [ ] App starts without errors against SQLite: `python -m uvicorn app.main:app --reload`
+- [ ] No attempt made to run app or service queries against PostgreSQL in this task
 - [ ] `ruff check .` passes
-- [ ] Existing tests still pass: `pytest -v` (SQLite path unchanged)
+- [ ] `pytest -v` passes (SQLite path unchanged)

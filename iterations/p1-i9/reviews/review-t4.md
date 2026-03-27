@@ -58,8 +58,14 @@ Review only the changes in this task branch. Report precise problems with file r
 
 5. **WhiteNoise**
    - `whitenoise>=6.0.0` in `requirements.txt`
-   - `app = WhiteNoise(app, root="static", prefix="static")` at module level, conditional on `ENVIRONMENT == "production"`
-   - Dev path still uses `app.mount("/static", StaticFiles(...))` — unchanged
+   - WhiteNoise is applied as a **module-level wrapper** at the bottom of `main.py`, after `create_app()`:
+     ```python
+     app = create_app()
+     if ENVIRONMENT == "production":
+         app = WhiteNoise(app, root="static", prefix="static")
+     ```
+   - Dev path still uses `app.mount("/static", StaticFiles(...))` inside `create_app()` — unchanged
+   - **`app.middleware_stack = None` must NOT appear** — that is an unsafe internal FastAPI detail
 
 6. **SANDBOX banner in `base.html`**
    - Wrapped in `{% if request.app.state.environment != 'production' %}` … `{% endif %}`
@@ -128,7 +134,8 @@ Files modified outside `app/main.py`, `app/templates/base.html`, `requirements.t
 - [PASS|FAIL] middleware registered outermost (after `SessionMiddleware`)
 - [PASS|FAIL] no sensitive data logged
 - [PASS|FAIL] `whitenoise>=6.0.0` in `requirements.txt`
-- [PASS|FAIL] WhiteNoise wraps app when `ENVIRONMENT=production`
+- [PASS|FAIL] WhiteNoise wraps app at module level when `ENVIRONMENT=production`
+- [PASS|FAIL] `app.middleware_stack = None` does NOT appear anywhere
 - [PASS|FAIL] SANDBOX banner hidden when `ENVIRONMENT=production`
 - [PASS|FAIL] SANDBOX banner visible when `ENVIRONMENT=development`
 - [PASS|FAIL] `app.state.environment` set in `create_app()`

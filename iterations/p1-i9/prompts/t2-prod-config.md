@@ -8,7 +8,7 @@
 
 ## Goal
 
-Harden the application configuration for production. After this task: all secrets come from environment variables, no hardcoded values exist, the app behaves differently in `production` vs `development` vs `test` environments (logging level, debug mode, CORS, allowed hosts), and a `.env.example` documents every variable an operator needs to set.
+Harden the application configuration for production. After this task: all secrets come from environment variables, no hardcoded values exist, the app behaves differently in `production` vs `development` vs `test` environments (allowed hosts, session security), and a `.env.example` documents every variable an operator needs to set.
 
 This task is **configuration only** — no new features, no schema changes, no route changes.
 
@@ -32,9 +32,13 @@ Add `ENVIRONMENT` detection to `app/main.py`. Three valid values: `production`, 
 
 ```python
 ENVIRONMENT = os.getenv("ENVIRONMENT", "development").lower()
-assert ENVIRONMENT in ("production", "development", "test"), \
-    f"ENVIRONMENT must be production/development/test, got: {ENVIRONMENT!r}"
+if ENVIRONMENT not in ("production", "development", "test"):
+    raise ValueError(
+        f"ENVIRONMENT must be 'production', 'development', or 'test', got: {ENVIRONMENT!r}"
+    )
 ```
+
+Do NOT use `assert` — it is silently disabled when Python runs with the `-O` (optimise) flag, which some production runtimes enable.
 
 Use `ENVIRONMENT` to gate:
 - Debug mode: enabled only in `development`

@@ -38,50 +38,64 @@ tests/test_init_db.py
 
 ## Deliverables
 
-### 1. PostgreSQL-compatible `db/schema.sql`
+### 1. Single `db/schema.sql` with runtime adaptation
 
-The current schema has SQLite-specific syntax that must be made dual-compatible.
+The iteration brief states the schema is identical between SQLite and PostgreSQL. Do NOT create a second schema file (`db/schema_pg.sql`). Keep one `db/schema.sql` and handle the two engine-specific differences in `init_db.py` at apply time.
 
-**AUTOINCREMENT → SERIAL (PostgreSQL) / AUTOINCREMENT (SQLite):**
-SQLite and PostgreSQL cannot share the same auto-increment syntax. The cleanest solution: keep `schema.sql` using standard SQL `INTEGER PRIMARY KEY` without `AUTOINCREMENT` — SQLite auto-increments any `INTEGER PRIMARY KEY` implicitly, and PostgreSQL handles this with `SERIAL` or `GENERATED ALWAYS AS IDENTITY`.
+**Difference 1 — AUTOINCREMENT → SERIAL:**
 
-Use `SERIAL PRIMARY KEY` for PostgreSQL, `INTEGER PRIMARY KEY` for SQLite. Since `init_db.py` will handle engine-specific schema creation (see deliverable 2), create two schema files:
+SQLite requires `INTEGER PRIMARY KEY AUTOINCREMENT`. PostgreSQL requires `SERIAL PRIMARY KEY`. The schema uses `AUTOINCREMENT` (existing SQLite syntax). At apply time, substitute for PostgreSQL:
 
-- `db/schema.sql` — SQLite version (current, minimal changes)
-- `db/schema_pg.sql` — PostgreSQL version
-
-**Changes in `db/schema_pg.sql`:**
-
-```sql
--- Replace: id INTEGER PRIMARY KEY AUTOINCREMENT
--- With:    id SERIAL PRIMARY KEY
-
--- Replace: category_id INTEGER PRIMARY KEY
--- With:    category_id SERIAL PRIMARY KEY
+```python
+def _prepare_schema_for_pg(sql: str) -> str:
+    """Adapt SQLite schema SQL for PostgreSQL at apply time."""
+    return sql.replace("INTEGER PRIMARY KEY AUTOINCREMENT", "SERIAL PRIMARY KEY")
 ```
 
-**Timestamps:**
-- SQLite: `DEFAULT CURRENT_TIMESTAMP` — works on both, keep as-is
+This is a safe substitution — `AUTOINCREMENT` is a specific, bounded keyword that appears only in column definitions in our schema. `DEFAULT CURRENT_TIMESTAMP` and `BOOLEAN` work identically on both engines.
 
-**Boolean:**
-- Both SQLite (0/1) and PostgreSQL (true/false) accept `BOOLEAN` column type — no change needed
+**Difference 2 — conditional CHECK constraint (go-live requirement per CLAUDE.md):**
 
-**Add PostgreSQL conditional CHECK (go-live requirement per CLAUDE.md):**
+SQLite does not support `ALTER TABLE ... ADD CONSTRAINT CHECK` after table creation. PostgreSQL does. Apply the constraint as a separate statement after schema creation, for PostgreSQL only:
 
-Add to `db/schema_pg.sql` after the transactions table definition:
-
-```sql
--- PostgreSQL only — enforces vat_deductible_pct NOT NULL on cash_out
--- Added at go-live per CLAUDE.md
+```python
+_PG_POST_SCHEMA_SQL = """
 ALTER TABLE transactions
 ADD CONSTRAINT chk_expense_vat_deductible
 CHECK (
     direction != 'cash_out'
     OR vat_deductible_pct IS NOT NULL
 );
+"""
 ```
 
-This constraint must NOT be in `db/schema.sql` (SQLite version) — SQLite does not support `ALTER TABLE ADD CONSTRAINT` with `CHECK` clauses after table creation.
+Run this in `_apply_schema()` after the CREATE TABLE statements, wrapped in a try/except on `DuplicateObject` so it is idempotent:
+
+```python
+import psycopg2.errors
+
+def _apply_pg_post_schema(conn) -> None:
+    """Apply PostgreSQL-only post-schema DDL (idempotent)."""
+    try:
+        conn.execute(_PG_POST_SCHEMA_SQL)
+        conn.commit()
+    except psycopg2.errors.DuplicateObject:
+        conn.rollback()  # constraint already exists — safe to ignore
+```
+
+**Schema execution on PostgreSQL:**
+
+psycopg2 has no `executescript()`. Execute the schema as individual CREATE TABLE statements. Since our `schema.sql` contains only DDL `CREATE TABLE IF NOT EXISTS` blocks separated by blank lines with semicolons, split on `;\n` (semicolon + newline) — not a bare `;` — which is safe for this controlled file:
+
+```python
+def _split_schema_statements(sql: str) -> list[str]:
+    """Split schema SQL into individual statements for psycopg2.
+
+    Splits on semicolon-newline, not bare semicolon, to avoid splitting
+    inside string literals or inline comments. Safe for our DDL-only schema.
+    """
+    return [s.strip() for s in sql.split(";\n") if s.strip()]
+```
 
 ### 2. Dual-engine `db/init_db.py`
 
@@ -97,7 +111,11 @@ Refactor `init_db.py` for dual-engine support:
 **Engine detection:**
 ```python
 def _is_postgres(conn) -> bool:
-    """Detect psycopg2 connection by module name."""
+    """Detect psycopg2 connection, including the _PgConnectionWrapper from main.py."""
+    # _PgConnectionWrapper (added by T3 in app/main.py) wraps a raw psycopg2 conn.
+    # Check for it by name to avoid importing app code into db/init_db.py.
+    if type(conn).__name__ == "_PgConnectionWrapper":
+        return True
     return type(conn).__module__.startswith("psycopg2")
 ```
 
@@ -138,54 +156,49 @@ def _column_exists(conn, table_name: str, column_name: str) -> bool:
 **Schema loading (engine-aware):**
 ```python
 SCHEMA_PATH = pathlib.Path("db/schema.sql")
-SCHEMA_PG_PATH = pathlib.Path("db/schema_pg.sql")
 
 def _apply_schema(conn) -> None:
+    schema = SCHEMA_PATH.read_text()
     if _is_postgres(conn):
-        schema = SCHEMA_PG_PATH.read_text()
-        # psycopg2 does not support executescript — execute statements one by one
-        for statement in _split_sql(schema):
+        pg_schema = _prepare_schema_for_pg(schema)
+        for statement in _split_schema_statements(pg_schema):
             conn.execute(statement)
         conn.commit()
+        _apply_pg_post_schema(conn)  # conditional CHECK constraint
     else:
-        conn.executescript(SCHEMA_PATH.read_text())
+        conn.executescript(schema)
 ```
 
-**SQL statement splitter for PostgreSQL:**
-```python
-def _split_sql(sql: str) -> list[str]:
-    """Split a SQL script into individual statements for psycopg2."""
-    return [s.strip() for s in sql.split(";") if s.strip()]
+**Seed data — rewrite seed files to use standard SQL:**
+
+`INSERT OR IGNORE` is SQLite-only. The fix is to rewrite the seed files to use `INSERT INTO ... ON CONFLICT DO NOTHING`, which is standard SQL supported by both SQLite 3.24+ (released 2018) and PostgreSQL. No runtime string rewriting needed.
+
+Update `seed/categories.sql` and `seed/companies.sql`:
+- Remove `INSERT OR IGNORE INTO`
+- Replace with `INSERT INTO`
+- Append `ON CONFLICT DO NOTHING` before the statement's `;`
+
+Example for `seed/companies.sql`:
+```sql
+-- Before:
+INSERT OR IGNORE INTO companies (id, name, slug)
+VALUES (...);
+
+-- After:
+INSERT INTO companies (id, name, slug)
+VALUES (...)
+ON CONFLICT DO NOTHING;
 ```
 
-**Seed data (INSERT OR IGNORE → ON CONFLICT DO NOTHING):**
-
-`INSERT OR IGNORE` is SQLite-only. For PostgreSQL, the seed files need `ON CONFLICT DO NOTHING`. Since the seed files are plain SQL, create PostgreSQL-compatible versions or adapt them at runtime.
-
-Preferred approach: adapt at init time, not separate files. In `initialise_db()`, detect engine and rewrite the INSERT statements:
-
+For the inline user INSERT in `init_db.py`, use the same pattern:
 ```python
-def _adapt_seed(sql: str, is_pg: bool) -> str:
-    """Convert SQLite INSERT OR IGNORE to PostgreSQL ON CONFLICT DO NOTHING."""
-    if is_pg:
-        return sql.replace("INSERT OR IGNORE INTO", "INSERT INTO").replace(
-            ");", ") ON CONFLICT DO NOTHING;"
-        )
-    return sql
-```
-
-Apply `_adapt_seed()` to the contents of `seed/categories.sql`, `seed/companies.sql`, and the inline user INSERT in `initialise_db()`.
-
-For users, adapt the inline INSERT:
-```python
-# SQLite:
-conn.execute("INSERT OR IGNORE INTO users (username, password_hash) VALUES (?, ?)", ...)
-# PostgreSQL:
 conn.execute(
-    "INSERT INTO users (username, password_hash) VALUES (%s, %s) ON CONFLICT DO NOTHING",
-    ...
+    "INSERT INTO users (username, password_hash) VALUES (?, ?) ON CONFLICT DO NOTHING",
+    (username, password_hash),
 )
 ```
+
+This works on SQLite (via `_PgConnectionWrapper` which translates `?` → `%s`) and PostgreSQL alike. The `?` is translated by the wrapper — do not write `%s` here.
 
 **Pre-I8 compatibility check (engine-aware):**
 
@@ -195,9 +208,9 @@ The `_has_incompatible_pre_i8_schema()` function uses `_table_exists` and `_colu
 
 ### 3. SQL placeholder compatibility adapter in `app/main.py`
 
-The service layer uses `?` placeholders throughout. psycopg2 requires `%s`. Rather than touching every service file, add a thin connection wrapper in `app/main.py`.
+The service layer uses `?` placeholders throughout. psycopg2 requires `%s`. T1 intentionally left `_connect()` returning a raw psycopg2 connection — this task adds the wrapper that makes it service-layer compatible.
 
-Add a `PgConnection` wrapper class that proxies `execute()` with automatic placeholder rewriting:
+Add the `_PgConnectionWrapper` class in `app/main.py` and update `_connect()` to return it for PostgreSQL URLs:
 
 ```python
 class _PgConnectionWrapper:
@@ -285,10 +298,9 @@ pytest -v
 
 ## Important Rules
 
-- **Do NOT change service layer SQL logic** — only add the `_PgConnectionWrapper` in `main.py`
-- **Keep `db/schema.sql` working** — the SQLite version is unchanged for dev/test
-- **`db/schema_pg.sql` is the production schema** — it adds `SERIAL` and the conditional CHECK
-- **`INSERT OR IGNORE` stays in seed files** — adapt at runtime in `init_db.py`, do not modify the seed files themselves
+- **One schema file** — do NOT create `db/schema_pg.sql`. Runtime adaptation via `_prepare_schema_for_pg()` keeps the single source of truth.
+- **Do NOT change service layer SQL logic** — only add `_PgConnectionWrapper` in `main.py`
+- **Rewrite seed files** to use `ON CONFLICT DO NOTHING` — this removes `INSERT OR IGNORE` from the source, which is cleaner than runtime adaptation
 - **`_memory_keeper` (`:memory:`) pattern must still work** — SQLite tests depend on it
 - **Do not break existing tests** — all 84+ tests must still pass against SQLite after this task
 
@@ -297,12 +309,13 @@ pytest -v
 ## Allowed Files
 
 ```text
-db/schema.sql
-db/schema_pg.sql       ← create
+db/schema.sql           ← no structural changes; AUTOINCREMENT stays for SQLite
 db/init_db.py
-app/main.py
-tests/conftest.py      ← create or modify
-tests/test_init_db.py  ← add pg_ fixtures and tests
+seed/categories.sql     ← rewrite INSERT OR IGNORE → ON CONFLICT DO NOTHING
+seed/companies.sql      ← rewrite INSERT OR IGNORE → ON CONFLICT DO NOTHING
+app/main.py             ← add _PgConnectionWrapper, update _connect() and _is_postgres()
+tests/conftest.py       ← create or modify
+tests/test_init_db.py   ← add pg_ fixtures and tests
 iterations/p1-i9/tasks.md
 ```
 
@@ -310,12 +323,16 @@ iterations/p1-i9/tasks.md
 
 ## Acceptance Criteria
 
-- [ ] `db/schema_pg.sql` created with SERIAL primary keys and conditional CHECK constraint
-- [ ] `init_db.py` detects engine and uses engine-appropriate schema file
-- [ ] `_table_exists()` and `_column_exists()` work on both SQLite and PostgreSQL
-- [ ] Seed data inserts use `ON CONFLICT DO NOTHING` on PostgreSQL (adapted at runtime)
-- [ ] `_PgConnectionWrapper` in `main.py` translates `?` → `%s` transparently
-- [ ] `get_db()` returns wrapper for PostgreSQL connections (dict-like row access preserved)
+- [ ] No `db/schema_pg.sql` — single schema file maintained
+- [ ] `_prepare_schema_for_pg()` substitutes `AUTOINCREMENT` → `SERIAL` for PostgreSQL
+- [ ] `chk_expense_vat_deductible` CHECK constraint applied after schema via `_apply_pg_post_schema()` (idempotent)
+- [ ] `init_db.py` `_table_exists()` and `_column_exists()` use engine-appropriate introspection
+- [ ] `_apply_schema()` uses `_split_schema_statements()` (splits on `;\n`) for PostgreSQL
+- [ ] Seed files use `ON CONFLICT DO NOTHING` — no `INSERT OR IGNORE` remains
+- [ ] `_PgConnectionWrapper` in `main.py` translates `?` → `%s` and returns `RealDictCursor` rows
+- [ ] `_connect()` returns `_PgConnectionWrapper` for PostgreSQL URLs
+- [ ] `_is_postgres()` in both `main.py` and `init_db.py` recognises the wrapper
+- [ ] `get_db()` yields wrapper for PostgreSQL (service layer queries work end-to-end)
 - [ ] `pytest -v` passes (SQLite path) — all existing tests green
 - [ ] `DATABASE_URL=postgresql://... pytest -v` passes (PostgreSQL path) — all tests green
 - [ ] PostgreSQL `vat_deductible_pct` CHECK constraint active and tested
