@@ -1,8 +1,8 @@
 # P1-I9 — Azure / Server / Deployment
 ## Task Board
 
-**Status:** NOT STARTED
-**Last updated:** 2026-03-23
+**Status:** READY TO START
+**Last updated:** 2026-03-27
 **Iteration branch:** `feature/phase-1/iteration-9` ← all task PRs target this branch
 **Final PR:** `feature/phase-1/iteration-9` → `main` ← QA agent approves before merge
 
