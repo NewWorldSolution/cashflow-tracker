@@ -58,19 +58,21 @@ Expected: all tests pass including the `pg_*` fixtures.
 git diff --name-only main
 ```
 
-Expected modified/created files:
+Expected modified/created files may include:
 
 ```text
 app/main.py
 app/templates/base.html
-db/schema_pg.sql
 db/init_db.py
+db/schema.sql
 requirements.txt
 .env.example
 .gitignore
 docs/deployment.md
-.github/workflows/ci.yml
+.github/workflows/ci.yml    ← optional if CI is implemented rather than deferred
 tests/conftest.py and/or tests/test_init_db.py
+seed/categories.sql
+seed/companies.sql
 iterations/p1-i9/tasks.md
 iterations/p1-i9/prompts/*.md
 iterations/p1-i9/reviews/*.md
@@ -88,7 +90,6 @@ app/routes/dashboard.py
 app/routes/auth.py
 app/routes/settings.py
 app/i18n/
-db/schema.sql            ← SQLite schema structurally unchanged (AUTOINCREMENT stays)
 ```
 
 File that must NOT exist:

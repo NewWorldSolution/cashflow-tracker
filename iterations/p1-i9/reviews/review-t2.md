@@ -37,7 +37,7 @@ Review only the changes in this task branch. Report precise problems with file r
 
 2. **`ENVIRONMENT` detection in `app/main.py`**
    - Read via `os.getenv("ENVIRONMENT", "development").lower()`
-   - Validated (assert or explicit check) against `("production", "development", "test")`
+   - Validated via an explicit runtime check against `("production", "development", "test")`
    - Invalid value must raise an error — not silently accepted
 
 3. **`ALLOWED_HOSTS` enforcement**

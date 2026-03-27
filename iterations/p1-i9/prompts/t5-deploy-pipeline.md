@@ -24,7 +24,7 @@ docs/deployment.md      ← stub created in T1 — expand it here
 app/main.py             ← understand all env vars in use
 .env.example            ← all variables documented in T2
 requirements.txt        ← current dependencies
-db/schema_pg.sql        ← PostgreSQL schema from T3
+db/schema.sql           ← single schema source; PostgreSQL adaptation happens in `db/init_db.py`
 ```
 
 ---
@@ -344,6 +344,7 @@ PostgreSQL CI tests (optional — requires a PostgreSQL service in the CI job):
 
 - **No application code changes** — this task is docs and pipeline only
 - **Do not commit real passwords or connection strings** — all examples use placeholders
+- **Test-only CI values are acceptable** — a placeholder like `SECRET_KEY=ci-test-secret-key` is fine in the workflow; production secrets must never be committed
 - **The runbook must be self-sufficient** — the owner should be able to follow it cold without asking questions
 - **Smoke test covers the full happy path** — not just the health endpoint
 - **GitHub Actions is optional** — document it but do not block the iteration if CI setup is deferred

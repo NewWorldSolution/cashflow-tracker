@@ -71,7 +71,8 @@ Review only the changes in this task branch. Report precise problems with file r
    - Steps: checkout → Python 3.11 setup → `pip install -r requirements.txt` → `pytest -v` → `ruff check .`
    - `SECRET_KEY` set as an env var for the test step
    - `ENVIRONMENT=test` set for the test step
-   - Secrets referenced via `${{ secrets.* }}` — not hardcoded
+   - No production secrets are hardcoded in the workflow
+   - A test-only placeholder such as `SECRET_KEY: ci-test-secret-key` is acceptable
    - If PostgreSQL job is included: uses a `services: postgres:` block, not a real Azure connection
 
    If CI is explicitly deferred: check that the reason is documented clearly in the deployment runbook.
@@ -129,7 +130,7 @@ Files modified outside `docs/deployment.md`, `.github/workflows/ci.yml`, and ite
 - [PASS|FAIL] no real passwords or connection strings committed
 - [PASS|FAIL] smoke test checklist covers health, auth, cash_in create, cash_out create, void, correct, company filter, SANDBOX absent, persistence
 - [PASS|FAIL] `.github/workflows/ci.yml` created with pytest + ruff (or deferral explicitly documented)
-- [PASS|FAIL] CI workflow uses `ENVIRONMENT=test` and `SECRET_KEY` env vars, not hardcoded secrets
+- [PASS|FAIL] CI workflow uses `ENVIRONMENT=test` and a test-safe `SECRET_KEY` env var; no production secrets are hardcoded
 - [PASS|FAIL] no app / db / seed / test / requirements changes
 - [PASS|FAIL] `pytest -v` passes
 - [PASS|FAIL] `ruff check .` passes
