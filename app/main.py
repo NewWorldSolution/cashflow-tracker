@@ -8,15 +8,29 @@ from fastapi.responses import RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.sessions import SessionMiddleware
+from starlette.middleware.trustedhost import TrustedHostMiddleware
 
 from jinja2 import pass_context
 
-from app.i18n import DEFAULT_LOCALE, format_amount, format_date, format_datetime, translate
+from app.i18n import format_amount, format_date, format_datetime, translate
 from db.init_db import initialise_db
 
 load_dotenv()
 
 DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./cashflow.db")
+ENVIRONMENT = os.getenv("ENVIRONMENT", "development").lower()
+if ENVIRONMENT not in ("production", "development", "test"):
+    raise ValueError(
+        f"ENVIRONMENT must be 'production', 'development', or 'test', got: {ENVIRONMENT!r}"
+    )
+
+ALLOWED_HOSTS_RAW = os.getenv("ALLOWED_HOSTS", "")
+ALLOWED_HOSTS: list[str] = [h.strip() for h in ALLOWED_HOSTS_RAW.split(",") if h.strip()]
+
+_env_locale = os.getenv("DEFAULT_LOCALE", "pl").lower()
+if _env_locale not in ("en", "pl"):
+    _env_locale = "pl"
+
 SECRET_KEY = os.getenv("SECRET_KEY")
 
 if not SECRET_KEY:
@@ -129,7 +143,7 @@ class LocaleMiddleware(BaseHTTPMiddleware):
     """Read locale from session and expose on request state."""
 
     async def dispatch(self, request: Request, call_next):
-        request.state.locale = request.session.get("locale", DEFAULT_LOCALE)
+        request.state.locale = request.session.get("locale", _env_locale)
         return await call_next(request)
 
 
@@ -160,6 +174,12 @@ def create_app(database_url: str | None = None) -> FastAPI:
     if database_url:
         DATABASE_URL = database_url
 
+    if ENVIRONMENT == "production" and not ALLOWED_HOSTS:
+        raise RuntimeError(
+            "ALLOWED_HOSTS must be set in production. "
+            "Example: ALLOWED_HOSTS=mycashflow.azurewebsites.net"
+        )
+
     # NOTE: SQL placeholder style — SQLite uses ?, PostgreSQL uses %s.
     # Service layer uses ? throughout. T3 (pg-migration) handles placeholder
     # compatibility via a thin adapter or by patching the query layer.
@@ -171,12 +191,25 @@ def create_app(database_url: str | None = None) -> FastAPI:
     initialise_db(conn)
     conn.close()
 
-    app = FastAPI(title="cashflow-tracker", lifespan=lifespan)
+    app = FastAPI(
+        title="cashflow-tracker",
+        lifespan=lifespan,
+        debug=(ENVIRONMENT == "development"),
+    )
 
     app.add_middleware(AuthGate)
     app.add_middleware(LocaleMiddleware)
     app.add_middleware(FlashMessageMiddleware)
-    app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
+    if ENVIRONMENT == "production":
+        app.add_middleware(TrustedHostMiddleware, allowed_hosts=ALLOWED_HOSTS)
+    app.add_middleware(
+        SessionMiddleware,
+        secret_key=SECRET_KEY,
+        session_cookie="session",
+        max_age=8 * 60 * 60,
+        https_only=(ENVIRONMENT == "production"),
+        same_site="lax",
+    )
 
     from app.routes.settings import router as settings_router
     from app.routes.auth import router as auth_router
@@ -193,7 +226,7 @@ def create_app(database_url: str | None = None) -> FastAPI:
     @pass_context
     def _t(context, key: str) -> str:
         request = context.get("request")
-        locale = getattr(getattr(request, "state", None), "locale", DEFAULT_LOCALE)
+        locale = getattr(getattr(request, "state", None), "locale", _env_locale)
         return translate(key, locale)
 
     from app.routes.settings import templates as settings_tpl
@@ -204,19 +237,19 @@ def create_app(database_url: str | None = None) -> FastAPI:
     @pass_context
     def _format_date(context, value) -> str:
         request = context.get("request")
-        locale = getattr(getattr(request, "state", None), "locale", DEFAULT_LOCALE)
+        locale = getattr(getattr(request, "state", None), "locale", _env_locale)
         return format_date(value, locale)
 
     @pass_context
     def _format_amount(context, value) -> str:
         request = context.get("request")
-        locale = getattr(getattr(request, "state", None), "locale", DEFAULT_LOCALE)
+        locale = getattr(getattr(request, "state", None), "locale", _env_locale)
         return format_amount(value, locale)
 
     @pass_context
     def _format_datetime(context, value) -> str:
         request = context.get("request")
-        locale = getattr(getattr(request, "state", None), "locale", DEFAULT_LOCALE)
+        locale = getattr(getattr(request, "state", None), "locale", _env_locale)
         return format_datetime(value, locale)
 
     for tpl in (settings_tpl, auth_tpl, dashboard_tpl, transactions_tpl):
