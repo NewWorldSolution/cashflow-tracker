@@ -1,10 +1,15 @@
 import os
+import json
+import logging
 import sqlite3
+import sys
+import time
 from contextlib import asynccontextmanager
+from datetime import datetime, timezone
 
 from dotenv import load_dotenv
 from fastapi import FastAPI, Request
-from fastapi.responses import RedirectResponse
+from fastapi.responses import JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.middleware.sessions import SessionMiddleware
@@ -45,6 +50,7 @@ _memory_keeper: sqlite3.Connection | None = None
 EXEMPT_PATHS = {
     "/settings/opening-balance", "/auth/login", "/auth/logout", "/favicon.ico",
     "/lang/en", "/lang/pl",
+    "/health",
 }
 EXEMPT_PREFIXES = ("/static", "/docs", "/openapi.json")
 
@@ -138,6 +144,33 @@ def _is_postgres(target) -> bool:
     if isinstance(target, _PgConnectionWrapper):
         return True
     return type(target).__module__.startswith("psycopg2")
+
+
+class _JsonFormatter(logging.Formatter):
+    def format(self, record: logging.LogRecord) -> str:
+        return json.dumps(
+            {
+                "timestamp": datetime.now(timezone.utc).isoformat(),
+                "level": record.levelname,
+                "logger": record.name,
+                "message": record.getMessage(),
+            }
+        )
+
+
+def _configure_logging() -> None:
+    handler = logging.StreamHandler(sys.stdout)
+    if ENVIRONMENT == "production":
+        handler.setFormatter(_JsonFormatter())
+    else:
+        handler.setFormatter(
+            logging.Formatter("%(asctime)s %(levelname)-8s %(name)s  %(message)s")
+        )
+    logging.basicConfig(level=logging.INFO, handlers=[handler], force=True)
+
+
+_configure_logging()
+logger = logging.getLogger(__name__)
 
 
 def _connect(url: str):
@@ -237,12 +270,32 @@ class FlashMessageMiddleware(BaseHTTPMiddleware):
         return await call_next(request)
 
 
+class RequestLoggingMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        start = time.perf_counter()
+        response = await call_next(request)
+        duration_ms = (time.perf_counter() - start) * 1000
+        logger.info(
+            "%s %s %d %.1fms",
+            request.method,
+            request.url.path,
+            response.status_code,
+            duration_ms,
+        )
+        return response
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """Initialise database on startup."""
     conn = _connect(DATABASE_URL)
     initialise_db(conn)
     conn.close()
+    logger.info(
+        "cashflow-tracker started [environment=%s, database=%s]",
+        ENVIRONMENT,
+        "postgresql" if _is_postgres(DATABASE_URL) else "sqlite",
+    )
     yield
 
 
@@ -274,6 +327,7 @@ def create_app(database_url: str | None = None) -> FastAPI:
         lifespan=lifespan,
         debug=(ENVIRONMENT == "development"),
     )
+    app.state.environment = ENVIRONMENT
 
     app.add_middleware(AuthGate)
     app.add_middleware(LocaleMiddleware)
@@ -288,6 +342,7 @@ def create_app(database_url: str | None = None) -> FastAPI:
         https_only=(ENVIRONMENT == "production"),
         same_site="lax",
     )
+    app.add_middleware(RequestLoggingMiddleware)
 
     from app.routes.settings import router as settings_router
     from app.routes.auth import router as auth_router
@@ -343,9 +398,42 @@ def create_app(database_url: str | None = None) -> FastAPI:
         referer = request.headers.get("referer", "/")
         return RedirectResponse(url=referer, status_code=302)
 
+    @app.get("/health")
+    async def health_check():
+        try:
+            conn = _connect(DATABASE_URL)
+            try:
+                if _is_postgres(DATABASE_URL):
+                    with conn.cursor() as cur:
+                        cur.execute("SELECT 1")
+                else:
+                    conn.execute("SELECT 1")
+            finally:
+                conn.close()
+            db_status = "connected"
+            status_code = 200
+        except Exception:
+            db_status = "unreachable"
+            status_code = 503
+
+        return JSONResponse(
+            content={
+                "status": "healthy" if status_code == 200 else "unhealthy",
+                "database": db_status,
+                "version": "1.0.0",
+                "environment": ENVIRONMENT,
+            },
+            status_code=status_code,
+        )
+
     app.mount("/static", StaticFiles(directory="static"), name="static")
 
     return app
 
 
 app = create_app()
+
+if ENVIRONMENT == "production":
+    from whitenoise import WhiteNoise
+
+    app = WhiteNoise(app, root="static/", prefix="static")
