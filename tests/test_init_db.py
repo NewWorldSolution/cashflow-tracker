@@ -226,3 +226,82 @@ def test_opening_balance_saves_to_settings(client):
         follow_redirects=False,
     )
     assert response.status_code == 302
+
+
+def test_pg_tables_created(pg_db):
+    cur = pg_db.cursor()
+    cur.execute(
+        "SELECT table_name FROM information_schema.tables WHERE table_schema = 'public'"
+    )
+    tables = {row[0] for row in cur.fetchall()}
+    assert {
+        "users",
+        "categories",
+        "companies",
+        "transactions",
+        "settings",
+        "settings_audit",
+    }.issubset(tables)
+
+
+def test_pg_seed_categories(pg_db):
+    cur = pg_db.cursor()
+    cur.execute("SELECT COUNT(*) FROM categories WHERE parent_id IS NULL")
+    parent_count = cur.fetchone()[0]
+    cur.execute("SELECT COUNT(*) FROM categories WHERE parent_id IS NOT NULL")
+    child_count = cur.fetchone()[0]
+    assert parent_count == 19
+    assert child_count == 62
+
+
+def test_pg_seed_companies(pg_db):
+    cur = pg_db.cursor()
+    cur.execute("SELECT COUNT(*) FROM companies")
+    assert cur.fetchone()[0] == 4
+
+
+def test_pg_seed_users(pg_db):
+    cur = pg_db.cursor()
+    cur.execute("SELECT COUNT(*) FROM users")
+    assert cur.fetchone()[0] == 3
+
+
+def test_pg_vat_deductible_constraint(pg_db):
+    import psycopg2.errors
+
+    cur = pg_db.cursor()
+    with pytest.raises(psycopg2.errors.CheckViolation):
+        cur.execute(
+            """
+            INSERT INTO transactions (
+                date,
+                amount,
+                direction,
+                category_id,
+                company_id,
+                payment_method,
+                vat_rate,
+                vat_deductible_pct,
+                vat_mode,
+                customer_type,
+                for_accountant,
+                logged_by
+            )
+            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+            """,
+            (
+                "2026-03-28",
+                "100.00",
+                "cash_out",
+                121,
+                1,
+                "cash",
+                23,
+                None,
+                "automatic",
+                "private",
+                False,
+                1,
+            ),
+        )
+    pg_db.rollback()
