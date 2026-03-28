@@ -37,7 +37,7 @@ Prepare the app for real deployment and operational use in Azure. After I9, the 
 
 | ID    | Title                              | Owner | Status     | Depends on | Branch |
 |-------|------------------------------------|-------|------------|------------|--------|
-| I9-T1 | Azure hosting + database setup     | —     | ⏳ WAITING | —          | `feature/p1-i9/t1-azure-setup` |
+| I9-T1 | Azure hosting + database setup     | Codex | ✅ DONE | —          | `feature/p1-i9/t1-azure-setup` |
 | I9-T2 | Production config + secrets        | —     | ⏳ WAITING | I9-T1      | `feature/p1-i9/t2-prod-config` |
 | I9-T3 | Schema migration (SQLite → PG)     | —     | ⏳ WAITING | I9-T1      | `feature/p1-i9/t3-pg-migration` |
 | I9-T4 | Health check + logging + static    | —     | ⏳ WAITING | I9-T2      | `feature/p1-i9/t4-ops` |

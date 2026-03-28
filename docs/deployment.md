@@ -1,0 +1,1 @@
+Azure hosting decision for Phase 1 iteration 9: use Azure App Service (Linux) with Python 3.11+ as the runtime. For this 3-user internal tool, App Service is the simplest fit because it supports straightforward Python deployment without Docker while still providing built-in HTTPS/SSL and standard Azure app settings for environment-based configuration.
