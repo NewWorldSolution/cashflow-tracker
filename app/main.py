@@ -115,7 +115,7 @@ class _PgConnectionWrapper:
         return _PgCursorWrapper(cur)
 
     def executescript(self, sql: str):
-        for stmt in [s.strip() for s in sql.split(";") if s.strip()]:
+        for stmt in [s.strip() for s in sql.split(";\n") if s.strip()]:
             self.execute(stmt)
         self._conn.commit()
 

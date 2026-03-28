@@ -106,7 +106,7 @@ def _table_exists(conn, table_name: str) -> bool:
         row = _execute(
             conn,
             "SELECT 1 FROM information_schema.tables "
-            "WHERE table_schema = 'public' AND table_name = %s",
+            "WHERE table_schema = 'public' AND table_name = ?",
             (table_name,),
         ).fetchone()
     else:
@@ -123,7 +123,7 @@ def _column_exists(conn, table_name: str, column_name: str) -> bool:
         row = _execute(
             conn,
             "SELECT 1 FROM information_schema.columns "
-            "WHERE table_name = %s AND column_name = %s",
+            "WHERE table_name = ? AND column_name = ?",
             (table_name, column_name),
         ).fetchone()
         return row is not None
