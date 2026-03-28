@@ -16,7 +16,7 @@ from db.init_db import initialise_db
 
 load_dotenv()
 
-DATABASE_URL = os.getenv("DATABASE_URL", "cashflow.db").removeprefix("sqlite:///./")
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./cashflow.db")
 SECRET_KEY = os.getenv("SECRET_KEY")
 
 if not SECRET_KEY:
@@ -35,15 +35,36 @@ EXEMPT_PATHS = {
 EXEMPT_PREFIXES = ("/static", "/docs", "/openapi.json")
 
 
-def _connect(url: str) -> sqlite3.Connection:
-    """Open a SQLite connection, using shared-cache URI for :memory: databases.
+def _is_postgres(url: str) -> bool:
+    return url.startswith("postgresql://") or url.startswith("postgres://")
+
+
+def _connect(url: str):
+    """Return a live database connection for the given URL.
+
+    Returns sqlite3.Connection for SQLite URLs.
+    Returns a raw psycopg2 connection for PostgreSQL URLs.
+
+    NOTE: The raw psycopg2 connection is NOT yet compatible with the service
+    layer — it uses ? placeholders and sqlite3.Row-style access. T3 wraps
+    this in _PgConnectionWrapper to solve both problems. T1 intentionally
+    returns the raw connection so T3 has a clean foundation to wrap.
 
     :memory: uses file::memory:?cache=shared so all connections in the process
     share the same in-memory database. A module-level keeper connection is held
     open so SQLite does not destroy the database between request connections.
     """
+    if _is_postgres(url):
+        import psycopg2
+
+        conn = psycopg2.connect(url)
+        conn.autocommit = False
+        return conn
+
+    sqlite_path = url.removeprefix("sqlite:///./").removeprefix("sqlite:///")
+
     global _memory_keeper
-    if url == ":memory:":
+    if sqlite_path in (":memory:", ""):
         if _memory_keeper is None:
             _memory_keeper = sqlite3.connect(
                 "file::memory:?cache=shared", uri=True, check_same_thread=False
@@ -51,17 +72,18 @@ def _connect(url: str) -> sqlite3.Connection:
         return sqlite3.connect(
             "file::memory:?cache=shared", uri=True, check_same_thread=False
         )
-    return sqlite3.connect(url, check_same_thread=False)
+    return sqlite3.connect(sqlite_path, check_same_thread=False)
 
 
-def get_db() -> sqlite3.Connection:
-    """FastAPI dependency — returns a live SQLite connection.
+def get_db():
+    """FastAPI dependency — returns a live database connection.
 
     Usage in route:
-        db: sqlite3.Connection = Depends(get_db)
+        db = Depends(get_db)
     """
     conn = _connect(DATABASE_URL)
-    conn.row_factory = sqlite3.Row
+    if not _is_postgres(DATABASE_URL):
+        conn.row_factory = sqlite3.Row
     try:
         yield conn
     finally:
@@ -86,7 +108,8 @@ class AuthGate(BaseHTTPMiddleware):
         from app.services.auth_service import get_current_user, get_opening_balance
 
         conn = _connect(DATABASE_URL)
-        conn.row_factory = sqlite3.Row
+        if not _is_postgres(DATABASE_URL):
+            conn.row_factory = sqlite3.Row
         try:
             if get_opening_balance(conn) is None:
                 return RedirectResponse(url="/settings/opening-balance", status_code=302)
@@ -136,6 +159,10 @@ def create_app(database_url: str | None = None) -> FastAPI:
     global DATABASE_URL
     if database_url:
         DATABASE_URL = database_url
+
+    # NOTE: SQL placeholder style — SQLite uses ?, PostgreSQL uses %s.
+    # Service layer uses ? throughout. T3 (pg-migration) handles placeholder
+    # compatibility via a thin adapter or by patching the query layer.
 
     # Eager init — idempotent (CREATE IF NOT EXISTS / INSERT OR IGNORE).
     # Runs here so TestClient without a context manager has a ready schema.
