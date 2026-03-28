@@ -175,15 +175,77 @@ az webapp config hostname add \
   --resource-group cashflow-rg \
   --hostname yourdomain.com
 
-## 8. Updates and Redeployment
+## 8. Two-Environment Setup (Sandbox + Production)
+
+The app runs as two completely separate deployments sharing one PostgreSQL server.
+This lets you give sandbox access to testers without touching real data.
+
+### 8.1 Create the sandbox database
+
+```bash
+az postgres flexible-server db create \
+  --resource-group cashflow-rg \
+  --server-name cashflow-pg \
+  --database-name cashflow_sandbox
+```
+
+### 8.2 Create the sandbox App Service
+
+```bash
+az webapp create \
+  --name cashflow-sandbox \
+  --resource-group cashflow-rg \
+  --plan cashflow-plan \
+  --runtime "PYTHON:3.11"
+```
+
+### 8.3 Sandbox App Settings
+
+```bash
+az webapp config appsettings set \
+  --name cashflow-sandbox \
+  --resource-group cashflow-rg \
+  --settings \
+    SECRET_KEY="<separate secret — never share with production>" \
+    DATABASE_URL="postgresql://cfadmin:<PASSWORD>@cashflow-pg.postgres.database.azure.com:5432/cashflow_sandbox?sslmode=require" \
+    ENVIRONMENT="development" \
+    DEFAULT_LOCALE="pl" \
+    SCM_DO_BUILD_DURING_DEPLOYMENT="true"
+```
+
+Key differences vs production:
+- `ENVIRONMENT=development` → SANDBOX banner is visible in the UI, making it unmistakably clear which instance you are on
+- `ALLOWED_HOSTS` not required (development mode)
+- Separate `SECRET_KEY` — sessions are isolated between instances
+- Points to `cashflow_sandbox` database — production data is never touched
+
+### 8.4 Resetting sandbox data
+
+To wipe and re-seed the sandbox at any time:
+
+```bash
+psql "postgresql://cfadmin:<PASSWORD>@cashflow-pg.postgres.database.azure.com:5432/cashflow_sandbox?sslmode=require" \
+  -c "DROP SCHEMA public CASCADE; CREATE SCHEMA public;"
+az webapp restart --name cashflow-sandbox --resource-group cashflow-rg
+# App startup runs initialise_db() automatically — tables and seeds are recreated
+```
+
+### 8.5 Future multi-tenancy note
+
+The schema already carries `company_id` on every transaction row (enforced in CLAUDE.md).
+If the app is later offered as a subscription service, the data layer is already
+multi-tenant-ready. Additional clients would require a new auth/routing layer —
+no schema redesign needed.
+
+## 9. Updates and Redeployment
 
 Standard update cycle:
 1. Merge PR to main
-2. git push azure main
+2. git push azure main  (production) and/or git push to sandbox deployment source
 3. Monitor: az webapp log tail --name cashflow-app --resource-group cashflow-rg
 4. Verify: curl https://cashflow-app.azurewebsites.net/health
 
-## 9. Troubleshooting
+## 10. Troubleshooting
 
 View live logs:
 az webapp log tail --name cashflow-app --resource-group cashflow-rg
@@ -368,6 +430,9 @@ iterations/p1-i9/tasks.md
 - [ ] Startup command documented
 - [ ] Health check Azure configuration documented
 - [ ] Smoke test checklist covers: health, auth, create cash_in, create cash_out, void, correct, company filter, SANDBOX banner absent, data persistence
+- [ ] Two-environment setup documented: `cashflow_sandbox` + `cashflow_prod` databases, two App Service instances, SANDBOX banner visible on sandbox via `ENVIRONMENT=development`
+- [ ] Sandbox reset procedure documented (DROP SCHEMA + restart)
+- [ ] Multi-tenancy note included (company_id already in schema)
 - [ ] No real passwords or secrets in documentation — placeholders only
 - [ ] `.github/workflows/ci.yml` created (or explicitly noted as deferred with reason)
 - [ ] `ruff check .` passes
