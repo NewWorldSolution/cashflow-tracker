@@ -1,4 +1,4 @@
-INSERT OR IGNORE INTO categories (
+INSERT INTO categories (
     category_id,
     name,
     label,
@@ -90,4 +90,5 @@ VALUES
     (159, 'co_training_del_food', 'Food / Catering', 'cash_out', 8, 100, 17),
     (160, 'co_training_del_commissions', 'Commissions', 'cash_out', 23, 100, 17),
     (161, 'co_private_withdrawals', 'Private Withdrawals', 'cash_out', 0, 0, 18),
-    (162, 'co_other_expense', 'Other Expense', 'cash_out', 23, 100, 19);
+    (162, 'co_other_expense', 'Other Expense', 'cash_out', 23, 100, 19)
+ON CONFLICT DO NOTHING;
